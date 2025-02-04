@@ -11,7 +11,7 @@
     import java.util.Random;
 
     @Entity
-    @Table(name = "candidates")
+    @Table(name = "candidates_prod")
     public class CandidateDetails {
 
         @Id
