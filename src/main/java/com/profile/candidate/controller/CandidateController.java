@@ -567,17 +567,17 @@ public class CandidateController {
     @DeleteMapping("/deleteinterview/{candidateId}")
     public ResponseEntity<DeleteInterviewResponseDto> deleteInterview(@PathVariable String candidateId) {
         try {
-            logger.info("Received request to delete interview for candidateId: {}", candidateId);
+            logger.info("Received request to Remove Scheduled Interview Details for candidateId: {}", candidateId);
             candidateService.deleteInterview(candidateId);
 
             DeleteInterviewResponseDto response = new DeleteInterviewResponseDto(
                     "success",
-                    "Interview deleted successfully for candidateId: " + candidateId
+                    "Scheduled Interview is Removed successfully for candidateId: " + candidateId
             );
 
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterviewNotScheduledException e) {
-            logger.error("Interview not found for candidateId: {}", candidateId);
+            logger.error("Scheduled Interview not found for candidateId: {}", candidateId);
 
             DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
                     "error",
@@ -586,11 +586,11 @@ public class CandidateController {
 
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         } catch (Exception e) {
-            logger.error("Error deleting interview for candidateId {}: {}", candidateId, e.getMessage());
+            logger.error("Error Removing Scheduled Interview details for candidateId {}: {}", candidateId, e.getMessage());
 
             DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
                     "error",
-                    "An error occurred while deleting the interview."
+                    "An error occurred while Removing the Scheduled Interview details."
             );
 
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);

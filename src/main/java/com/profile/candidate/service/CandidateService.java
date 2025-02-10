@@ -402,7 +402,7 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
         }
 
         // **Update interview status to "Scheduled"**
-        candidate.setInterviewStatus("Scheduled");
+        candidate.setInterviewStatus("SCHEDULED");
         // Save the updated candidate details to the database
         try {
 
@@ -743,13 +743,13 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
     }
     @Transactional
     public void deleteInterview(String candidateId) {
-        logger.info("Received request to delete interview for candidateId: {}", candidateId);
+        logger.info("Received request to Remove Scheduled Interview Details for candidateId: {}", candidateId);
 
         Optional<CandidateDetails> optionalCandidate = candidateRepository.findByCandidateId(candidateId);
 
         if (optionalCandidate.isEmpty()) {
             logger.error("Candidate with ID {} not found in database", candidateId);
-            throw new InterviewNotScheduledException("No scheduled interview found for candidate ID: " + candidateId);
+            throw new InterviewNotScheduledException("No Scheduled Interview found for candidate ID: " + candidateId);
         }
 
         CandidateDetails candidate = optionalCandidate.get();
@@ -758,7 +758,7 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
 
         if (candidate.getInterviewDateTime() == null) {
             logger.warn("No interview scheduled for candidate ID: {}", candidateId);
-            throw new InterviewNotScheduledException("No interview found for candidate ID: " + candidateId);
+            throw new InterviewNotScheduledException("No Scheduled Interview found for candidate ID: " + candidateId);
         }
 
         // ✅ ONLY remove interview-related fields
@@ -767,12 +767,14 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
         candidate.setZoomLink(null);
         candidate.setClientName(null);
         candidate.setInterviewLevel(null);
+        candidate.setClientEmail(null);
+        candidate.setTimestamp(null);
         candidate.setExternalInterviewDetails(null);
-        candidate.setInterviewStatus("Cancelled");
+        candidate.setInterviewStatus("NOT SCHEDULED");
 
         // ✅ DO NOT DELETE THE ENTIRE CANDIDATE
         candidateRepository.save(candidate);
-        logger.info("Interview deleted successfully for candidateId: {}", candidateId);
+        logger.info("Scheduled Interview Details is Removed successfully for candidateId: {}", candidateId);
     }
 
 }
