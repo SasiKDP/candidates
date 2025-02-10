@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -44,6 +45,19 @@ public class GlobalExceptionHandler {
                 ex.getMessage() // Same error message for the response
         );
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle FileSizeExceededException (added for file size exceeded)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<CandidateResponseDto> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
+        // Log the error if needed
+        CandidateResponseDto errorResponse = new CandidateResponseDto(
+                "Error",
+                "File size exceeds the maximum allowed size of 10 MB.", // Custom error message
+                new CandidateResponseDto.Payload(null, null, null),
+                null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);  // Return 413 Payload Too Large
     }
     // Handle CandidateAlreadyExistsException
     @ExceptionHandler(CandidateAlreadyExistsException.class)

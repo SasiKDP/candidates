@@ -1,18 +1,17 @@
 package com.profile.candidate.service;
 
 import com.profile.candidate.dto.*;
-import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
-import com.profile.candidate.exceptions.CandidateNotFoundException;
-import com.profile.candidate.exceptions.InterviewAlreadyScheduledException;
-import com.profile.candidate.exceptions.InvalidFileTypeException;
+import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.repository.CandidateRepository;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -23,11 +22,9 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class CandidateService {
@@ -60,7 +57,7 @@ public class CandidateService {
             candidateDetails.setResumeFilePath(resumeFilePath);  // Store the file path in DB
         }
         if (!isValidFileType(resumeFile)) {
-            throw new InvalidFileTypeException("Invalid file type. Only PDF and DOCX are allowed.");
+            throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC and DOCX Files are allowed.");
         }
 
         // Save the candidate details to the database
@@ -86,7 +83,7 @@ public class CandidateService {
         String fileName = file.getOriginalFilename();
         if (fileName != null) {
             String fileExtension = getFileExtension(fileName).toLowerCase();
-            return fileExtension.equals("pdf") || fileExtension.equals("docx");
+            return fileExtension.equals("pdf") || fileExtension.equals("docx") || fileExtension.equals("doc");
         }
         return false;
     }
@@ -220,9 +217,11 @@ public class CandidateService {
     private void validateFileSize(MultipartFile file) {
         long maxSize = 10 * 1024 * 1024; // 10 MB
         if (file.getSize() > maxSize) {
-            throw new RuntimeException("File size exceeds the maximum limit of 10 MB.");
+            // Throw MaxUploadSizeExceededException instead of FileSizeExceededException
+            throw new MaxUploadSizeExceededException(maxSize);
         }
     }
+
 
     private void saveFile(CandidateDetails candidate, MultipartFile file) throws IOException {
         // Define the path where files will be stored
@@ -238,18 +237,22 @@ public class CandidateService {
         String filename = candidate.getCandidateId() + "-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
         Path targetPath = uploadsDirectory.resolve(filename);  // Save the file inside the "uploads" directory
 
-        // Log the file saving action
-        logger.info("Saving file to path: {}", targetPath);
+        try {
+            // Log the file saving action
+            logger.info("Saving file to path: {}", targetPath);
 
-        // Save the file to the directory
-        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            // Save the file to the directory
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Optionally save the file path in the database (for example, updating the candidate)
-        candidate.setResumeFilePath(targetPath.toString());
-        candidateRepository.save(candidate);
+            // Optionally save the file path in the database (for example, updating the candidate)
+            candidate.setResumeFilePath(targetPath.toString());
+            candidateRepository.save(candidate);
+
+        } catch (IOException e) {
+            logger.error("Failed to save file: {}", e.getMessage());
+            throw new IOException("Failed to save file to path: " + targetPath, e);  // Throw exception to indicate failure
+        }
     }
-
-
 
     public Resource fetchResume(String candidateId) throws IOException {
         // Find the candidate by ID to get the resume file path
@@ -265,11 +268,13 @@ public class CandidateService {
             // Return the file as a resource
             return new UrlResource(path.toUri());
         } else {
-            // If the file doesn't exist, throw an exception
+            // If the file doesn't exist, log the error and throw a custom exception
+            logger.error("Resume file not found for candidate {}: {}", candidateId, resumeFilePath);
             throw new IOException("File not found: " + resumeFilePath);
         }
     }
-//    // Method to get all candidate submissions
+
+    //    // Method to get all candidate submissions
 //    public List<CandidateDetails> getSubmissions() {
 //        // Retrieve all candidates from the repository
 //        return candidateRepository.findAll();
@@ -471,6 +476,91 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
                     e.getMessage());  // Return the exception message in case of failure
         }
     }
+
+    public InterviewResponseDto updateScheduledInterview(
+            String userId,
+            String candidateId,
+            OffsetDateTime interviewDateTime,
+            Integer duration,
+            String zoomLink,
+            String userEmail,
+            String clientEmail,
+            String clientName,
+            String interviewLevel,
+            String externalInterviewDetails,
+            String interviewStatus) {  // Added interviewStatus parameter
+
+        logger.info("Starting interview update for userId: {} and candidateId: {}", userId, candidateId);
+
+        if (candidateId == null) {
+            throw new CandidateNotFoundException("Candidate ID cannot be null for userId: " + userId);
+        }
+
+        // Retrieve candidate details
+        CandidateDetails candidate = candidateRepository.findByCandidateIdAndUserId(candidateId, userId)
+                .orElseThrow(() -> new CandidateNotFoundException(
+                        "Candidate not found for userId: " + userId + " and candidateId: " + candidateId));
+
+        if (candidate.getInterviewDateTime() == null) {
+            throw new InterviewNotScheduledException("No interview scheduled for candidate ID: " + candidateId);
+        }
+
+        // Update only if values are provided
+        if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
+        if (duration != null) candidate.setDuration(duration);
+        if (zoomLink != null && !zoomLink.isEmpty()) candidate.setZoomLink(zoomLink);
+        if (userEmail != null && !userEmail.isEmpty()) candidate.setUserEmail(userEmail);
+        if (clientEmail != null && !clientEmail.isEmpty()) candidate.setClientEmail(clientEmail);
+        if (clientName != null && !clientName.isEmpty()) candidate.setClientName(clientName);
+        if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
+        if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
+        if (interviewStatus != null && !interviewStatus.isEmpty()) candidate.setInterviewStatus(interviewStatus); // Updated interview status
+
+        // Update timestamp
+        candidate.setTimestamp(LocalDateTime.now());
+
+        candidateRepository.save(candidate);
+        logger.info("Interview details updated successfully for candidateId: {}", candidateId);
+
+        // Prepare email content
+        String formattedDate = interviewDateTime != null ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
+        String formattedTime = interviewDateTime != null ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
+
+        String emailBody = String.format(
+                "<p>Hello %s,</p>"
+                        + "<p>Your interview has been rescheduled.</p>"
+                        + "<ul>"
+                        + "<li><b>New Date:</b> %s</li>"
+                        + "<li><b>New Time:</b> %s</li>"
+                        + "<li><b>Duration:</b> Approx. %d minutes</li>"
+                        + "<li><b>New Zoom Link:</b> <a href='%s'>Click here to join</a></li>"
+                        + "<li><b>Status:</b> %s</li>"
+                        + "</ul>"
+                        + "<p>Please confirm your availability.</p>"
+                        + "<p>Best regards,<br>The Interview Team</p>",
+                candidate.getFullName(), formattedDate, formattedTime, duration, zoomLink, candidate.getInterviewStatus());
+
+        String subject = "Interview Update for " + candidate.getFullName();
+
+        // Send email notifications
+        Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), candidate.getUserEmail())
+                .filter(Objects::nonNull)
+                .forEach(email -> emailService.sendInterviewNotification(email, subject, emailBody));
+
+        return new InterviewResponseDto(
+                true,
+                "Interview updated successfully and notifications sent.",
+                new InterviewResponseDto.InterviewPayload(
+                        candidate.getCandidateId(),
+                        candidate.getUserEmail(),
+                        candidate.getCandidateEmailId(),
+                        candidate.getClientEmail()
+                ),
+                null  // No errors
+        );
+
+    }
+
     public List<GetInterviewResponseDto> getAllScheduledInterviews() {
         // Fetch all candidates (no userId filter)
         List<CandidateDetails> candidates = candidateRepository.findAll();
@@ -622,11 +712,18 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
             existingCandidate.setCurrentOrganization(updatedCandidateDetails.getCurrentOrganization());
     }
 
-    // File type validation moved above file processing
-    public DeleteCandidateResponseDto deleteCandidateById(String candidateId) throws Exception {
+    @Transactional
+    public DeleteCandidateResponseDto deleteCandidateById(String candidateId) {
+        logger.info("Received request to delete candidate with candidateId: {}", candidateId);
+
         // Fetch candidate details before deletion
         CandidateDetails candidate = candidateRepository.findById(candidateId)
-                .orElseThrow(() -> new Exception("Candidate not found with id: " + candidateId));
+                .orElseThrow(() -> {
+                    logger.error("Candidate with ID {} not found", candidateId);
+                    return new CandidateNotFoundException("Candidate not found with id: " + candidateId);
+                });
+
+        logger.info("Candidate found: {}, Proceeding with deletion", candidate.getFullName());
 
         // Store the candidate details before deletion
         String candidateIdBeforeDelete = candidate.getCandidateId();
@@ -634,18 +731,51 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
 
         // Delete the candidate from the repository
         candidateRepository.delete(candidate);
+        logger.info("Candidate with ID {} deleted successfully", candidateId);
 
         // Prepare the response with candidate details
         DeleteCandidateResponseDto.Payload payload = new DeleteCandidateResponseDto.Payload(candidateIdBeforeDelete, candidateNameBeforeDelete);
 
-        // Return response with status, message, and candidate details
         return new DeleteCandidateResponseDto("Success",
                 "Candidate deleted successfully",
                 payload,
                 null);
     }
+    @Transactional
+    public void deleteInterview(String candidateId) {
+        logger.info("Received request to delete interview for candidateId: {}", candidateId);
 
+        Optional<CandidateDetails> optionalCandidate = candidateRepository.findByCandidateId(candidateId);
+
+        if (optionalCandidate.isEmpty()) {
+            logger.error("Candidate with ID {} not found in database", candidateId);
+            throw new InterviewNotScheduledException("No scheduled interview found for candidate ID: " + candidateId);
+        }
+
+        CandidateDetails candidate = optionalCandidate.get();
+        logger.info("Candidate found: {} (Candidate ID: {}), Checking interviewDateTime: {}",
+                candidate.getFullName(), candidate.getCandidateId(), candidate.getInterviewDateTime());
+
+        if (candidate.getInterviewDateTime() == null) {
+            logger.warn("No interview scheduled for candidate ID: {}", candidateId);
+            throw new InterviewNotScheduledException("No interview found for candidate ID: " + candidateId);
+        }
+
+        // ✅ ONLY remove interview-related fields
+        candidate.setInterviewDateTime(null);
+        candidate.setDuration(null);
+        candidate.setZoomLink(null);
+        candidate.setClientName(null);
+        candidate.setInterviewLevel(null);
+        candidate.setExternalInterviewDetails(null);
+        candidate.setInterviewStatus("Cancelled");
+
+        // ✅ DO NOT DELETE THE ENTIRE CANDIDATE
+        candidateRepository.save(candidate);
+        logger.info("Interview deleted successfully for candidateId: {}", candidateId);
+    }
 
 }
+
 
 

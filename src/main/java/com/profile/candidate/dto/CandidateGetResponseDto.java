@@ -2,8 +2,6 @@ package com.profile.candidate.dto;
 
 import com.profile.candidate.model.CandidateDetails;
 
-import java.util.List;
-
 public class CandidateGetResponseDto {
 
     private String candidateId;
