@@ -10,10 +10,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -175,52 +180,7 @@ public class CandidateService {
 
     private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
 
-//    public String uploadResume(String candidateId, MultipartFile file) throws IOException {
-//        // Validate file type (only .pdf and .docx)
-//        try {
-//            validateFile(file);
-//        } catch (InvalidFileTypeException ex) {
-//            logger.error("Invalid file type for candidateId: {}", candidateId);
-//            throw ex; // rethrow to be caught by controller
-//        }
-//
-//        // Check file size (optional: 10 MB max)
-//        try {
-//            validateFileSize(file);
-//        } catch (RuntimeException ex) {
-//            logger.error("File size exceeds limit for candidateId: {}", candidateId);
-//            throw ex; // rethrow to be caught by controller
-//        }
-//
-//        // Find the candidate by ID
-//        CandidateDetails candidate = candidateRepository.findById(candidateId)
-//                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
-//
-//        // Save the file (either on disk or as a byte array)
-//        try {
-//            saveFile(candidate, file);
-//        } catch (IOException ex) {
-//            logger.error("Error saving the file for candidateId: {}", candidateId, ex);
-//            throw ex; // rethrow to be caught by controller
-//        }
-//
-//        return "Resume uploaded successfully for candidate: " + candidateId;
-//    }
 
-    private void validateFile(MultipartFile file) {
-        String filename = file.getOriginalFilename();
-        if (filename == null || !(filename.endsWith(".pdf") || filename.endsWith(".docx"))) {
-            throw new InvalidFileTypeException("Only .pdf and .docx files are allowed.");
-        }
-    }
-
-    private void validateFileSize(MultipartFile file) {
-        long maxSize = 10 * 1024 * 1024; // 10 MB
-        if (file.getSize() > maxSize) {
-            // Throw MaxUploadSizeExceededException instead of FileSizeExceededException
-            throw new MaxUploadSizeExceededException(maxSize);
-        }
-    }
 
 
     private void saveFile(CandidateDetails candidate, MultipartFile file) throws IOException {
@@ -254,32 +214,7 @@ public class CandidateService {
         }
     }
 
-    public Resource fetchResume(String candidateId) throws IOException {
-        // Find the candidate by ID to get the resume file path
-        CandidateDetails candidate = candidateRepository.findById(candidateId)
-                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
 
-        // Get the file path from the candidate entity
-        String resumeFilePath = candidate.getResumeFilePath();
-        Path path = Paths.get(resumeFilePath);
-
-        // Check if the file exists
-        if (Files.exists(path)) {
-            // Return the file as a resource
-            return new UrlResource(path.toUri());
-        } else {
-            // If the file doesn't exist, log the error and throw a custom exception
-            logger.error("Resume file not found for candidate {}: {}", candidateId, resumeFilePath);
-            throw new IOException("File not found: " + resumeFilePath);
-        }
-    }
-
-    //    // Method to get all candidate submissions
-//    public List<CandidateDetails> getSubmissions() {
-//        // Retrieve all candidates from the repository
-//        return candidateRepository.findAll();
-//    }
-// Service method to get all candidate submissions
 public List<CandidateGetResponseDto> getAllSubmissions() {
     // Retrieve all candidates from the repository
     List<CandidateDetails> candidates = candidateRepository.findAll();
@@ -346,135 +281,111 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
 
         System.out.println("Starting to schedule interview for userId: " + userId + " and candidateId: " + candidateId);
 
-        // Validate if candidateId is null
         if (candidateId == null) {
-            System.err.println("Candidate ID cannot be null for userId: " + userId);
             throw new CandidateNotFoundException("Candidate ID cannot be null for userId: " + userId);
         }
 
-        System.out.println("Candidate ID passed: " + candidateId);
+        CandidateDetails candidate = candidateRepository.findByCandidateIdAndUserId(candidateId, userId)
+                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found for userId: " + userId + " and candidateId: " + candidateId));
 
-
-        // Find candidate by userId and candidateId
-        Optional<CandidateDetails> optionalCandidate = candidateRepository.findByCandidateIdAndUserId(candidateId, userId);
-
-        if (optionalCandidate.isEmpty()) {
-            System.err.println("No candidate found for userId: " + userId + " and candidateId: " + candidateId);
-            throw new CandidateNotFoundException("Candidate not found for userId: " + userId + " and candidateId: " + candidateId);
-        }
-
-        CandidateDetails candidate = optionalCandidate.get();
-
-
-        // Check if an interview is already scheduled for the candidate
         if (candidate.getInterviewDateTime() != null) {
             throw new InterviewAlreadyScheduledException("An interview is already scheduled for candidate ID: " + candidateId);
         }
 
-        System.out.println("Found candidate: " + candidate);
-
-        // Set userEmail and clientEmail from interview request if provided
-        if (userEmail != null && !userEmail.isEmpty()) {
-            candidate.setUserEmail(userEmail);
-        }
-        if (clientEmail != null && !clientEmail.isEmpty()) {
-            candidate.setClientEmail(clientEmail);
-        }
-
-        // Ensure userEmail and clientEmail are set (default them if missing)
+        // Update candidate details
+        candidate.setUserEmail(userEmail);
+        candidate.setClientEmail(clientEmail);
         setDefaultEmailsIfMissing(candidate);
 
-        // Update interview fields
+        // Determine Interview Type **ONLY IF interviewLevel is NULL or Empty**
+        if (interviewLevel == null || interviewLevel.isEmpty()) {
+            interviewLevel = determineInterviewType(clientEmail, zoomLink);
+        }
+        candidate.setInterviewLevel(interviewLevel);
+
+        if ("External".equalsIgnoreCase(interviewLevel)) {
+            // For External Interviews, make clientEmail & zoomLink optional
+            candidate.setClientEmail(clientEmail);
+            candidate.setZoomLink(zoomLink);
+        } else {
+            // For Internal Interviews, enforce mandatory fields
+            if (clientEmail == null || clientEmail.isEmpty()) {
+                throw new IllegalArgumentException("Client email is required for Internal interviews.");
+            }
+            if (zoomLink == null || zoomLink.isEmpty()) {
+                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
+            }
+        }
+
+        // Set interview details
         candidate.setInterviewDateTime(interviewDateTime);
         candidate.setDuration(duration);
         candidate.setTimestamp(LocalDateTime.now());
         candidate.setZoomLink(zoomLink);
         candidate.setClientName(clientName);
-        candidate.setInterviewLevel(interviewLevel);
         candidate.setExternalInterviewDetails(externalInterviewDetails);
 
-        // Set the new fields (clientName and interviewLevel)
-        if (clientName != null && !clientName.isEmpty()) {
-            candidate.setClientName(clientName);
-        }
-        if (interviewLevel != null && !interviewLevel.isEmpty()) {
-            candidate.setInterviewLevel(interviewLevel);
-        }
-
-        // **Update interview status to "Scheduled"**
+        // **Update Interview Status**
         candidate.setInterviewStatus("SCHEDULED");
-        // Save the updated candidate details to the database
-        try {
 
+        try {
             candidateRepository.save(candidate);
             System.out.println("Candidate saved successfully.");
         } catch (Exception e) {
-            System.err.println("Error while saving candidate: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Error while saving candidate data.");
+            throw new RuntimeException("Error while saving candidate data.", e);
         }
 
-        // Create the email subject and body
+        // **Email Notification**
+        sendInterviewNotification(candidate);
 
-        // Build the email body using the provided format
-        // Build the email body using the provided format
-        String body = "<p>Hello " + candidate.getFullName() + ",\n\n</p>"
-                + "<p>Hope you are doing well!\n\n</p>"
-                + "<p>Thank you for your interest in the position <b>" + interviewLevel + "</b> for our client <b>" + clientName + "</b>.\n\n</p>"
-                + "<p>We're pleased to inform you that your profile has been shortlisted for screening.\n\n</p>"
-                + "<p>As mentioned earlier, I am scheduling your screening, and below are the details:\n\n</p>"
-                + "<ul>\n"
-                + "<li><b>Date:</b> " + interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) + "</li>\n"
-                + "<li><b>Time:</b> " + interviewDateTime.format(DateTimeFormatter.ISO_TIME) + "</li>\n"
-                + "<li><b>Duration:</b> Approx. " + duration + " minutes</li>\n"
-                + "<li><b>Join Zoom Meeting:</b> <a href='" + zoomLink + "'>Click here to join the interview</a></li>\n"
-                + "</ul>\n\n"
-                + "<p>Kindly confirm your availability by replying to this email. Please let us know if this needs to be rescheduled or if you need further details.\n\n</p>"
-                + "<p>We look forward to speaking with you.\n\n</p>"
-                + "<p>Best regards,\n</p>"
-                + "<p>The Interview Team</p>";
+        // **Return Response**
+        InterviewResponseDto.InterviewPayload payload = new InterviewResponseDto.InterviewPayload(
+                candidate.getCandidateId(),
+                candidate.getUserEmail(),
+                candidate.getCandidateEmailId(),
+                candidate.getClientEmail()
+        );
 
+        return new InterviewResponseDto(true, "Interview scheduled successfully and email notifications sent.", payload, null);
+    }
 
-        // Create the subject for the email
+    /**
+     * Determines the interview type based on clientEmail and zoomLink.
+     */
+    private String determineInterviewType(String clientEmail, String zoomLink) {
+        return (clientEmail != null && !clientEmail.isEmpty() && zoomLink != null && !zoomLink.isEmpty())
+                ? "Internal"
+                : "External";
+    }
+
+    /**
+     * Sends interview notification emails.
+     */
+    private void sendInterviewNotification(CandidateDetails candidate) {
         String subject = "Interview Scheduled for " + candidate.getFullName();
 
-        System.out.println("Subject: " + subject);
-        System.out.println("Body: " + body);
-        // Send email to Candidate, Client, and User
+        String body = "<p>Hello " + candidate.getFullName() + ",</p>"
+                + "<p>Hope you are doing well!</p>"
+                + "<p>Thank you for your interest in the position <b>" + candidate.getInterviewLevel() + "</b> for our client <b>" + candidate.getClientName() + "</b>.</p>"
+                + "<p>We're pleased to inform you that your profile has been shortlisted for screening.</p>"
+                + "<p>Interview Details:</p>"
+                + "<ul>"
+                + "<li><b>Date:</b> " + candidate.getInterviewDateTime().format(DateTimeFormatter.BASIC_ISO_DATE) + "</li>"
+                + "<li><b>Time:</b> " + candidate.getInterviewDateTime().format(DateTimeFormatter.ISO_TIME) + "</li>"
+                + "<li><b>Duration:</b> Approx. " + candidate.getDuration() + " minutes</li>"
+                + (candidate.getZoomLink() != null ? "<li><b>Join Zoom Meeting:</b> <a href='" + candidate.getZoomLink() + "'>Click here</a></li>" : "")
+                + "</ul>"
+                + "<p>Kindly confirm your availability by replying to this email.</p>"
+                + "<p>Best regards,</p>"
+                + "<p>The Interview Team</p>";
+
         emailService.sendInterviewNotification(candidate.getCandidateEmailId(), subject, body);
-        emailService.sendInterviewNotification(candidate.getClientEmail(), subject, body);
-        emailService.sendInterviewNotification(candidate.getUserEmail(), subject, body);
 
-        try {
-            // Create the payload for the response
-            InterviewResponseDto.InterviewPayload payload = new InterviewResponseDto.InterviewPayload(
-                    candidate.getCandidateId(),
-                    candidate.getUserEmail(),
-                    candidate.getCandidateEmailId(),
-                    candidate.getClientEmail()
-            );
-
-            // Return response DTO with success = true
-            return new InterviewResponseDto(true,
-                    "Interview scheduled successfully and email notifications sent.",
-                    payload,
-                    null);  // No errors
-        }catch (Exception e) {
-            // If email sending fails, log the error and return a failure response
-            e.printStackTrace();
-
-            InterviewResponseDto.InterviewPayload payload = new InterviewResponseDto.InterviewPayload(
-                    candidate.getCandidateId(),
-                    candidate.getUserEmail(),
-                    candidate.getCandidateEmailId(),
-                    candidate.getClientEmail()
-            );
-
-            return new InterviewResponseDto(false,
-                    "Interview scheduled, but an error occurred while sending email notifications.",
-                    payload,
-                    e.getMessage());  // Return the exception message in case of failure
+        if (candidate.getClientEmail() != null) {
+            emailService.sendInterviewNotification(candidate.getClientEmail(), subject, body);
         }
+
+        emailService.sendInterviewNotification(candidate.getUserEmail(), subject, body);
     }
 
     public InterviewResponseDto updateScheduledInterview(
@@ -488,7 +399,7 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
             String clientName,
             String interviewLevel,
             String externalInterviewDetails,
-            String interviewStatus) {  // Added interviewStatus parameter
+            String interviewStatus) {
 
         logger.info("Starting interview update for userId: {} and candidateId: {}", userId, candidateId);
 
@@ -505,26 +416,57 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
             throw new InterviewNotScheduledException("No interview scheduled for candidate ID: " + candidateId);
         }
 
-        // Update only if values are provided
+        // Update fields only if values are provided
         if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
         if (duration != null) candidate.setDuration(duration);
-        if (zoomLink != null && !zoomLink.isEmpty()) candidate.setZoomLink(zoomLink);
         if (userEmail != null && !userEmail.isEmpty()) candidate.setUserEmail(userEmail);
-        if (clientEmail != null && !clientEmail.isEmpty()) candidate.setClientEmail(clientEmail);
         if (clientName != null && !clientName.isEmpty()) candidate.setClientName(clientName);
-        if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
         if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
-        if (interviewStatus != null && !interviewStatus.isEmpty()) candidate.setInterviewStatus(interviewStatus); // Updated interview status
+        if (interviewStatus != null && !interviewStatus.isEmpty()) candidate.setInterviewStatus(interviewStatus);
+
+        // Handle null values properly for clientEmail and zoomLink
+        if (clientEmail != null) {
+            candidate.setClientEmail(clientEmail);
+        } else {
+            candidate.setClientEmail(null); // Explicitly clear client email if null
+        }
+
+        if (zoomLink != null) {
+            candidate.setZoomLink(zoomLink);
+        } else {
+            candidate.setZoomLink(null); // Explicitly clear zoom link if null
+        }
+
+        // Determine interview type if interviewLevel is null
+        if (interviewLevel == null || interviewLevel.isEmpty()) {
+            interviewLevel = determineInterviewType(candidate.getClientEmail(), candidate.getZoomLink());
+        }
+        candidate.setInterviewLevel(interviewLevel);
+
+        // Handle Internal vs External interview constraints
+        if ("Internal".equalsIgnoreCase(candidate.getInterviewLevel())) {
+            if (candidate.getClientEmail() == null || candidate.getClientEmail().isEmpty()) {
+                throw new IllegalArgumentException("Client email is required for Internal interviews.");
+            }
+            if (candidate.getZoomLink() == null || candidate.getZoomLink().isEmpty()) {
+                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
+            }
+        }
 
         // Update timestamp
         candidate.setTimestamp(LocalDateTime.now());
 
+        // Save updated candidate details
         candidateRepository.save(candidate);
         logger.info("Interview details updated successfully for candidateId: {}", candidateId);
 
         // Prepare email content
-        String formattedDate = interviewDateTime != null ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
-        String formattedTime = interviewDateTime != null ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
+        String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
+        String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
+        String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
+        String formattedZoomLink = (candidate.getZoomLink() != null && !candidate.getZoomLink().isEmpty())
+                ? "<a href='" + candidate.getZoomLink() + "'>Click here to join</a>"
+                : "N/A";
 
         String emailBody = String.format(
                 "<p>Hello %s,</p>"
@@ -532,21 +474,26 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
                         + "<ul>"
                         + "<li><b>New Date:</b> %s</li>"
                         + "<li><b>New Time:</b> %s</li>"
-                        + "<li><b>Duration:</b> Approx. %d minutes</li>"
-                        + "<li><b>New Zoom Link:</b> <a href='%s'>Click here to join</a></li>"
+                        + "<li><b>Duration:</b> Approx. %s</li>"
+                        + "<li><b>New Zoom Link:</b> %s</li>"
                         + "<li><b>Status:</b> %s</li>"
                         + "</ul>"
                         + "<p>Please confirm your availability.</p>"
                         + "<p>Best regards,<br>The Interview Team</p>",
-                candidate.getFullName(), formattedDate, formattedTime, duration, zoomLink, candidate.getInterviewStatus());
+                candidate.getFullName(), formattedDate, formattedTime, formattedDuration, formattedZoomLink, candidate.getInterviewStatus());
 
         String subject = "Interview Update for " + candidate.getFullName();
 
-        // Send email notifications
-        Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), candidate.getUserEmail())
-                .filter(Objects::nonNull)
-                .forEach(email -> emailService.sendInterviewNotification(email, subject, emailBody));
+        // Send email notifications with error handling
+        try {
+            Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), candidate.getUserEmail())
+                    .filter(email -> email != null && !email.isEmpty())
+                    .forEach(email -> emailService.sendInterviewNotification(email, subject, emailBody));
+        } catch (Exception e) {
+            logger.error("Failed to send email notification: " + e.getMessage(), e);
+        }
 
+        // Return updated interview response
         return new InterviewResponseDto(
                 true,
                 "Interview updated successfully and notifications sent.",
@@ -558,42 +505,43 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
                 ),
                 null  // No errors
         );
-
     }
 
+
     public List<GetInterviewResponseDto> getAllScheduledInterviews() {
-        // Fetch all candidates (no userId filter)
+        // Fetch all candidates
         List<CandidateDetails> candidates = candidateRepository.findAll();
         List<GetInterviewResponseDto> response = new ArrayList<>();
 
         for (CandidateDetails interview : candidates) {
-            // Determine interview status dynamically
-            String interviewStatus = (interview.getInterviewDateTime() != null) ? "Scheduled" : "Not Scheduled";
-
-            // Map each CandidateDetails to GetInterviewResponseDto
-            GetInterviewResponseDto dto = new GetInterviewResponseDto(
-                    interview.getJobId(),
-                    interview.getCandidateId(),
-                    interview.getFullName(),
-                    interview.getContactNumber(),
-                    interview.getCandidateEmailId(),
-                    interview.getUserEmail(),
-                    interview.getUserId(),
-                    interview.getInterviewDateTime(),
-                    interview.getDuration(),
-                    interview.getZoomLink(),
-                    interview.getTimestamp(),
-                    interview.getClientEmail(),
-                    interview.getClientName(),
-                    interview.getInterviewLevel(),
-                    interviewStatus  // Dynamically assign status
-            );
-            response.add(dto);
+            // Skip candidates where interview is not scheduled
+            if (interview.getInterviewDateTime() == null) {
+                continue;  // Skip this iteration if interview is not scheduled
+            } {
+                // Create DTO and add to response list
+                GetInterviewResponseDto dto = new GetInterviewResponseDto(
+                        interview.getJobId(),
+                        interview.getCandidateId(),
+                        interview.getFullName(),
+                        interview.getContactNumber(),
+                        interview.getCandidateEmailId(),
+                        interview.getUserEmail(),
+                        interview.getUserId(),
+                        interview.getInterviewDateTime(),
+                        interview.getDuration(),
+                        interview.getZoomLink(),
+                        interview.getTimestamp(),
+                        interview.getClientEmail(),
+                        interview.getClientName(),
+                        interview.getInterviewLevel(),
+                        "Scheduled" // Since only scheduled interviews are included
+                );
+                response.add(dto);
+            }
         }
 
         return response;
     }
-
 
 
     public List<GetInterviewResponseDto> getAllScheduledInterviewsByUserId(String userId) {

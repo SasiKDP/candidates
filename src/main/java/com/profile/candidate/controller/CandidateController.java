@@ -8,6 +8,8 @@ import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -309,104 +311,54 @@ public class CandidateController {
         }
     }
 
-//    @PostMapping("/upload-resume/{candidateId}")
-//    public ResponseEntity<String> uploadResume(@PathVariable String candidateId,
-//                                               @RequestParam("file") MultipartFile file) {
-//        try {
-//            // Check if file is present
-//            if (file.isEmpty()) {
-//                logger.error("No file uploaded.");
-//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No file uploaded. Please upload a file.");
-//            }
-//
-//            // Call the service to upload the resume
-//            String resultMessage = candidateService.uploadResume(candidateId, file);
-//
-//            // If the upload is successful, respond with a 200 status code
-//            logger.info("Resume uploaded successfully for candidateId: {}", candidateId);
-//            return ResponseEntity.ok(resultMessage);
-//
-//        } catch (CandidateNotFoundException ex) {
-//            logger.error("Candidate not found for candidateId: {}", candidateId);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Candidate not found.");
-//        } catch (InvalidFileTypeException ex) {
-//            logger.error("Invalid file type for candidateId: {}", candidateId);
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Only .pdf and .docx files are allowed.");
-//        } catch (MaxUploadSizeExceededException ex) {
-//            logger.error("File size exceeds limit for candidateId: {}", candidateId);
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File size exceeds the maximum limit.");
-//        } catch (IOException ex) {
-//            logger.error("Error uploading the resume for candidateId: {}", candidateId, ex);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading the resume.");
-//        } catch (Exception ex) {
-//            logger.error("An unexpected error occurred while uploading resume for candidateId: {}", candidateId, ex);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while uploading the resume.");
-//        }
-//    }
-
-
-    // Fetch resume for a candidate
     @GetMapping("/download-resume/{candidateId}")
-    public ResponseEntity<UrlResource> downloadResume(@PathVariable String candidateId) {
+    public ResponseEntity<Object> downloadResume(@PathVariable String candidateId) {
         try {
-            // Find the candidate by ID to get the resume file path
+            logger.info("Downloading resume for candidate ID: {}", candidateId);
+
+            // Fetch candidate details from the database
             CandidateDetails candidate = candidateRepository.findById(candidateId)
-                    .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
+                    .orElseThrow(() -> new CandidateNotFoundException("Candidate not found with ID: " + candidateId));
 
-            // Get the file path from the candidate entity
-            String resumeFilePath = candidate.getResumeFilePath();
-            Path path = Paths.get(resumeFilePath);
+            // Fetch the resume BLOB field from the candidate entity
+            byte[] resumeBytes = candidate.getResume(); // Assuming `getResume()` returns the BLOB data
 
-            // Check if the file exists
-            if (Files.exists(path)) {
-                // Create a resource for the file using UrlResource
-                UrlResource resource = new UrlResource(path.toUri());
-
-                // Get the filename and determine the file type
-                String filename = path.getFileName().toString();
-                String contentType = Files.probeContentType(path);
-
-                // If the content type is null, set a default content type
-                if (contentType == null) {
-                    contentType = "application/octet-stream";
-                }
-
-                // Return the file as a resource in the response
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                        .body(resource);  // Return the UrlResource as a Resource
-            } else {
-                // If the file doesn't exist, return a 404 error
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(null);  // No file found
+            if (resumeBytes == null || resumeBytes.length == 0) {
+                logger.error("Resume is missing for candidate ID: {}", candidateId);
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponseDto(false, "Resume is missing for candidate ID: " + candidateId));
             }
 
-        }  catch (CandidateNotFoundException ex) {
-            // Log the error and return a 404 response
-            logger.error("Candidate not found for candidateId: {}", candidateId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(null);  // No file found for the given candidate
+            // Assuming you want to set the filename based on candidate's name or other criteria
+            String filename = candidate.getFullName() + "-Resume.pdf"; // Adjust filename logic as needed
 
-        } catch (FileNotFoundException ex) {
-            // Log the error and return a 404 response if file not found
-            logger.error("File not found for candidateId: {}", candidateId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(null);  // Resume file doesn't exist
+            // Convert the byte array to a ByteArrayResource
+            ByteArrayResource resource = new ByteArrayResource(resumeBytes);
 
-        } catch (IOException ex) {
-            // Log any I/O errors (e.g. access issues with the file)
-            logger.error("Error accessing the resume for candidateId: {}", candidateId, ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);  // Some error occurred while accessing the file
+            // Set content type (you can change this to match the actual file type)
+            String contentType = "application/pdf"; // You can dynamically determine the content type if needed
 
-        } catch (Exception ex) {
-            // Log any unexpected errors
-            logger.error("An unexpected error occurred while downloading the resume for candidateId: {}", candidateId, ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);  // Unexpected error
+            // Return the file as a response for download
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+
+        } catch (CandidateNotFoundException e) {
+            logger.error("Candidate not found: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponseDto(false, e.getMessage()));
+
+        } catch (Exception e) {
+            logger.error("Unexpected error while downloading resume for candidate ID {}: {}", candidateId, e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponseDto(false, "Unexpected error: " + e.getMessage()));
         }
     }
+
 
     @PostMapping("/interview-schedule/{userId}")
     public ResponseEntity<InterviewResponseDto> scheduleInterview(
