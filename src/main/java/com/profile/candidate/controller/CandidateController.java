@@ -483,6 +483,29 @@ public class CandidateController {
         }
     }
 
+    @DeleteMapping("/deletecandidate/{candidateId}")
+    public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
+        try {
+            // Call the service method to delete the candidate by ID and get the response DTO
+            DeleteCandidateResponseDto response = candidateService.deleteCandidateById(candidateId);
+
+            // Return the response entity with status 200 OK
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception ex) {
+            // Handle any exceptions and return an error response
+            logger.error("An error occurred while deleting the candidate: {}", ex.getMessage());
+
+            // Create an error response DTO with error details
+            DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
+                    "error",
+                    "Error occurred while deleting the candidate.",
+                    null,
+                    ex.getMessage()
+            );
+
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @GetMapping("/interviews/{userId}")
     public ResponseEntity<List<GetInterviewResponseDto>> getAllScheduledInterviews(
