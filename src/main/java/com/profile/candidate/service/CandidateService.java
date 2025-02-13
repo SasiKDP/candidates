@@ -214,8 +214,73 @@ public class CandidateService {
         }
     }
 
+    public CandidateResponseDto resubmitCandidate(String candidateId, CandidateDetails updatedCandidateDetails, MultipartFile resumeFile) {
+        try {
+            // Fetch the existing candidate from the database
+            Optional<CandidateDetails> existingCandidateOpt = candidateRepository.findById(candidateId);
+            if (!existingCandidateOpt.isPresent()) {
+                // Candidate not found, return error
+                throw new CandidateNotFoundException(candidateId);
+            }
 
-public List<CandidateGetResponseDto> getAllSubmissions() {
+            CandidateDetails existingCandidate = existingCandidateOpt.get();
+
+            // If the resume is required but is null or empty, return an error response
+            if (resumeFile == null || resumeFile.isEmpty()) {
+                return new CandidateResponseDto("Error", "Resume file is required for resubmission",
+                        new CandidateResponseDto.Payload(null, null, null), null);
+            }
+
+            // Validate file type (e.g., PDF, DOCX)
+            if (!isValidFileType(resumeFile)) {
+                return new CandidateResponseDto("Error", "Invalid file type. Only PDF, DOC and DOCX are allowed.",
+                        new CandidateResponseDto.Payload(null, null, null), null);
+            }
+
+            // Update candidate fields with the new data (e.g., name, contact, etc.)
+            updateCandidateFields(existingCandidate, updatedCandidateDetails);
+
+            // Save the resume file and update the candidate with the new file path
+            saveFile(existingCandidate, resumeFile);  // This saves the file and updates the candidate's resumeFilePath
+
+            // Save the updated candidate details (including the new resume file path)
+            candidateRepository.save(existingCandidate);
+
+            // Return a success response with the updated candidate details
+            CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
+                    existingCandidate.getCandidateId(),
+                    existingCandidate.getUserId(),
+                    existingCandidate.getJobId()
+            );
+
+            return new CandidateResponseDto(
+                    "Success",
+                    "Candidate successfully updated",
+                    payload,
+                    null // No error message since no error occurred
+            );
+
+        } catch (CandidateNotFoundException ex) {
+            // Custom handling for CandidateNotFoundException
+            logger.error("Candidate with ID {} not found: {}", candidateId, ex.getMessage());
+            throw ex; // Rethrow to be caught by GlobalExceptionHandler
+        } catch (InvalidFileTypeException ex) {
+            // Custom handling for InvalidFileTypeException
+            logger.error("Invalid file type for resume: {}", ex.getMessage());
+            throw ex; // Rethrow to be caught by GlobalExceptionHandler
+        } catch (IOException ex) {
+            // Specific handling for I/O issues, such as file saving errors
+            logger.error("Failed to save resume file: {}", ex.getMessage());
+            throw new RuntimeException("An error occurred while saving the resume file", ex);
+        } catch (Exception ex) {
+            // General error handling for any unexpected issues
+            logger.error("An unexpected error occurred while resubmitting the candidate: {}", ex.getMessage());
+            throw new RuntimeException("An unexpected error occurred while resubmitting the candidate", ex);
+        }
+    }
+
+
+    public List<CandidateGetResponseDto> getAllSubmissions() {
     // Retrieve all candidates from the repository
     List<CandidateDetails> candidates = candidateRepository.findAll();
 
@@ -419,38 +484,34 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
         // Update fields only if values are provided
         if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
         if (duration != null) candidate.setDuration(duration);
+        if (zoomLink != null && !zoomLink.isEmpty()) candidate.setZoomLink(zoomLink);
         if (userEmail != null && !userEmail.isEmpty()) candidate.setUserEmail(userEmail);
+        if (clientEmail != null && !clientEmail.isEmpty()) candidate.setClientEmail(clientEmail);
         if (clientName != null && !clientName.isEmpty()) candidate.setClientName(clientName);
+        if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
         if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
-        if (interviewStatus != null && !interviewStatus.isEmpty()) candidate.setInterviewStatus(interviewStatus);
-
-        // Handle null values properly for clientEmail and zoomLink
-        if (clientEmail != null) {
-            candidate.setClientEmail(clientEmail);
-        } else {
-            candidate.setClientEmail(null); // Explicitly clear client email if null
-        }
-
-        if (zoomLink != null) {
-            candidate.setZoomLink(zoomLink);
-        } else {
-            candidate.setZoomLink(null); // Explicitly clear zoom link if null
-        }
+        if (interviewStatus != null && !interviewStatus.isEmpty()) candidate.setInterviewStatus(interviewStatus); // Update status
 
         // Determine interview type if interviewLevel is null
-        if (interviewLevel == null || interviewLevel.isEmpty()) {
-            interviewLevel = determineInterviewType(candidate.getClientEmail(), candidate.getZoomLink());
+        if (candidate.getInterviewLevel() == null) {
+            candidate.setInterviewLevel(determineInterviewType(clientEmail, zoomLink));
         }
-        candidate.setInterviewLevel(interviewLevel);
 
-        // Handle Internal vs External interview constraints
-        if ("Internal".equalsIgnoreCase(candidate.getInterviewLevel())) {
-            if (candidate.getClientEmail() == null || candidate.getClientEmail().isEmpty()) {
+        // Handle internal vs. external interview constraints
+        if ("External".equalsIgnoreCase(candidate.getInterviewLevel())) {
+            // External interview: Only update clientEmail and zoomLink if provided, don't nullify
+            if (clientEmail != null) candidate.setClientEmail(clientEmail);
+            if (zoomLink != null) candidate.setZoomLink(zoomLink);
+        } else {
+            // Internal interview: Ensure clientEmail and zoomLink are mandatory
+            if (clientEmail == null || clientEmail.isEmpty()) {
                 throw new IllegalArgumentException("Client email is required for Internal interviews.");
             }
-            if (candidate.getZoomLink() == null || candidate.getZoomLink().isEmpty()) {
+            if (zoomLink == null || zoomLink.isEmpty()) {
                 throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
             }
+            candidate.setClientEmail(clientEmail);
+            candidate.setZoomLink(zoomLink);
         }
 
         // Update timestamp
@@ -464,9 +525,7 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
         String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
         String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
         String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
-        String formattedZoomLink = (candidate.getZoomLink() != null && !candidate.getZoomLink().isEmpty())
-                ? "<a href='" + candidate.getZoomLink() + "'>Click here to join</a>"
-                : "N/A";
+        String formattedZoomLink = (zoomLink != null && !zoomLink.isEmpty()) ? "<a href='" + zoomLink + "'>Click here to join</a>" : "N/A";
 
         String emailBody = String.format(
                 "<p>Hello %s,</p>"
@@ -487,7 +546,7 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
         // Send email notifications with error handling
         try {
             Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), candidate.getUserEmail())
-                    .filter(email -> email != null && !email.isEmpty())
+                    .filter(Objects::nonNull)
                     .forEach(email -> emailService.sendInterviewNotification(email, subject, emailBody));
         } catch (Exception e) {
             logger.error("Failed to send email notification: " + e.getMessage(), e);
@@ -506,7 +565,6 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
                 null  // No errors
         );
     }
-
 
     public List<GetInterviewResponseDto> getAllScheduledInterviews() {
         // Fetch all candidates
@@ -575,56 +633,6 @@ public List<CandidateGetResponseDto> getAllSubmissions() {
         return response;
     }
 
-    public CandidateResponseDto resubmitCandidate(String candidateId, CandidateDetails updatedCandidateDetails, MultipartFile resumeFile) {
-        try {
-            // Fetch the existing candidate from the database
-            Optional<CandidateDetails> existingCandidateOpt = candidateRepository.findById(candidateId);
-            if (!existingCandidateOpt.isPresent()) {
-                throw new CandidateNotFoundException(candidateId); // Use custom exception
-            }
-
-            CandidateDetails existingCandidate = existingCandidateOpt.get(); // If the resume is required but is null or empty, return an error response
-            if (resumeFile == null || resumeFile.isEmpty()) {
-                return new CandidateResponseDto("Error", "Resume file is required for resubmission",
-                        new CandidateResponseDto.Payload(null, null, null), null);
-            }
-
-            // Update the fields in the existing candidate with new data
-            updateCandidateFields(existingCandidate, updatedCandidateDetails);
-
-
-            // Handle file upload if a new resume is provided
-            if (!isValidFileType(resumeFile)) {
-                // Log invalid file type for debugging purposes
-                return new CandidateResponseDto("Error", "Invalid file type. Only PDF and DOCX are allowed.",
-                        new CandidateResponseDto.Payload(null, null, null), null);
-            }
-
-            // Save the updated candidate details
-            candidateRepository.save(existingCandidate);
-
-            // Return a success response with the updated candidate details
-            CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
-                    existingCandidate.getCandidateId(),
-                    existingCandidate.getUserId(),
-                    existingCandidate.getJobId()
-            );
-
-            return new CandidateResponseDto(
-                    "Success",
-                    "Candidate successfully updated",
-                    payload,
-                    null // errorMessage is null since no error occurred
-            );
-
-        } catch (CandidateNotFoundException | InvalidFileTypeException ex) {
-            // These exceptions are already handled by GlobalExceptionHandler, so no need to catch them here
-            throw ex; // Rethrow to be caught by GlobalExceptionHandler
-        } catch (Exception ex) {
-            logger.error("An error occurred while resubmitting the candidate: {}", ex.getMessage());
-            throw new RuntimeException("An unexpected error occurred while resubmitting the candidate", ex);
-        }
-    }
 
 
     // Method to update the candidate fields with new values
