@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: candidate-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: candidate-api
+  template:
+    metadata:
+      labels:
+        app: candidate-api
+    spec:
+      containers:
+      - name: candidate-api
+        image: sandycis476/candidates-new-prod:latest
+        ports:
+        - containerPort: 8085
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: candidate-api
+spec:
+  selector:
+    app: candidate-api
+  ports:
+  - protocol: TCP
+    port: 8085         # Port exposed to the Ingress
+    targetPort: 8085 # Port in the application pod
+  type: ClusterIP
