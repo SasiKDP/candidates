@@ -28,6 +28,10 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     // Find candidates by notice period
     List<CandidateDetails> findByNoticePeriod(String noticePeriod);
 
+    // Fetch candidate by candidateId
+    Optional<CandidateDetails> findByCandidateId(String candidateId);
+
+
     Optional<CandidateDetails> findByFullNameAndCandidateEmailIdAndContactNumber(String fullName, String candidateEmailId, String contactNumber);
 
     List<CandidateDetails> findByUserId(String userId);
@@ -45,4 +49,5 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             String clientEmail);
     // Method to fetch all candidates (this is already provided by JpaRepository)
     List<CandidateDetails> findAll();
+    
 }

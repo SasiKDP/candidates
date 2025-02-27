@@ -1,5 +1,6 @@
     package com.profile.candidate.model;
 
+    import com.fasterxml.jackson.annotation.JsonFormat;
     import jakarta.persistence.*;
 
     import javax.validation.constraints.*;
@@ -7,11 +8,10 @@
     import java.time.LocalDate;
     import java.time.LocalDateTime;
     import java.time.OffsetDateTime;
-    import java.util.List;
     import java.util.Random;
 
     @Entity
-    @Table(name = "candidates_prod")
+    @Table(name = "candidates")
     public class CandidateDetails {
 
         @Id
@@ -76,6 +76,7 @@
 
         private String overallFeedback;
 
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
         private OffsetDateTime interviewDateTime;
 
         private Integer duration; // in minutes

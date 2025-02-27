@@ -1,37 +1,25 @@
 package com.profile.candidate.dto;
 
-import com.profile.candidate.model.CandidateDetails;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 public class InterviewDto {
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
     private OffsetDateTime interviewDateTime;
+
     private Integer duration;
     private String zoomLink;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "UTC")
     private LocalDateTime scheduledTimeStamp;
+
     private String userId;
     private String jobId;
     private String clientName;
     private String candidateId;
     private String fullName;
-    private String externalInterviewDetails;
-
-    public String getExternalInterviewDetails() {
-        return externalInterviewDetails;
-    }
-
-    public void setExternalInterviewDetails(String externalInterviewDetails) {
-        this.externalInterviewDetails = externalInterviewDetails;
-    }
-
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
-    }
 
     public String getFullName() {
         return fullName;
@@ -41,18 +29,14 @@ public class InterviewDto {
         this.fullName = fullName;
     }
 
-    public void setCandidateId(String candidateId) {
-        this.candidateId = candidateId;
-    }
-
-    private String contactNumber;// Use CandidateDetails object instead of individual fields
+    private String externalInterviewDetails;
+    private String contactNumber;
     private String userEmail;
     private String interviewLevel;
     private String clientEmail;
 
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
-    }
+    // Added interviewStatus field
+    private String interviewStatus;
 
     // Constructor
     public InterviewDto() {
@@ -60,8 +44,6 @@ public class InterviewDto {
     }
 
     // Getters and Setters
-
-
     public OffsetDateTime getInterviewDateTime() {
         return interviewDateTime;
     }
@@ -134,6 +116,46 @@ public class InterviewDto {
         this.zoomLink = zoomLink;
     }
 
+    public String getExternalInterviewDetails() {
+        return externalInterviewDetails;
+    }
+
+    public void setExternalInterviewDetails(String externalInterviewDetails) {
+        this.externalInterviewDetails = externalInterviewDetails;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
+
+    public String getClientEmail() {
+        return clientEmail;
+    }
+
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
+    }
+
+    public String getCandidateId() {
+        return candidateId;
+    }
+
+    public void setCandidateId(String candidateId) {
+        this.candidateId = candidateId;
+    }
+
+    public String getInterviewStatus() {
+        return interviewStatus;
+    }
+
+    public void setInterviewStatus(String interviewStatus) {
+        this.interviewStatus = interviewStatus;
+    }
+
     @Override
     public String toString() {
         return "InterviewDto{" +
@@ -149,14 +171,7 @@ public class InterviewDto {
                 ", clientName='" + clientName + '\'' +
                 ", userEmail='" + userEmail + '\'' +
                 ", interviewLevel='" + interviewLevel + '\'' +
+                ", interviewStatus='" + interviewStatus + '\'' +  // Added interviewStatus in toString
                 '}';
-    }
-
-    public String getClientEmail() {
-        return clientEmail;
-    }
-
-    public String getCandidateId() {
-        return candidateId;
     }
 }

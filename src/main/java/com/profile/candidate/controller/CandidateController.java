@@ -3,10 +3,13 @@ package com.profile.candidate.controller;
 import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
 import com.profile.candidate.exceptions.CandidateNotFoundException;
+import com.profile.candidate.exceptions.InterviewNotScheduledException;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileNotFoundException;
@@ -65,15 +69,18 @@ public class CandidateController {
             @RequestParam("resumeFile") MultipartFile resumeFile) {
 
         try {
+            // Validate file size (10 MB max)
+            validateFileSize(resumeFile);
+
             // Check if the resume file is valid (PDF or DOCX)
             if (!isValidFileType(resumeFile)) {
                 // Log the invalid file type error
-                logger.error("Invalid file type uploaded for candidate {}. Only PDF and DOCX are allowed.", fullName);
+                logger.error("Invalid file type uploaded for candidate {}. Only PDF, DOC and DOCX are allowed.", fullName);
 
                 // Return the error response in the correct format
                 return new ResponseEntity<>(new CandidateResponseDto(
                         "Error",
-                        "Invalid file type. Only PDF and DOCX are allowed.",
+                        "Invalid file type. Only PDF, DOC and DOCX are allowed.",
                         new CandidateResponseDto.Payload(null, null, null),
                         null
                 ), HttpStatus.BAD_REQUEST); // Return HTTP 400 for invalid file type
@@ -110,6 +117,14 @@ public class CandidateController {
             // Return success response
             return new ResponseEntity<>(response, HttpStatus.OK);
 
+        }  catch (MaxUploadSizeExceededException ex) {
+            CandidateResponseDto errorResponse = new CandidateResponseDto(
+                    "Error",
+                    "File size exceeds the maximum allowed size of 20 MB.", // Custom error message
+                    new CandidateResponseDto.Payload(null, null, null),
+                    null
+            );
+            return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);  // Return 413 Payload Too Large
         } catch (CandidateAlreadyExistsException ex) {
             // Handle specific CandidateAlreadyExistsException
             logger.error("Candidate already exists: {}", ex.getMessage());
@@ -134,7 +149,7 @@ public class CandidateController {
 
         } catch (IOException ex) {
             // Handle file I/O exceptions (e.g., file save errors)
-            logger.error("Error processing resume file: {}", ex.getMessage());
+            logger.error("Error processing resume file for candidate {}. Error: {}", fullName, ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
                     "Error processing resume file.",
@@ -145,7 +160,7 @@ public class CandidateController {
 
         } catch (Exception ex) {
             // General error handler for any issues during candidate submission
-            logger.error("An error occurred while submitting the candidate: {}", ex.getMessage());
+            logger.error("An error occurred while submitting the candidate {}. Error: {}", fullName, ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
                     "An error occurred while submitting the candidate",
@@ -156,11 +171,21 @@ public class CandidateController {
         }
     }
 
+
+    private void validateFileSize(MultipartFile file) {
+        long maxSize = 10 * 1024 * 1024; // 10 MB
+        if (file.getSize() > maxSize) {
+            // Throw MaxUploadSizeExceededException instead of FileSizeExceededException
+            throw new MaxUploadSizeExceededException(maxSize);
+        }
+    }
+
+
     private boolean isValidFileType(MultipartFile file) {
         String fileName = file.getOriginalFilename();
         if (fileName != null) {
             String fileExtension = getFileExtension(fileName).toLowerCase();
-            return fileExtension.equals("pdf") || fileExtension.equals("docx");
+            return fileExtension.equals("pdf") || fileExtension.equals("docx") || fileExtension.equals("doc");
         }
         return false;
     }
@@ -172,6 +197,7 @@ public class CandidateController {
         }
         return "";
     }
+
     @PutMapping("/candidatesubmissions/{candidateId}")
     public ResponseEntity<CandidateResponseDto> resubmitCandidate(
             @PathVariable("candidateId") String candidateId,
@@ -285,104 +311,54 @@ public class CandidateController {
         }
     }
 
-//    @PostMapping("/upload-resume/{candidateId}")
-//    public ResponseEntity<String> uploadResume(@PathVariable String candidateId,
-//                                               @RequestParam("file") MultipartFile file) {
-//        try {
-//            // Check if file is present
-//            if (file.isEmpty()) {
-//                logger.error("No file uploaded.");
-//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No file uploaded. Please upload a file.");
-//            }
-//
-//            // Call the service to upload the resume
-//            String resultMessage = candidateService.uploadResume(candidateId, file);
-//
-//            // If the upload is successful, respond with a 200 status code
-//            logger.info("Resume uploaded successfully for candidateId: {}", candidateId);
-//            return ResponseEntity.ok(resultMessage);
-//
-//        } catch (CandidateNotFoundException ex) {
-//            logger.error("Candidate not found for candidateId: {}", candidateId);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Candidate not found.");
-//        } catch (InvalidFileTypeException ex) {
-//            logger.error("Invalid file type for candidateId: {}", candidateId);
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Only .pdf and .docx files are allowed.");
-//        } catch (MaxUploadSizeExceededException ex) {
-//            logger.error("File size exceeds limit for candidateId: {}", candidateId);
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File size exceeds the maximum limit.");
-//        } catch (IOException ex) {
-//            logger.error("Error uploading the resume for candidateId: {}", candidateId, ex);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading the resume.");
-//        } catch (Exception ex) {
-//            logger.error("An unexpected error occurred while uploading resume for candidateId: {}", candidateId, ex);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while uploading the resume.");
-//        }
-//    }
-
-
-    // Fetch resume for a candidate
     @GetMapping("/download-resume/{candidateId}")
-    public ResponseEntity<UrlResource> downloadResume(@PathVariable String candidateId) {
+    public ResponseEntity<Object> downloadResume(@PathVariable String candidateId) {
         try {
-            // Find the candidate by ID to get the resume file path
+            logger.info("Downloading resume for candidate ID: {}", candidateId);
+
+            // Fetch candidate details from the database
             CandidateDetails candidate = candidateRepository.findById(candidateId)
-                    .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
+                    .orElseThrow(() -> new CandidateNotFoundException("Candidate not found with ID: " + candidateId));
 
-            // Get the file path from the candidate entity
-            String resumeFilePath = candidate.getResumeFilePath();
-            Path path = Paths.get(resumeFilePath);
+            // Fetch the resume BLOB field from the candidate entity
+            byte[] resumeBytes = candidate.getResume(); // Assuming `getResume()` returns the BLOB data
 
-            // Check if the file exists
-            if (Files.exists(path)) {
-                // Create a resource for the file using UrlResource
-                UrlResource resource = new UrlResource(path.toUri());
-
-                // Get the filename and determine the file type
-                String filename = path.getFileName().toString();
-                String contentType = Files.probeContentType(path);
-
-                // If the content type is null, set a default content type
-                if (contentType == null) {
-                    contentType = "application/octet-stream";
-                }
-
-                // Return the file as a resource in the response
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                        .body(resource);  // Return the UrlResource as a Resource
-            } else {
-                // If the file doesn't exist, return a 404 error
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(null);  // No file found
+            if (resumeBytes == null || resumeBytes.length == 0) {
+                logger.error("Resume is missing for candidate ID: {}", candidateId);
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponseDto(false, "Resume is missing for candidate ID: " + candidateId));
             }
 
-        }  catch (CandidateNotFoundException ex) {
-            // Log the error and return a 404 response
-            logger.error("Candidate not found for candidateId: {}", candidateId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(null);  // No file found for the given candidate
+            // Assuming you want to set the filename based on candidate's name or other criteria
+            String filename = candidate.getFullName() + "-Resume.pdf"; // Adjust filename logic as needed
 
-        } catch (FileNotFoundException ex) {
-            // Log the error and return a 404 response if file not found
-            logger.error("File not found for candidateId: {}", candidateId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(null);  // Resume file doesn't exist
+            // Convert the byte array to a ByteArrayResource
+            ByteArrayResource resource = new ByteArrayResource(resumeBytes);
 
-        } catch (IOException ex) {
-            // Log any I/O errors (e.g. access issues with the file)
-            logger.error("Error accessing the resume for candidateId: {}", candidateId, ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);  // Some error occurred while accessing the file
+            // Set content type (you can change this to match the actual file type)
+            String contentType = "application/pdf"; // You can dynamically determine the content type if needed
 
-        } catch (Exception ex) {
-            // Log any unexpected errors
-            logger.error("An unexpected error occurred while downloading the resume for candidateId: {}", candidateId, ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);  // Unexpected error
+            // Return the file as a response for download
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+
+        } catch (CandidateNotFoundException e) {
+            logger.error("Candidate not found: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponseDto(false, e.getMessage()));
+
+        } catch (Exception e) {
+            logger.error("Unexpected error while downloading resume for candidate ID {}: {}", candidateId, e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponseDto(false, "Unexpected error: " + e.getMessage()));
         }
     }
+
 
     @PostMapping("/interview-schedule/{userId}")
     public ResponseEntity<InterviewResponseDto> scheduleInterview(
@@ -401,17 +377,17 @@ public class CandidateController {
                         null
                 ));
             }
-            // Check if an interview is already scheduled for the candidate at the specified time
-            boolean isInterviewScheduled = candidateService.isInterviewScheduled(interviewRequest.getCandidateId(), interviewRequest.getInterviewDateTime());
-            if (isInterviewScheduled) {
-                // Return a 400 Bad Request response if an interview is already scheduled
-                return ResponseEntity.badRequest().body(new InterviewResponseDto(
-                        false,
-                        "An interview is already scheduled for this candidate at the specified time.",
-                        null,
-                        null
-                ));
-            }
+//            // Check if an interview is already scheduled for the candidate at the specified time
+//            boolean isInterviewScheduled = candidateService.isInterviewScheduled(interviewRequest.getCandidateId(), interviewRequest.getInterviewDateTime());
+//            if (isInterviewScheduled) {
+//                // Return a 400 Bad Request response if an interview is already scheduled
+//                return ResponseEntity.badRequest().body(new InterviewResponseDto(
+//                        false,
+//                        "An interview is already scheduled for this candidate at the specified time.",
+//                        null,
+//                        null
+//                ));
+//            }
 
             // Check if the candidate belongs to the user
             boolean isValidCandidate = candidateService.isCandidateValidForUser(userId, interviewRequest.getCandidateId());
@@ -460,6 +436,76 @@ public class CandidateController {
             ));
         }
     }
+    @DeleteMapping("/deletecandidate/{candidateId}")
+    public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
+        try {
+            // Call the service method to delete the candidate by ID and get the response DTO
+            DeleteCandidateResponseDto response = candidateService.deleteCandidateById(candidateId);
+
+            // Return the response entity with status 200 OK
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception ex) {
+            // Handle any exceptions and return an error response
+            logger.error("An error occurred while deleting the candidate: {}", ex.getMessage());
+
+            // Create an error response DTO with error details
+            DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
+                    "error",
+                    "Error occurred while deleting the candidate.",
+                    null,
+                    ex.getMessage()
+            );
+
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @PutMapping("/interview-update/{userId}/{candidateId}")
+    public ResponseEntity<InterviewResponseDto> updateScheduledInterview(
+            @PathVariable String userId,
+            @PathVariable String candidateId,
+            @RequestBody InterviewDto interviewRequest) {
+        try {
+            logger.info("Received interview update request for userId: {} and candidateId: {}", userId, candidateId);
+
+            if (candidateId == null || userId == null) {
+                return ResponseEntity.badRequest().body(new InterviewResponseDto(
+                        false, "Candidate ID or User ID cannot be null.", null, null
+                ));
+            }
+
+            InterviewResponseDto response = candidateService.updateScheduledInterview(
+                    userId,
+                    candidateId,
+                    interviewRequest.getInterviewDateTime(),
+                    interviewRequest.getDuration(),
+                    interviewRequest.getZoomLink(),
+                    interviewRequest.getUserEmail(),
+                    interviewRequest.getClientEmail(),
+                    interviewRequest.getClientName(),
+                    interviewRequest.getInterviewLevel(),
+                    interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getInterviewStatus()); // Added status update
+
+            return ResponseEntity.ok(response);
+        } catch (CandidateNotFoundException e) {
+            logger.error("Candidate not found for userId: {}", userId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+                    false, "Candidate not found for the User Id.", null, null
+            ));
+        } catch (InterviewNotScheduledException e) {
+            logger.error("No interview scheduled for candidateId: {}", candidateId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+                    false, "No scheduled interview found for this candidate.", null, null
+            ));
+        } catch (Exception e) {
+            logger.error("Error while updating interview: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
+                    false, "An error occurred while updating the interview.", null, null
+            ));
+        }
+    }
 
 
     @GetMapping("/interviews/{userId}")
@@ -494,28 +540,36 @@ public class CandidateController {
         }
     }
 
-    @DeleteMapping("/deletecandidate/{candidateId}")
-    public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
+    @DeleteMapping("/deleteinterview/{candidateId}")
+    public ResponseEntity<DeleteInterviewResponseDto> deleteInterview(@PathVariable String candidateId) {
         try {
-            // Call the service method to delete the candidate by ID and get the response DTO
-            DeleteCandidateResponseDto response = candidateService.deleteCandidateById(candidateId);
+            logger.info("Received request to Remove Scheduled Interview Details for candidateId: {}", candidateId);
+            candidateService.deleteInterview(candidateId);
 
-            // Return the response entity with status 200 OK
+            DeleteInterviewResponseDto response = new DeleteInterviewResponseDto(
+                    "success",
+                    "Scheduled Interview is Removed successfully for candidateId: " + candidateId
+            );
+
             return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception ex) {
-            // Handle any exceptions and return an error response
-            logger.error("An error occurred while deleting the candidate: {}", ex.getMessage());
+        } catch (InterviewNotScheduledException e) {
+            logger.error("Scheduled Interview not found for candidateId: {}", candidateId);
 
-            // Create an error response DTO with error details
-            DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
+            DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
                     "error",
-                    "Error occurred while deleting the candidate.",
-                    null,
-                    ex.getMessage()
+                    e.getMessage()
+            );
+
+            return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            logger.error("Error Removing Scheduled Interview details for candidateId {}: {}", candidateId, e.getMessage());
+
+            DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
+                    "error",
+                    "An error occurred while Removing the Scheduled Interview details."
             );
 
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 }
