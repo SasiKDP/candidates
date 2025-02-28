@@ -4,6 +4,8 @@ import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.repository.CandidateRepository;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -444,13 +446,46 @@ public class CandidateService {
                 + "<p>Best regards,</p>"
                 + "<p>The Interview Team</p>";
 
-        emailService.sendInterviewNotification(candidate.getCandidateEmailId(), subject, body);
-
-        if (candidate.getClientEmail() != null) {
-            emailService.sendInterviewNotification(candidate.getClientEmail(), subject, body);
+        // Validate emails before sending
+        if (isValidEmail(candidate.getCandidateEmailId())) {
+            emailService.sendInterviewNotification(candidate.getCandidateEmailId(), subject, body);
+            System.out.println("Interview notification sent to candidate: " + candidate.getCandidateEmailId());
+        } else {
+            System.err.println("Invalid candidate email: " + candidate.getCandidateEmailId());
         }
 
-        emailService.sendInterviewNotification(candidate.getUserEmail(), subject, body);
+        // If client email is provided, validate it and send
+        if (candidate.getClientEmail() != null && isValidEmail(candidate.getClientEmail())) {
+            emailService.sendInterviewNotification(candidate.getClientEmail(), subject, body);
+            System.out.println("Interview notification sent to client: " + candidate.getClientEmail());
+        } else if (candidate.getClientEmail() != null) {
+            System.err.println("Invalid client email: " + candidate.getClientEmail());
+        }
+
+        // Always send to user email if provided and valid
+        if (isValidEmail(candidate.getUserEmail())) {
+            emailService.sendInterviewNotification(candidate.getUserEmail(), subject, body);
+            System.out.println("Interview notification sent to user: " + candidate.getUserEmail());
+        } else {
+            System.err.println("Invalid user email: " + candidate.getUserEmail());
+        }
+    }
+
+    /**
+     * Helper method to validate email format
+     */
+    private boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;  // Early return if email is null or empty
+        }
+        try {
+            email = email.trim();  // Remove leading/trailing whitespace
+            InternetAddress emailAddr = new InternetAddress(email);
+            emailAddr.validate();  // Will throw an exception if invalid
+            return true;  // Valid email format
+        } catch (AddressException e) {
+            return false;  // Invalid email format
+        }
     }
 
     public InterviewResponseDto updateScheduledInterview(
