@@ -4,6 +4,9 @@ C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\c
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\CandidateDto.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\CandidateGetResponseDto.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\CandidateResponseDto.java
+C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\DeleteCandidateResponseDto.java
+C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\DeleteInterviewResponseDto.java
+C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\ErrorResponseDto.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\GetInterviewResponseDto.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\InterviewDto.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\dto\InterviewResponseDto.java
@@ -11,6 +14,7 @@ C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\e
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\exceptions\CandidateNotFoundException.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\exceptions\GlobalExceptionHandler.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\exceptions\InterviewAlreadyScheduledException.java
+C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\exceptions\InterviewNotScheduledException.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\exceptions\InvalidFileTypeException.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\model\CandidateDetails.java
 C:\Users\User\workspsce\Dstaquad-Candidate\src\main\java\com\profile\candidate\repository\CandidateRepository.java

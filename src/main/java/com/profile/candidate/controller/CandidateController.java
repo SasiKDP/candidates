@@ -1,9 +1,7 @@
 package com.profile.candidate.controller;
 
 import com.profile.candidate.dto.*;
-import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
-import com.profile.candidate.exceptions.CandidateNotFoundException;
-import com.profile.candidate.exceptions.InterviewNotScheduledException;
+import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.service.CandidateService;
@@ -221,41 +219,64 @@ public class CandidateController {
             @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile) {
 
         try {
-            // Create a CandidateDetails object from the request parameters
+            // Validate required fields
+            validateRequiredFields(fullName, candidateEmailId, contactNumber);
+
+            // Create a CandidateDetails object and populate fields from request params
             CandidateDetails updatedCandidateDetails = new CandidateDetails();
 
-            updatedCandidateDetails.setJobId(jobId);
-            updatedCandidateDetails.setUserId(userId);
+            // Set each field only if it's provided (handling null cases)
+            if (jobId != null) updatedCandidateDetails.setJobId(jobId);
+            if (userId != null) updatedCandidateDetails.setUserId(userId);
             updatedCandidateDetails.setFullName(fullName);
             updatedCandidateDetails.setCandidateEmailId(candidateEmailId);
             updatedCandidateDetails.setContactNumber(contactNumber);
-            updatedCandidateDetails.setQualification(qualification);
-            updatedCandidateDetails.setTotalExperience(totalExperience != null ? totalExperience : 0);
-            updatedCandidateDetails.setCurrentCTC(currentCTC);
-            updatedCandidateDetails.setExpectedCTC(expectedCTC);
-            updatedCandidateDetails.setNoticePeriod(noticePeriod);
-            updatedCandidateDetails.setCurrentLocation(currentLocation);
-            updatedCandidateDetails.setPreferredLocation(preferredLocation);
-            updatedCandidateDetails.setSkills(skills);
-            updatedCandidateDetails.setCommunicationSkills(communicationSkills);
-            updatedCandidateDetails.setRequiredTechnologiesRating(requiredTechnologiesRating);
-            updatedCandidateDetails.setOverallFeedback(overallFeedback);
-            updatedCandidateDetails.setRelevantExperience(relevantExperience != null ? relevantExperience : 0);
-            updatedCandidateDetails.setCurrentOrganization(currentOrganization);
+            if (qualification != null) updatedCandidateDetails.setQualification(qualification);
+            updatedCandidateDetails.setTotalExperience(totalExperience != null ? totalExperience : 0); // Default if null
+            if (currentCTC != null) updatedCandidateDetails.setCurrentCTC(currentCTC);
+            if (expectedCTC != null) updatedCandidateDetails.setExpectedCTC(expectedCTC);
+            if (noticePeriod != null) updatedCandidateDetails.setNoticePeriod(noticePeriod);
+            if (currentLocation != null) updatedCandidateDetails.setCurrentLocation(currentLocation);
+            if (preferredLocation != null) updatedCandidateDetails.setPreferredLocation(preferredLocation);
+            if (skills != null) updatedCandidateDetails.setSkills(skills);
+            if (communicationSkills != null) updatedCandidateDetails.setCommunicationSkills(communicationSkills);
+            if (requiredTechnologiesRating != null) updatedCandidateDetails.setRequiredTechnologiesRating(requiredTechnologiesRating);
+            if (overallFeedback != null) updatedCandidateDetails.setOverallFeedback(overallFeedback);
+            updatedCandidateDetails.setRelevantExperience(relevantExperience != null ? relevantExperience : 0); // Default if null
+            if (currentOrganization != null) updatedCandidateDetails.setCurrentOrganization(currentOrganization);
 
-            // Call the service method to resubmit the candidate
+            // Call the service method to resubmit the candidate with the file
             CandidateResponseDto response = candidateService.resubmitCandidate(candidateId, updatedCandidateDetails, resumeFile);
 
             // Return the response entity with status 200 OK
             return new ResponseEntity<>(response, HttpStatus.OK);
 
+        } catch (InvalidCandidateDataException ex) {
+            // Handle invalid data exception (e.g., missing required fields)
+            logger.error("Invalid candidate data: {}", ex.getMessage());
+            CandidateResponseDto errorResponse = new CandidateResponseDto(
+                    ex.getMessage(), null, null, null
+            );
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
-            // Handle any exceptions and return an error response
+            // Handle any other exceptions and return an error response
             logger.error("An error occurred while resubmitting the candidate: {}", ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "An error occurred while resubmitting the candidate", null, null, null
             );
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void validateRequiredFields(String fullName, String candidateEmailId, String contactNumber) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw new InvalidCandidateDataException("Candidate full name is required.");
+        }
+        if (candidateEmailId == null || candidateEmailId.trim().isEmpty()) {
+            throw new InvalidCandidateDataException("Candidate email is required.");
+        }
+        if (contactNumber == null || contactNumber.trim().isEmpty()) {
+            throw new InvalidCandidateDataException("Candidate Contact number is required.");
         }
     }
 
@@ -309,6 +330,32 @@ public class CandidateController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    @GetMapping("/submissions/{userId}/{jobId}")
+    public ResponseEntity<List<CandidateGetResponseDto>> getAllSubmissions(
+            @PathVariable String userId,
+            @PathVariable String jobId) {  // Use PathVariable to get userId and jobId from the URL
+        try {
+            // Fetch submissions based on the userId and jobId
+            List<CandidateGetResponseDto> submissions = candidateService.getSubmissionsByUserIdAndJobId(userId, jobId);
+
+            // Log success
+            logger.info("Fetched {} submissions successfully for userId: {} and jobId: {}", submissions.size(), userId, jobId);
+
+            // Return all candidate details with status 200 OK
+            return ResponseEntity.ok(submissions);
+
+        } catch (CandidateNotFoundException ex) {
+            // Handle specific CandidateNotFoundException
+            logger.error("No submissions found for userId: {} and jobId: {}", userId, jobId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        } catch (Exception ex) {
+            // Log the error and return HTTP 500
+            logger.error("An error occurred while fetching submissions for userId: {} and jobId: {}: {}", userId, jobId, ex.getMessage(), ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     @GetMapping("/download-resume/{candidateId}")
     public ResponseEntity<Object> downloadResume(@PathVariable String candidateId) {
@@ -376,25 +423,31 @@ public class CandidateController {
                         null
                 ));
             }
-//            // Check if an interview is already scheduled for the candidate at the specified time
-//            boolean isInterviewScheduled = candidateService.isInterviewScheduled(interviewRequest.getCandidateId(), interviewRequest.getInterviewDateTime());
-//            if (isInterviewScheduled) {
-//                // Return a 400 Bad Request response if an interview is already scheduled
-//                return ResponseEntity.badRequest().body(new InterviewResponseDto(
-//                        false,
-//                        "An interview is already scheduled for this candidate at the specified time.",
-//                        null,
-//                        null
-//                ));
-//            }
 
             // Check if the candidate belongs to the user
             boolean isValidCandidate = candidateService.isCandidateValidForUser(userId, interviewRequest.getCandidateId());
             if (!isValidCandidate) {
                 // If the candidateId does not belong to the userId, return a 403 Forbidden response
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new InterviewResponseDto(
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
                         false,
-                        "Candidate ID does not belong to the provided userId.",
+                        "Candidate does not belong to the provided userId.",
+                        null,
+                        null
+                ));
+            }
+
+            // Check if an interview is already scheduled for the candidate with the same jobId and interviewDateTime
+            boolean isInterviewScheduled = candidateService.isInterviewScheduledForJobAndTime(
+                    interviewRequest.getCandidateId(),
+                    interviewRequest.getJobId(),
+                    interviewRequest.getInterviewDateTime()
+            );
+            if (isInterviewScheduled) {
+                // If interview already scheduled for the same job and time, throw an exception
+                return ResponseEntity.badRequest().body(new InterviewResponseDto(
+                        false,
+                        "An interview is already scheduled for this candidate for jobId: " + interviewRequest.getJobId() +
+                                " at the specified time.",
                         null,
                         null
                 ));
@@ -404,13 +457,14 @@ public class CandidateController {
             InterviewResponseDto response = candidateService.scheduleInterview(
                     userId,
                     interviewRequest.getCandidateId(),
+                    interviewRequest.getJobId(),
                     interviewRequest.getInterviewDateTime(),
                     interviewRequest.getDuration(),
                     interviewRequest.getZoomLink(),
                     interviewRequest.getUserEmail(), // Pass userEmail
                     interviewRequest.getClientEmail(),
                     interviewRequest.getClientName(),
-                    interviewRequest.getInterviewLevel(),// Pass clientEmail
+                    interviewRequest.getInterviewLevel(), // Pass interview level
                     interviewRequest.getExternalInterviewDetails()
             );
 
@@ -424,12 +478,22 @@ public class CandidateController {
                     null,
                     null
             ));
+        } catch (InterviewAlreadyScheduledException e) {
+            // Log the specific exception for interview already scheduled
+            logger.error("Interview already scheduled for candidate ID: {} with jobId: {}", interviewRequest.getCandidateId(), interviewRequest.getJobId());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new InterviewResponseDto(
+                    false,
+                    "An interview is already scheduled for this candidate for jobId: " + interviewRequest.getJobId() +
+                            " at the specified time.",
+                    null,
+                    null
+            ));
         } catch (Exception e) {
             // Log unexpected errors and return 500
             logger.error("Error while scheduling interview: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
                     false,
-                    "An error occurred while scheduling the interview.",
+                    "An unexpected error occurred while scheduling the interview. Please try again later.",
                     null,
                     null
             ));
@@ -506,29 +570,29 @@ public class CandidateController {
         }
     }
 
-    @DeleteMapping("/deletecandidate/{candidateId}")
-    public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
-        try {
-            // Call the service method to delete the candidate by ID and get the response DTO
-            DeleteCandidateResponseDto response = candidateService.deleteCandidateById(candidateId);
-
-            // Return the response entity with status 200 OK
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception ex) {
-            // Handle any exceptions and return an error response
-            logger.error("An error occurred while deleting the candidate: {}", ex.getMessage());
-
-            // Create an error response DTO with error details
-            DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
-                    "error",
-                    "Error occurred while deleting the candidate.",
-                    null,
-                    ex.getMessage()
-            );
-
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+//    @DeleteMapping("/deletecandidate/{candidateId}")
+//    public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
+//        try {
+//            // Call the service method to delete the candidate by ID and get the response DTO
+//            DeleteCandidateResponseDto response = candidateService.deleteCandidateById(candidateId);
+//
+//            // Return the response entity with status 200 OK
+//            return new ResponseEntity<>(response, HttpStatus.OK);
+//        } catch (Exception ex) {
+//            // Handle any exceptions and return an error response
+//            logger.error("An error occurred while deleting the candidate: {}", ex.getMessage());
+//
+//            // Create an error response DTO with error details
+//            DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
+//                    "error",
+//                    "Error occurred while deleting the candidate.",
+//                    null,
+//                    ex.getMessage()
+//            );
+//
+//            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
 
     @GetMapping("/interviews/{userId}")
     public ResponseEntity<List<GetInterviewResponseDto>> getAllScheduledInterviews(
@@ -542,6 +606,26 @@ public class CandidateController {
 
         } catch (CandidateNotFoundException ex) {
             // If no interviews are found for the given userId
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        } catch (Exception ex) {
+            // If any other error occurs
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/jobs-interviews/{jobId}")
+    public ResponseEntity<List<GetInterviewResponseDto>> getAllScheduledInterviewsByJobId(
+            @PathVariable String jobId) {
+        try {
+            // Fetch all scheduled interviews for the given jobId
+            List<GetInterviewResponseDto> interviewDetails = candidateService.getAllScheduledInterviewsByJobId(jobId);
+
+            // Return response with status 200 OK and the interview details
+            return ResponseEntity.ok(interviewDetails);
+
+        } catch (CandidateNotFoundException ex) {
+            // If no interviews are found for the given jobId
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         } catch (Exception ex) {

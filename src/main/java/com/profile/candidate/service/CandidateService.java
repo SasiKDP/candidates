@@ -84,6 +84,58 @@ public class CandidateService {
         );
 
     }
+
+    private String saveResumeToFileSystem(MultipartFile resumeFile) throws IOException {
+        // Set the directory where resumes will be stored
+        String resumeDirectory = "C:\\Users\\User\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
+
+        // Generate a unique file name using UUID to avoid conflicts
+        String fileName = UUID.randomUUID().toString() + "-" + resumeFile.getOriginalFilename();
+        Path filePath = Paths.get(resumeDirectory, fileName);
+
+        // Create the directories if they don't exist
+        Files.createDirectories(filePath.getParent());
+
+        // Save the file to the disk
+        Files.write(filePath, resumeFile.getBytes());
+
+        // Return the path where the file is saved
+        return filePath.toString();
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
+
+    private void saveFile(CandidateDetails candidate, MultipartFile file) throws IOException {
+        // Define the path where files will be stored
+        Path uploadsDirectory = Paths.get("uploads");
+
+        // Check if the directory exists, if not, create it
+        if (Files.notExists(uploadsDirectory)) {
+            Files.createDirectories(uploadsDirectory);
+            logger.info("Created directory: {}", uploadsDirectory.toString());
+        }
+
+        // Generate a filename that combines the candidateId and timestamp
+        String filename = candidate.getCandidateId() + "-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
+        Path targetPath = uploadsDirectory.resolve(filename);  // Save the file inside the "uploads" directory
+
+        try {
+            // Log the file saving action
+            logger.info("Saving file to path: {}", targetPath);
+
+            // Save the file to the directory
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            // Optionally save the file path in the database (for example, updating the candidate)
+            candidate.setResumeFilePath(targetPath.toString());
+            candidateRepository.save(candidate);
+
+        } catch (IOException e) {
+            logger.error("Failed to save file: {}", e.getMessage());
+            throw new IOException("Failed to save file to path: " + targetPath, e);  // Throw exception to indicate failure
+        }
+    }
+
     private boolean isValidFileType(MultipartFile file) {
         String fileName = file.getOriginalFilename();
         if (fileName != null) {
@@ -160,59 +212,7 @@ public class CandidateService {
         }
     }
 
-    private String saveResumeToFileSystem(MultipartFile resumeFile) throws IOException {
-        // Set the directory where resumes will be stored
-        String resumeDirectory = "C:\\Users\\User\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
 
-        // Generate a unique file name using UUID to avoid conflicts
-        String fileName = UUID.randomUUID().toString() + "-" + resumeFile.getOriginalFilename();
-        Path filePath = Paths.get(resumeDirectory, fileName);
-
-        // Create the directories if they don't exist
-        Files.createDirectories(filePath.getParent());
-
-        // Save the file to the disk
-        Files.write(filePath, resumeFile.getBytes());
-
-        // Return the path where the file is saved
-        return filePath.toString();
-    }
-
-    private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
-
-
-
-
-    private void saveFile(CandidateDetails candidate, MultipartFile file) throws IOException {
-        // Define the path where files will be stored
-        Path uploadsDirectory = Paths.get("uploads");
-
-        // Check if the directory exists, if not, create it
-        if (Files.notExists(uploadsDirectory)) {
-            Files.createDirectories(uploadsDirectory);
-            logger.info("Created directory: {}", uploadsDirectory.toString());
-        }
-
-        // Generate a filename that combines the candidateId and timestamp
-        String filename = candidate.getCandidateId() + "-" + System.currentTimeMillis() + "-" + file.getOriginalFilename();
-        Path targetPath = uploadsDirectory.resolve(filename);  // Save the file inside the "uploads" directory
-
-        try {
-            // Log the file saving action
-            logger.info("Saving file to path: {}", targetPath);
-
-            // Save the file to the directory
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-            // Optionally save the file path in the database (for example, updating the candidate)
-            candidate.setResumeFilePath(targetPath.toString());
-            candidateRepository.save(candidate);
-
-        } catch (IOException e) {
-            logger.error("Failed to save file: {}", e.getMessage());
-            throw new IOException("Failed to save file to path: " + targetPath, e);  // Throw exception to indicate failure
-        }
-    }
 
     public CandidateResponseDto resubmitCandidate(String candidateId, CandidateDetails updatedCandidateDetails, MultipartFile resumeFile) {
         try {
@@ -340,7 +340,7 @@ public class CandidateService {
 
     // Method to schedule an interview for a candidate
 
-    public InterviewResponseDto scheduleInterview(String userId, String candidateId, OffsetDateTime interviewDateTime, Integer duration,
+    public InterviewResponseDto scheduleInterview(String userId, String candidateId, String jobId, OffsetDateTime interviewDateTime, Integer duration,
                                                   String zoomLink, String userEmail, String clientEmail,
                                                   String clientName, String interviewLevel, String externalInterviewDetails) {
 
@@ -350,11 +350,16 @@ public class CandidateService {
             throw new CandidateNotFoundException("Candidate ID cannot be null for userId: " + userId);
         }
 
+        // Check if the candidate exists for the given userId
         CandidateDetails candidate = candidateRepository.findByCandidateIdAndUserId(candidateId, userId)
                 .orElseThrow(() -> new CandidateNotFoundException("Candidate not found for userId: " + userId + " and candidateId: " + candidateId));
 
-        if (candidate.getInterviewDateTime() != null) {
-            throw new InterviewAlreadyScheduledException("An interview is already scheduled for candidate ID: " + candidateId);
+        // Check if an interview is already scheduled for this candidate with the same jobId and at the same time
+        boolean isInterviewScheduledForJob = candidateRepository.existsByCandidateIdAndJobIdAndInterviewDateTime(candidateId, jobId, interviewDateTime);
+        if (isInterviewScheduledForJob) {
+            // Throw an exception if interview is already scheduled for this candidate and job at the same time
+            throw new InterviewAlreadyScheduledException("An interview is already scheduled for candidate ID: " + candidateId +
+                    " for jobId: " + jobId + " at the specified time.");
         }
 
         // Update candidate details
@@ -422,6 +427,12 @@ public class CandidateService {
                 ? "Internal"
                 : "External";
     }
+
+    public boolean isInterviewScheduledForJobAndTime(String candidateId, String jobId, OffsetDateTime interviewDateTime) {
+        // Check if an interview is already scheduled for the given candidate, job, and time
+        return candidateRepository.existsByCandidateIdAndJobIdAndInterviewDateTime(candidateId, jobId, interviewDateTime);
+    }
+
 
     /**
      * Sends interview notification emails.
@@ -633,6 +644,42 @@ public class CandidateService {
         return response;
     }
 
+    public List<GetInterviewResponseDto> getAllScheduledInterviewsByJobId(String jobId) {
+        // Fetch the candidates who are associated with the given jobId
+        List<CandidateDetails> candidates = candidateRepository.findByJobId(jobId);
+        List<GetInterviewResponseDto> response = new ArrayList<>();
+
+        // Iterate through the candidates to build the response
+        for (CandidateDetails interview : candidates) {
+            // Dynamically determine interview status
+            String interviewStatus = (interview.getInterviewDateTime() != null) ? "Scheduled" : "Not Scheduled";
+
+            // Map each candidate to the response DTO
+            GetInterviewResponseDto dto = new GetInterviewResponseDto(
+                    interview.getJobId(),
+                    interview.getCandidateId(),
+                    interview.getFullName(),
+                    interview.getContactNumber(),
+                    interview.getCandidateEmailId(),
+                    interview.getUserEmail(),
+                    interview.getUserId(),
+                    interview.getInterviewDateTime(),
+                    interview.getDuration(),
+                    interview.getZoomLink(),
+                    interview.getTimestamp(),
+                    interview.getClientEmail(),
+                    interview.getClientName(),
+                    interview.getInterviewLevel(),
+                    interviewStatus  // Dynamically assign status based on the interview date
+            );
+
+            // Add the DTO to the response list
+            response.add(dto);
+        }
+
+        return response;
+    }
+
 
 
     // Method to update the candidate fields with new values
@@ -732,7 +779,17 @@ public class CandidateService {
         candidateRepository.save(candidate);
         logger.info("Scheduled Interview Details is Removed successfully for candidateId: {}", candidateId);
     }
+    public List<CandidateGetResponseDto> getSubmissionsByUserIdAndJobId(String userId, String jobId) {
+        // Fetch candidates based on userId and jobId
+        List<CandidateDetails> candidates = candidateRepository.findByUserIdAndJobId(userId, jobId);
 
+        // Convert to DTO (CandidateGetResponseDto)
+        List<CandidateGetResponseDto> responseDtos = candidates.stream()
+                .map(candidate -> new CandidateGetResponseDto(candidate))
+                .collect(Collectors.toList());
+
+        return responseDtos;
+    }
 }
 
 
