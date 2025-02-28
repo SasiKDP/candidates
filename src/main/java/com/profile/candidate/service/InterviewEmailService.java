@@ -77,14 +77,19 @@ public class InterviewEmailService {
 
     // Helper method to validate email format
     private boolean isValidEmail(String email) {
-        try {
-            InternetAddress emailAddr = new InternetAddress(email);
-            emailAddr.validate(); // Will throw an exception if the email is invalid
-            return true;
-        } catch (AddressException e) {
-            return false;
+        if (email == null || email.trim().isEmpty()) {
+            return false;  // Early return if email is null or empty
         }
+
+        // Trim email to remove any leading/trailing whitespace before validation
+        email = email.trim();
+
+        // Regex to check valid email format
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+        return email.matches(emailRegex);
     }
+
+
 
     // Custom Exception for Email Configuration Issues
     public static class EmailConfigurationException extends RuntimeException {
