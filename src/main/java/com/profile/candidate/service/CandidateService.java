@@ -227,17 +227,16 @@ public class CandidateService {
 
             CandidateDetails existingCandidate = existingCandidateOpt.get();
 
-            // If the resume is required but is null or empty, return an error response
-            if (resumeFile == null || resumeFile.isEmpty()) {
-                return new CandidateResponseDto("Error", "Resume file is required for resubmission",
-                        new CandidateResponseDto.Payload(null, null, null), null);
+            // ✅ If a resume file is provided, validate and update it
+            if (resumeFile != null && !resumeFile.isEmpty()) {
+                if (!isValidFileType(resumeFile)) {
+                    throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC, and DOCX are allowed.");
+                }
+                saveFile(existingCandidate, resumeFile);  // Save the file & update resume path
             }
 
-            // Validate file type (e.g., PDF, DOCX)
-            if (!isValidFileType(resumeFile)) {
-                return new CandidateResponseDto("Error", "Invalid file type. Only PDF, DOC and DOCX are allowed.",
-                        new CandidateResponseDto.Payload(null, null, null), null);
-            }
+            // ✅ Reset interview status
+            existingCandidate.setInterviewStatus("");
 
             // Update candidate fields with the new data (e.g., name, contact, etc.)
             updateCandidateFields(existingCandidate, updatedCandidateDetails);
