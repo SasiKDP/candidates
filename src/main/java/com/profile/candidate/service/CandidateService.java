@@ -70,6 +70,9 @@ public class CandidateService {
         // Save the candidate details to the database
         CandidateDetails savedCandidate = candidateRepository.save(candidateDetails);
 
+        // ✅ After saving candidate, update the requirement status
+        candidateRepository.updateRequirementStatus(savedCandidate.getJobId());
+
         // Create the payload with candidateId, employeeId, and jobId
         CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
                 savedCandidate.getCandidateId(),
