@@ -70,6 +70,9 @@ public class CandidateService {
         // Save the candidate details to the database
         CandidateDetails savedCandidate = candidateRepository.save(candidateDetails);
 
+        // ✅ After saving candidate, update the requirement status
+        candidateRepository.updateRequirementStatus(savedCandidate.getJobId());
+
         // Create the payload with candidateId, employeeId, and jobId
         CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
                 savedCandidate.getCandidateId(),
@@ -227,23 +230,23 @@ public class CandidateService {
 
             CandidateDetails existingCandidate = existingCandidateOpt.get();
 
-            // If the resume is required but is null or empty, return an error response
-            if (resumeFile == null || resumeFile.isEmpty()) {
-                return new CandidateResponseDto("Error", "Resume file is required for resubmission",
-                        new CandidateResponseDto.Payload(null, null, null), null);
+            // ✅ If a resume file is provided, validate and update it
+            if (resumeFile != null && !resumeFile.isEmpty()) {
+                if (!isValidFileType(resumeFile)) {
+                    throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC, and DOCX are allowed.");
+                }
+                saveFile(existingCandidate, resumeFile);  // Save the file & update resume path
             }
 
-            // Validate file type (e.g., PDF, DOCX)
-            if (!isValidFileType(resumeFile)) {
-                return new CandidateResponseDto("Error", "Invalid file type. Only PDF, DOC and DOCX are allowed.",
-                        new CandidateResponseDto.Payload(null, null, null), null);
-            }
 
             // Update candidate fields with the new data (e.g., name, contact, etc.)
             updateCandidateFields(existingCandidate, updatedCandidateDetails);
 
             // Save the resume file and update the candidate with the new file path
             saveFile(existingCandidate, resumeFile);  // This saves the file and updates the candidate's resumeFilePath
+
+            // **Reset interview status**
+            existingCandidate.setInterviewStatus(""); // Set it to empty string OR use null: existingCandidate.setInterviewStatus(null);
 
             // Save the updated candidate details (including the new resume file path)
             candidateRepository.save(existingCandidate);

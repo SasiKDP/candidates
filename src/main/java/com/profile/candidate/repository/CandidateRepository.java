@@ -1,7 +1,11 @@
 package com.profile.candidate.repository;
 
 import com.profile.candidate.model.CandidateDetails;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
@@ -49,5 +53,11 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             String clientEmail);
     // Method to fetch all candidates (this is already provided by JpaRepository)
     List<CandidateDetails> findAll();
-    
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE requirements_model_prod r SET r.status = 'Submitted' " +
+            "WHERE r.job_id = :jobId AND EXISTS " +
+            "(SELECT 1 FROM candidates c WHERE c.job_id = :jobId)", nativeQuery = true)
+    void updateRequirementStatus(@Param("jobId") String jobId);
 }
