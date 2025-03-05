@@ -23,6 +23,11 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
 
     Optional<CandidateDetails> findByContactNumber(String contactNumber);
 
+    List<CandidateDetails> findByUserIdAndJobId(String userId, String jobId);
+
+    List<CandidateDetails> findByJobId(String jobId);
+
+
     // Find all candidates with specific total experience
     List<CandidateDetails> findByTotalExperience(Integer totalExperience);
 
@@ -54,9 +59,15 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     // Method to fetch all candidates (this is already provided by JpaRepository)
     List<CandidateDetails> findAll();
 
+    // Check if an interview is already scheduled for a candidate with the same jobId and interviewDateTime
+    boolean existsByCandidateIdAndJobIdAndInterviewDateTime(String candidateId,
+                                                            String jobId,
+                                                            OffsetDateTime interviewDateTime);
+
     @Modifying
     @Transactional
-    @Query(value = "UPDATE requirements_model r SET r.status = 'Submitted' " +
+    @Query(value = "UPDATE requirements_model r SET r.status = 'Submitted" +
+            "' " +
             "WHERE r.job_id = :jobId AND EXISTS " +
             "(SELECT 1 FROM candidates c WHERE c.job_id = :jobId)", nativeQuery = true)
     void updateRequirementStatus(@Param("jobId") String jobId);
