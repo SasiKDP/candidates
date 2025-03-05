@@ -66,7 +66,7 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE requirements_model_prod r SET r.status = 'Submitted' " +
+    @Query(value = "UPDATE requirements_model r SET r.status = 'Submitted' " +
             "WHERE r.job_id = :jobId AND EXISTS " +
             "(SELECT 1 FROM candidates c WHERE c.job_id = :jobId)", nativeQuery = true)
     void updateRequirementStatus(@Param("jobId") String jobId);
