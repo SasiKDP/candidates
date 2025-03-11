@@ -33,7 +33,8 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     List<CandidateDetails> findByNoticePeriod(String noticePeriod);
 
     // Fetch candidate by candidateId
-    Optional<CandidateDetails> findByCandidateId(String candidateId);
+    List<CandidateDetails> findAllByCandidateId(String candidateId);
+    void deleteAllByCandidateId(String candidateId);
 
 
     Optional<CandidateDetails> findByFullNameAndCandidateEmailIdAndContactNumber(String fullName, String candidateEmailId, String contactNumber);
@@ -58,6 +59,11 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     @Transactional
     @Query(value = "UPDATE requirements_model_prod r SET r.status = 'Submitted' " +
             "WHERE r.job_id = :jobId AND EXISTS " +
-            "(SELECT 1 FROM candidates c WHERE c.job_id = :jobId)", nativeQuery = true)
+            "(SELECT 1 FROM candidates_prod c WHERE c.job_id = :jobId)", nativeQuery = true)
     void updateRequirementStatus(@Param("jobId") String jobId);
+
+
+    // Custom query to count interviews by candidateId (should not conflict with findByCandidateId)
+    @Query("SELECT COUNT(c) FROM CandidateDetails c WHERE c.candidateId = :candidateId")
+    long countInterviewsByCandidateId(@Param("candidateId") String candidateId);
 }
