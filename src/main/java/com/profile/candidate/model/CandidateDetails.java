@@ -1,6 +1,8 @@
     package com.profile.candidate.model;
 
     import com.fasterxml.jackson.annotation.JsonFormat;
+    import com.fasterxml.jackson.core.JsonProcessingException;
+    import com.fasterxml.jackson.databind.ObjectMapper;
     import jakarta.persistence.*;
 
     import javax.validation.constraints.*;
@@ -8,6 +10,8 @@
     import java.time.LocalDate;
     import java.time.LocalDateTime;
     import java.time.OffsetDateTime;
+    import java.util.LinkedHashMap;
+    import java.util.Map;
     import java.util.Random;
 
     @Entity
@@ -127,8 +131,8 @@
         @Column(name = "resume_file_path")
         private String resumeFilePath;
 
-        @Column(name = "interview_status")
-        private String interviewStatus = "Not Scheduled";
+        @Column(name = "interview_status", columnDefinition = "TEXT")
+        private String interviewStatus; // Store JSON as String
 
         public String getInterviewStatus() {
             return interviewStatus;
@@ -137,6 +141,33 @@
         public void setInterviewStatus(String interviewStatus) {
             this.interviewStatus = interviewStatus;
         }
+
+        public void updateInterviewStatus(String round, String status) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, String> interviewHistory = new LinkedHashMap<>();
+
+            // Load existing interview status JSON (if available)
+            if (this.interviewStatus != null && !this.interviewStatus.isEmpty()) {
+                try {
+                    interviewHistory = objectMapper.readValue(this.interviewStatus, LinkedHashMap.class);
+                } catch (JsonProcessingException e) {
+                    // Log and reset interviewHistory in case of invalid JSON
+                    System.err.println("Invalid JSON format in interviewStatus, resetting it.");
+                    interviewHistory = new LinkedHashMap<>();
+                }
+            }
+
+            // Add or update the round status
+            interviewHistory.put(round, status);
+
+            // Convert back to JSON
+            try {
+                this.interviewStatus = objectMapper.writeValueAsString(interviewHistory);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Error converting interview status to JSON", e);
+            }
+        }
+
 
         public byte[] getResume() {
             return resume;

@@ -1,3 +1,4 @@
+
 package com.profile.candidate.service;
 
 import com.profile.candidate.dto.*;
@@ -286,19 +287,19 @@ public class CandidateService {
 
 
     public List<CandidateGetResponseDto> getAllSubmissions() {
-    // Retrieve all candidates from the repository
-    List<CandidateDetails> candidates = candidateRepository.findAll();
+        // Retrieve all candidates from the repository
+        List<CandidateDetails> candidates = candidateRepository.findAll();
 
-    // Check if there are no submissions
-    if (candidates.isEmpty()) {
-        throw new CandidateNotFoundException("No candidate submissions found.");
+        // Check if there are no submissions
+        if (candidates.isEmpty()) {
+            throw new CandidateNotFoundException("No candidate submissions found.");
+        }
+
+        // Map CandidateDetails to CandidateGetResponseDto
+        return candidates.stream()
+                .map(CandidateGetResponseDto::new)  // Use the DTO constructor for mapping
+                .collect(Collectors.toList());
     }
-
-    // Map CandidateDetails to CandidateGetResponseDto
-    return candidates.stream()
-            .map(CandidateGetResponseDto::new)  // Use the DTO constructor for mapping
-            .collect(Collectors.toList());
-}
 
 
 
@@ -772,6 +773,3 @@ public class CandidateService {
     }
 
 }
-
-
-
