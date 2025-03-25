@@ -62,8 +62,4 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             "(SELECT 1 FROM candidates_prod c WHERE c.job_id = :jobId)", nativeQuery = true)
     void updateRequirementStatus(@Param("jobId") String jobId);
 
-
-    // Custom query to count interviews by candidateId (should not conflict with findByCandidateId)
-    @Query("SELECT COUNT(c) FROM CandidateDetails c WHERE c.candidateId = :candidateId")
-    long countInterviewsByCandidateId(@Param("candidateId") String candidateId);
 }
