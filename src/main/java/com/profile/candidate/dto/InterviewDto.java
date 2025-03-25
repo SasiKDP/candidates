@@ -39,8 +39,25 @@ public class InterviewDto {
     private String interviewStatus;
 
     // Constructor
-    public InterviewDto() {
-        // Empty constructor
+    public InterviewDto(OffsetDateTime interviewDateTime, Integer duration, String zoomLink,
+                        LocalDateTime scheduledTimeStamp, String userId, String jobId, String clientName,
+                        String candidateId, String fullName, String externalInterviewDetails, String contactNumber,
+                        String userEmail, String interviewLevel, String clientEmail, String interviewStatus) {
+        this.interviewDateTime = interviewDateTime;
+        this.duration = duration;
+        this.zoomLink = zoomLink;
+        this.scheduledTimeStamp = scheduledTimeStamp;
+        this.userId = userId;
+        this.jobId = jobId;
+        this.clientName = clientName;
+        this.candidateId = candidateId;
+        this.fullName = fullName;
+        this.externalInterviewDetails = externalInterviewDetails;
+        this.contactNumber = contactNumber;
+        this.userEmail = userEmail;
+        this.interviewLevel = interviewLevel;
+        this.clientEmail = clientEmail;
+        this.interviewStatus = interviewStatus;
     }
 
     // Getters and Setters

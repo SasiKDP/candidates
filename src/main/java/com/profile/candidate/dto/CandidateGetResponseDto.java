@@ -1,6 +1,10 @@
 package com.profile.candidate.dto;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profile.candidate.model.CandidateDetails;
+
+import java.util.*;
 
 public class CandidateGetResponseDto {
 
@@ -24,10 +28,9 @@ public class CandidateGetResponseDto {
     private Double requiredTechnologiesRating;
     private String overallFeedback;
     private String userEmail;
-    private String interviewStatus = "Not Scheduled";
+    private String interviewStatus;
 
-
-
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Constructor that takes a CandidateDetails object
     public CandidateGetResponseDto(CandidateDetails candidate) {
@@ -51,29 +54,36 @@ public class CandidateGetResponseDto {
         this.requiredTechnologiesRating = candidate.getRequiredTechnologiesRating();
         this.overallFeedback = candidate.getOverallFeedback();
         this.userEmail = candidate.getUserEmail();
-        this.interviewStatus= determineInterviewStatus(candidate);
+        this.interviewStatus = extractLatestInterviewStatus(candidate.getInterviewStatus());
     }
 
-    // Method to determine interview status
-    private String determineInterviewStatus(CandidateDetails candidate) {
-        if (candidate.getInterviewDateTime() == null) {
+    // Method to extract latest interview status
+    private String extractLatestInterviewStatus(String interviewStatusJson) {
+        if (interviewStatusJson == null || interviewStatusJson.trim().isEmpty()) {
             return "Not Scheduled";
-        } else {
-            return "Scheduled";
         }
+
+        try {
+            if (interviewStatusJson.trim().startsWith("[") || interviewStatusJson.trim().startsWith("{")) {
+                // JSON format detected
+                List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+
+                return statusHistory.stream()
+                        .max(Comparator.comparing(entry -> (String) entry.get("timestamp"))) // Sort by latest timestamp
+                        .map(entry -> (String) entry.get("status"))
+                        .orElse("Not Scheduled");
+            }
+        } catch (JsonProcessingException e) {
+            System.err.println("Error parsing interview status JSON: " + e.getMessage());
+        }
+
+        // If it's not JSON, assume it's a simple status string
+        return interviewStatusJson;
     }
 
     // Getters and Setters
     public String getCandidateId() {
         return candidateId;
-    }
-
-    public String getUserEmail() {
-        return userEmail;
-    }
-
-    public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
     }
 
     public void setCandidateId(String candidateId) {
@@ -223,6 +233,15 @@ public class CandidateGetResponseDto {
     public void setOverallFeedback(String overallFeedback) {
         this.overallFeedback = overallFeedback;
     }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
     public String getInterviewStatus() {
         return interviewStatus;
     }

@@ -26,9 +26,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:8080"})
+@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000"})
 
 
 
@@ -482,6 +485,12 @@ public class CandidateController {
             ));
         }
     }
+
+    @GetMapping("/scheduledCandidates/{candidateId}")
+    public List<Map<String, Object>> getScheduledCandidates(@PathVariable String candidateId) {
+        return candidateService.getScheduledCandidates(candidateId);
+    }
+
 
     @DeleteMapping("/deletecandidate/{candidateId}")
     public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
