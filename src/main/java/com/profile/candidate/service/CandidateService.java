@@ -316,12 +316,44 @@ public class CandidateService {
             throw new CandidateNotFoundException("No submissions found for userId: " + userId);
         }
 
-        // Map the list of CandidateDetails to List<CandidateGetResponseDto>
-        List<CandidateGetResponseDto> candidateDtos = candidates.stream()
-                .map(CandidateGetResponseDto::new)  // Convert each CandidateDetails to CandidateGetResponseDto
-                .collect(Collectors.toList());
+        ObjectMapper objectMapper = new ObjectMapper();
 
-        // Return the list of CandidateGetResponseDto
+        // Map the list of CandidateDetails to List<CandidateGetResponseDto>
+        List<CandidateGetResponseDto> candidateDtos = candidates.stream().map(candidate -> {
+            String latestInterviewStatus = "Not Scheduled"; // Default status
+            String interviewStatusJson = candidate.getInterviewStatus();
+
+            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                try {
+                    // Check if JSON array or single JSON object
+                    if (interviewStatusJson.trim().startsWith("[") || interviewStatusJson.trim().startsWith("{")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+
+                        if (!statusHistory.isEmpty()) {
+                            // Get the latest status based on timestamp
+                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
+
+                            if (latestStatus.isPresent()) {
+                                latestInterviewStatus = (String) latestStatus.get().get("status");
+                            }
+                        }
+                    } else {
+                        // Handle legacy plain text status
+                        latestInterviewStatus = interviewStatusJson;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error parsing interview status JSON: " + e.getMessage());
+                    latestInterviewStatus = interviewStatusJson; // Fallback to raw text
+                }
+            }
+
+            // Return CandidateGetResponseDto with the latest status
+            CandidateGetResponseDto dto = new CandidateGetResponseDto(candidate);
+            dto.setInterviewStatus(latestInterviewStatus);
+            return dto;
+        }).collect(Collectors.toList());
+
         return candidateDtos;
     }
 
@@ -419,7 +451,6 @@ public class CandidateService {
                 candidate.getCandidateEmailId(),
                 candidate.getClientEmail()
         );
-
         return new InterviewResponseDto(true, "Interview scheduled successfully and email notifications sent.", payload, null);
     }
 
@@ -769,8 +800,11 @@ public class CandidateService {
                 latestInterviewStatus = interviewStatusJson;
             }
 
-            // Only add candidates to the response if their interview status is "scheduled"
-            if ("scheduled".equalsIgnoreCase(latestInterviewStatus)) {
+            // Check if interview is "scheduled" or not based on interviewDateTime and clientName
+            boolean isScheduled = interview.getInterviewDateTime() != null && interview.getClientName() != null;
+
+            // Exclude "not scheduled" interviews
+            if (isScheduled || !"not scheduled".equalsIgnoreCase(latestInterviewStatus)) {
                 // Create DTO with the latest status (it will never be null here)
                 GetInterviewResponseDto dto = new GetInterviewResponseDto(
                         interview.getJobId(),
@@ -796,6 +830,7 @@ public class CandidateService {
 
         return response;
     }
+
     // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
         if (updatedCandidateDetails.getJobId() != null) existingCandidate.setJobId(updatedCandidateDetails.getJobId());
