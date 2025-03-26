@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.profile.candidate.CandidateApplicationTests
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.94 s -- in com.profile.candidate.CandidateApplicationTests
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.48 s -- in com.profile.candidate.CandidateApplicationTests
