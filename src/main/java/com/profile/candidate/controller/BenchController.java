@@ -9,6 +9,7 @@ import com.profile.candidate.dto.ErrorResponseDto;
 import com.profile.candidate.model.BenchDetails;
 import com.profile.candidate.repository.BenchRepository;
 import com.profile.candidate.service.BenchService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -42,60 +43,64 @@ public class BenchController {
     }
     @PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BenchResponseDto> createBenchDetails(
-            @RequestPart(value = "resumeFiles", required = false) MultipartFile resumeFiles,
-            @RequestPart("benchDetails") String benchDetailsJson) {
+            @RequestParam(value = "resumeFiles", required = false) MultipartFile resumeFile,
+            @RequestParam(value = "fullName") String fullName,
+            @RequestParam(value = "email") String email,
+            @RequestParam(value = "relevantExperience") BigDecimal relevantExperience,
+            @RequestParam(value = "totalExperience") BigDecimal totalExperience,
+            @RequestParam(value = "contactNumber") String contactNumber,
+            @RequestParam(value = "skills") String skillsJson, // Expecting JSON string
+            @RequestParam(value = "linkedin", required = false) String linkedin,
+            @RequestParam(value = "referredBy", required = false) String referredBy) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            List<String> skillsList = objectMapper.readValue(skillsJson, new TypeReference<List<String>>() {});
 
-            // ✅ Log incoming request
-            System.out.println("Received BenchDetails JSON: " + benchDetailsJson);
-            System.out.println("Received Resume File: " + (resumeFiles != null ? resumeFiles.getOriginalFilename() : "None"));
+            BenchDetails benchDetails = new BenchDetails();
+            benchDetails.setFullName(fullName);
+            benchDetails.setEmail(email);
+            benchDetails.setRelevantExperience(relevantExperience);
+            benchDetails.setTotalExperience(totalExperience);
+            benchDetails.setContactNumber(contactNumber);
+            benchDetails.setSkills(skillsList);
+            benchDetails.setLinkedin(linkedin);
+            benchDetails.setReferredBy(referredBy);
 
-            // ✅ Deserialize JSON correctly
-            BenchDetails benchDetails = objectMapper.readValue(benchDetailsJson, BenchDetails.class);
-
-            // ✅ Ensure `skills` is properly handled
-            if (benchDetails.getSkills() == null) {
-                benchDetails.setSkills(new ArrayList<>());  // Default to empty list if null
+            // Process resume file
+            if (resumeFile != null && !resumeFile.isEmpty()) {
+                benchDetails.setResume(resumeFile.getBytes());
             }
 
-            // 🔹 Check for duplicate email
-            if (benchRepository.existsByEmail(benchDetails.getEmail())) {
-                System.out.println("Duplicate entry: Email already exists -> " + benchDetails.getEmail());
+            // Check for duplicate email
+            if (benchRepository.existsByEmail(email)) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         new BenchResponseDto("Error", "Duplicate entry: Email already exists.", null, null)
                 );
             }
 
-            // 🔹 Save BenchDetails
-            BenchDetails savedBenchDetails = benchService.saveBenchDetails(benchDetails, resumeFiles);
+            // Save bench details
+            BenchDetails savedBenchDetails = benchService.saveBenchDetails(benchDetails, resumeFile);
 
-            // 🔹 Prepare response
             BenchResponseDto responseDto = new BenchResponseDto(
                     "Success",
                     "Bench details saved successfully",
-                    List.of(new BenchResponseDto.Payload(
-                            savedBenchDetails.getId(),
-                            savedBenchDetails.getFullName()
-                    )),
+                    List.of(new BenchResponseDto.Payload(savedBenchDetails.getId(), savedBenchDetails.getFullName())),
                     null
             );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
 
-        } catch (JsonProcessingException e) {
-            System.err.println("Invalid JSON format: " + e.getMessage());
+        } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                    new BenchResponseDto("Error", "Invalid JSON format: " + e.getMessage(), null, null)
+                    new BenchResponseDto("Error", "Failed to process resume file: " + e.getMessage(), null, null)
             );
         } catch (Exception e) {
-            System.err.println("Error while saving bench details: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     new BenchResponseDto("Error", "Error while saving bench details: " + e.getMessage(), null, null)
             );
         }
     }
+
 
 
     @GetMapping("/getBenchList")
@@ -112,7 +117,7 @@ public class BenchController {
                             bench.getRelevantExperience(),
                             bench.getTotalExperience(),
                             bench.getContactNumber(),
-                            bench.getSkills() != null ? String.valueOf(bench.getSkills()) : String.valueOf(Collections.emptyList()),  // ✅ Ensure skills is a List<String>
+                            bench.getSkills() != null ? bench.getSkills() : Collections.<String>emptyList(),  // ✅ Ensure skills is a List<String>
                             bench.getLinkedin(),
                             bench.getReferredBy()
                     ))
@@ -160,7 +165,7 @@ public class BenchController {
     @PutMapping("/updatebench/{id}")
     public ResponseEntity<Object> updateBenchDetails(
             @PathVariable String id,
-            @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile,
+            @RequestParam(value = "resumeFiles", required = false) MultipartFile resumeFile,
             @RequestParam(value = "fullName", required = false) String fullName,
             @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "relevantExperience", required = false) BigDecimal relevantExperience,
@@ -234,8 +239,15 @@ public class BenchController {
     @DeleteMapping("/deletebench/{id}")
     public ResponseEntity<Object> deleteBenchDetails(@PathVariable String id) {
         try {
+            // ✅ Check if the bench ID exists before deleting
+            if (!benchRepository.existsById(id)) {
+                throw new EntityNotFoundException("Bench Details with ID " + id + " does not exist.");
+            }
+
+            // ✅ Proceed with deletion
             benchService.deleteBenchDetailsById(id);
 
+            // ✅ Prepare success response
             BenchResponseDto responseDto = new BenchResponseDto(
                     "Success",
                     "Bench Details with ID " + id + " successfully deleted",
@@ -244,14 +256,17 @@ public class BenchController {
             );
 
             return ResponseEntity.ok(responseDto);
-        } catch (RuntimeException e) {
-            ErrorResponseDto errorResponse = new ErrorResponseDto(false, "Failed to delete bench details: " + e.getMessage());
+        } catch (EntityNotFoundException e) {
+            // ❌ Bench ID not found
+            ErrorResponseDto errorResponse = new ErrorResponseDto(false, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         } catch (Exception e) {
+            // ❌ Other errors
             ErrorResponseDto errorResponse = new ErrorResponseDto(false, "Error while deleting bench details: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+
 
     @GetMapping("/download/{id}")
     public ResponseEntity<byte[]> downloadResume(@PathVariable String id) {

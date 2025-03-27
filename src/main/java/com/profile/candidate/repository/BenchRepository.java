@@ -20,6 +20,10 @@ public interface BenchRepository extends JpaRepository<BenchDetails, String> {
     boolean existsByFullName(String fullName);
     boolean existsByContactNumber(String contactNumber);
 
+    // ✅ Check for duplicates **excluding** a specific ID (for updates)
+    boolean existsByFullNameAndIdNot(String fullName, String id);
+    boolean existsByEmailAndIdNot(String email, String id);
+    boolean existsByContactNumberAndIdNot(String contactNumber, String id);
 
     List<BenchDetails> findByReferredBy(String referredBy);  // ✅ Add this method
 

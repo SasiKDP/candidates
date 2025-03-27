@@ -61,12 +61,7 @@ public class BenchDetails {
     private String referredBy;
 
 
- @PrePersist
- public void prePersist() {
-  if (this.id == null || this.id.isEmpty()) {
-   this.id = "BDM" + UUID.randomUUID().toString().substring(0, 8);  // Generate Unique ID
-  }
- }
+
 
  public List<String> getSkills() {
   return skills;

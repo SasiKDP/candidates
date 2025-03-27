@@ -66,9 +66,9 @@ public class BenchService {
         }
 
         // ✅ Check for duplicate full name
-        if (benchRepository.existsByFullName(benchDetails.getFullName())) {
-            throw new IllegalArgumentException("Duplicate entry: Full name already exists -> " + benchDetails.getFullName());
-        }
+//        if (benchRepository.existsByFullName(benchDetails.getFullName())) {
+//            throw new IllegalArgumentException("Duplicate entry: Full name already exists -> " + benchDetails.getFullName());
+//        }
 
         // ✅ Auto-generate ID if not provided
         if (benchDetails.getId() == null || benchDetails.getId().isEmpty()) {
@@ -87,6 +87,20 @@ public class BenchService {
     @Transactional
     public BenchDetails updateBenchDetails(String id, BenchDetails benchDetails) {
         return benchRepository.findById(id).map(existingBench -> {
+            // ✅ Check for duplicate fullName, email, or contactNumber (excluding the current ID)
+            if (benchDetails.getFullName() != null && benchRepository.existsByFullNameAndIdNot(benchDetails.getFullName(), id)) {
+                throw new IllegalArgumentException("Duplicate entry: Full Name already exists.");
+            }
+
+            if (benchDetails.getEmail() != null && benchRepository.existsByEmailAndIdNot(benchDetails.getEmail(), id)) {
+                throw new IllegalArgumentException("Duplicate entry: Email already exists.");
+            }
+
+            if (benchDetails.getContactNumber() != null && benchRepository.existsByContactNumberAndIdNot(benchDetails.getContactNumber(), id)) {
+                throw new IllegalArgumentException("Duplicate entry: Contact Number already exists.");
+            }
+
+            // ✅ Update only non-null fields
             if (benchDetails.getFullName() != null) existingBench.setFullName(benchDetails.getFullName());
             if (benchDetails.getEmail() != null) existingBench.setEmail(benchDetails.getEmail());
             if (benchDetails.getRelevantExperience() != null) existingBench.setRelevantExperience(benchDetails.getRelevantExperience());
