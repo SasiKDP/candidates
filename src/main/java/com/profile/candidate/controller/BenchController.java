@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000", "http://192.168.0.135:8080"})
 @RestController
-@RequestMapping("/candidates/bench")
+@RequestMapping("/candidate")
 public class BenchController {
 
     private static final String UPLOAD_DIR = "/your/upload/directory"; // Ensu
@@ -41,7 +41,7 @@ public class BenchController {
     public BenchController(BenchService benchService) {
         this.benchService = benchService;
     }
-    @PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/bench/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BenchResponseDto> createBenchDetails(
             @RequestParam(value = "resumeFiles", required = false) MultipartFile resumeFile,
             @RequestParam(value = "fullName") String fullName,
@@ -103,7 +103,7 @@ public class BenchController {
 
 
 
-    @GetMapping("/getBenchList")
+    @GetMapping("/bench/getBenchList")
     public ResponseEntity<List<BenchDetailsDto>> getAllBenchDetails() {
         try {
             List<BenchDetails> benchDetailsList = benchService.findAllBenchDetails();
@@ -133,7 +133,7 @@ public class BenchController {
 
 
 
-    @GetMapping("/{id}")
+    @GetMapping("/bench/{id}")
     public ResponseEntity<Object> getBenchDetailsById(@PathVariable String id) {
         try {
             Optional<BenchDetails> benchDetails = benchService.findBenchDetailsById(id);
@@ -162,7 +162,7 @@ public class BenchController {
         }
     }
 
-    @PutMapping("/updatebench/{id}")
+    @PutMapping("/bench/updatebench/{id}")
     public ResponseEntity<Object> updateBenchDetails(
             @PathVariable String id,
             @RequestParam(value = "resumeFiles", required = false) MultipartFile resumeFile,
@@ -236,7 +236,7 @@ public class BenchController {
         }
     }
 
-    @DeleteMapping("/deletebench/{id}")
+    @DeleteMapping("/bench/deletebench/{id}")
     public ResponseEntity<Object> deleteBenchDetails(@PathVariable String id) {
         try {
             // ✅ Check if the bench ID exists before deleting
@@ -268,7 +268,7 @@ public class BenchController {
     }
 
 
-    @GetMapping("/download/{id}")
+    @GetMapping("/bench/download/{id}")
     public ResponseEntity<byte[]> downloadResume(@PathVariable String id) {
         try {
             // Fetch BenchDetails by ID
