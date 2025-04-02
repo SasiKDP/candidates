@@ -30,11 +30,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000"})
-
-
-
+@CrossOrigin(origins = {"http://35.188.150.92",
+        "http://192.168.0.140:3000",
+        "http://192.168.0.139:3000",
+        "https://mymulya.com",
+        "http://localhost:3000",
+        "http://192.168.0.135:3000",
+        "http://182.18.177.16:444",
+        "http://192.168.0.135:8080",
+        "http://192.168.0.135:80",})
 @RestController
 @RequestMapping("/candidate")
 public class CandidateController {
