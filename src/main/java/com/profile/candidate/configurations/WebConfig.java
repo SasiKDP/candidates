@@ -14,13 +14,10 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://35.188.150.92",  // First IP
                         "http://192.168.0.140:3000",  // Second IP
                         "http://192.168.0.139:3000", // Third IP
-                        "https://mymulya.com",
-                        "http://mymulya.com:444",
-                        "https://mymulya.com:444", // Forth IP
+                        "https://mymulya.com",// Forth IP
                         "http://localhost:3000", // Fifth IP
                         "http://192.168.0.135:3000", // Sixth
                         "http://192.168.0.135:80",
-                        "http://182.18.177.16:444",
                         "http://182.18.177.16:443",
                         "http://localhost/",
                         "http://mymulya.com:443"
