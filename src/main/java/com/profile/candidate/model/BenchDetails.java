@@ -23,42 +23,42 @@ import java.util.UUID;
 @AllArgsConstructor
 public class BenchDetails {
 
-   @Id
-    @Column(name = "id", updatable = false, nullable = false, length = 36)
-    private String id;
+ @Id
+ @Column(name = "id", updatable = false, nullable = false, length = 36)
+ private String id;
 
-    @NotBlank(message = "Full name is required")
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
+ @NotBlank(message = "Full name is required")
+ @Column(name = "full_name", nullable = false)
+ private String fullName;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
-    @Column(name = "email", unique = true, nullable = false)
-    private String email;
+ @NotBlank(message = "Email is required")
+ @Email(message = "Email should be valid")
+ @Column(name = "email", unique = true, nullable = false)
+ private String email;
 
-    @Column(name = "relevant_experience", precision = 5, scale = 2)
-    private BigDecimal relevantExperience;
+ @Column(name = "relevant_experience", precision = 5, scale = 2)
+ private BigDecimal relevantExperience;
 
-    @Column(name = "total_experience", precision = 5, scale = 2)
-    private BigDecimal totalExperience;
+ @Column(name = "total_experience", precision = 5, scale = 2)
+ private BigDecimal totalExperience;
 
-    @NotBlank(message = "Contact number is required")
-    @Pattern(regexp = "^\\+?[0-9. ()-]{7,15}$", message = "Contact number must be valid")
-    @Column(name = "contact_number", nullable = false)
-    private String contactNumber;
+ @NotBlank(message = "Contact number is required")
+ @Pattern(regexp = "^\\+?[0-9. ()-]{7,15}$", message = "Contact number must be valid")
+ @Column(name = "contact_number", nullable = false)
+ private String contactNumber;
 
  @JsonProperty("skills")  // ✅ Ensure proper mapping
  private List<String> skills;  // ✅ Expecting an array, NOT a string
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.JSON)
-    private byte[] resume;
+ @Lob
+ @JdbcTypeCode(SqlTypes.JSON)
+ private byte[] resume;
 
-    @Column(name = "linkedin", columnDefinition = "TEXT")
-    private String linkedin;
+ @Column(name = "linkedin", columnDefinition = "TEXT")
+ private String linkedin;
 
-    @Column(name = "referred_by")
-    private String referredBy;
+ @Column(name = "referred_by")
+ private String referredBy;
 
 
 

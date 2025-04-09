@@ -9,6 +9,8 @@ import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,10 +21,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000", "http://192.168.0.135:8080"})
+@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
+        "http://192.168.0.135:80",
+        "http://mymulya.com:443",
+        "http://182.18.177.16:443",
+        "http://localhost/","http://192.168.0.135",
+        "http://182.18.177.16"})
 
 
 
@@ -476,6 +490,12 @@ public class CandidateController {
             ));
         }
     }
+
+    @GetMapping("/scheduledCandidates/{candidateId}")
+    public List<Map<String, Object>> getScheduledCandidates(@PathVariable String candidateId) {
+        return candidateService.getScheduledCandidates(candidateId);
+    }
+
 
     @DeleteMapping("/deletecandidate/{candidateId}")
     public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {

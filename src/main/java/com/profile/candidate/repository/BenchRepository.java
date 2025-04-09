@@ -33,4 +33,3 @@ public interface BenchRepository extends JpaRepository<BenchDetails, String> {
     void deleteByIdIgnoreCase(@Param("id") String id);
 
 }
-
