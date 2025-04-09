@@ -3,6 +3,7 @@ package com.profile.candidate.controller;
 import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
 import com.profile.candidate.exceptions.CandidateNotFoundException;
+import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.exceptions.InterviewNotScheduledException;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.repository.CandidateRepository;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,6 +28,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -319,6 +323,24 @@ public class CandidateController {
         }
     }
 
+    @GetMapping("/submissions/filterByDate")
+    public ResponseEntity<?> getSubmissionsByDateRange(
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<CandidateGetResponseDto> submissions =
+                candidateService.getSubmissionsByUserIdAndDateRange(startDate, endDate);
+
+        if (submissions.isEmpty()) {
+            logger.warn("No submissions found between {} and {}", startDate, endDate);
+            throw new CandidateNotFoundException("No submissions found in the given date range.");
+        }
+
+        logger.info("Fetched {} submissions between {} and {}", submissions.size(), startDate, endDate);
+        return ResponseEntity.ok(submissions);
+    }
+
+
     @GetMapping("/download-resume/{candidateId}")
     public ResponseEntity<Object> downloadResume(@PathVariable String candidateId) {
         try {
@@ -552,6 +574,38 @@ public class CandidateController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/interviews/filterByDate")
+    public ResponseEntity<?> getInterviewsByDateRange(
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        try {
+            List<GetInterviewResponseDto> interviews = candidateService.getScheduledInterviewsByDateOnly(startDate, endDate);
+
+            if (interviews.isEmpty()) {
+                logger.warn("No interviews found between {} and {}", startDate, endDate);
+                Map<String, String> response = new HashMap<>();
+                response.put("error", "No interviews found in given date range.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            logger.info("Fetched {} interviews between {} and {}", interviews.size(), startDate, endDate);
+            return ResponseEntity.ok(interviews);
+
+        } catch (DateRangeValidationException e) {
+            logger.warn("Validation error: {}", e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse); // ✅ JSON response
+        } catch (Exception ex) {
+            logger.error("Error fetching interviews by date range: {}", ex.getMessage(), ex);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Something went wrong while fetching interview data.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+
 
     @DeleteMapping("/deleteinterview/{candidateId}")
     public ResponseEntity<DeleteInterviewResponseDto> deleteInterview(@PathVariable String candidateId) {

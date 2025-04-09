@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -61,5 +62,21 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             "WHERE r.job_id = :jobId AND EXISTS " +
             "(SELECT 1 FROM candidates_prod c WHERE c.job_id = :jobId)", nativeQuery = true)
     void updateRequirementStatus(@Param("jobId") String jobId);
+
+
+
+    @Query("SELECT c FROM CandidateDetails c WHERE c.profileReceivedDate BETWEEN :startDate AND :endDate")
+    List<CandidateDetails> findByProfileReceivedDateBetween(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    @Query("SELECT c FROM CandidateDetails c " +
+            "WHERE c.interviewDateTime IS NOT NULL " +
+            "AND FUNCTION('DATE', c.timestamp) BETWEEN :startDate AND :endDate")
+    List<CandidateDetails> findScheduledInterviewsByDateOnly(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
 
 }

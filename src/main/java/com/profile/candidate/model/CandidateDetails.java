@@ -87,7 +87,6 @@
 
         private LocalDateTime timestamp;
 
-
         public String getClientName() {
             return clientName;
         }
@@ -228,6 +227,7 @@
         public void setProfileReceivedDate(LocalDate profileReceivedDate) {
             this.profileReceivedDate = profileReceivedDate;
         }
+
 
         // Getters and Setters for existing fields
         public String getCandidateId() {
