@@ -49,21 +49,21 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t dataquad123/dataquad-dev-requirements:${{ env.IMAGE_TAG }} .
-          docker tag dataquad123/dataquad-dev-requirements:${{ env.IMAGE_TAG }} dataquad123/dataquad-dev-requirements:latest
+          docker build -t dataquad123/dataquad-dev-candidates:${{ env.IMAGE_TAG }} .
+          docker tag dataquad123/dataquad-dev-candidates:${{ env.IMAGE_TAG }} dataquad123/dataquad-dev-candidates:latest
 
       - name: Push Docker Image
         run: |
-          docker push dataquad123/dataquad-dev-requirements:${{ env.IMAGE_TAG }}
-          docker push dataquad123/dataquad-dev-requirements:latest
+          docker push dataquad123/dataquad-dev-candidates:${{ env.IMAGE_TAG }}
+          docker push dataquad123/dataquad-dev-candidates:latest
 
       - name: Delete Old Images (Keep Only Last 10)
         run: |
-          OLD_TAGS=$(curl -s -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/dataquad123/dataquad-dev-requirements/tags/" \
+          OLD_TAGS=$(curl -s -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/dataquad123/dataquad-dev-candidates/tags/" \
             | jq -r '.results[].name' \
             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
             | sort -V | head -n -10)
 
           for TAG in $OLD_TAGS; do
-            curl -X DELETE -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/dataquad123/dataquad-dev-requirements/tags/$TAG/"
+            curl -X DELETE -u ${{ secrets.DOCKER_USERNAME }}:${{ secrets.DOCKER_PASSWORD }} "https://hub.docker.com/v2/repositories/dataquad123/dataquad-dev-candidates/tags/$TAG/"
           done
