@@ -36,7 +36,7 @@ public class InterviewEmailService {
             }
 
             // Validate recipient email format
-            if (!isValidEmail(to)) {
+            if (!isValidEmail(to.trim())) {
                 logger.error("Invalid recipient email: {}", to);
                 throw new IllegalArgumentException("Invalid recipient email format.");
             }

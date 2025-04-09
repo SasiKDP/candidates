@@ -88,9 +88,9 @@ public class BenchService {
     public BenchDetails updateBenchDetails(String id, BenchDetails benchDetails) {
         return benchRepository.findById(id).map(existingBench -> {
             // ✅ Check for duplicate fullName, email, or contactNumber (excluding the current ID)
-            if (benchDetails.getFullName() != null && benchRepository.existsByFullNameAndIdNot(benchDetails.getFullName(), id)) {
-                throw new IllegalArgumentException("Duplicate entry: Full Name already exists.");
-            }
+//            if (benchDetails.getFullName() != null && benchRepository.existsByFullNameAndIdNot(benchDetails.getFullName(), id)) {
+//                throw new IllegalArgumentException("Duplicate entry: Full Name already exists.");
+//            }
 
             if (benchDetails.getEmail() != null && benchRepository.existsByEmailAndIdNot(benchDetails.getEmail(), id)) {
                 throw new IllegalArgumentException("Duplicate entry: Email already exists.");

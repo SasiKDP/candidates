@@ -2,21 +2,21 @@ package com.profile.candidate.dto;
 
 public class BenchRequestDto {
 
-        private String id;
-        private String fullName;
-        private String email;
-        private String referredBy;
-        private String resume;
-        private String linkedin;
-        private Long contact;
-        private String skills;
-        private String relevantExperience;
-        private String totalExperience;
+    private String id;
+    private String fullName;
+    private String email;
+    private String referredBy;
+    private String resume;
+    private String linkedin;
+    private Long contact;
+    private String skills;
+    private String relevantExperience;
+    private String totalExperience;
 
-        // ✅ Default Constructor
-        public BenchRequestDto() {}
+    // ✅ Default Constructor
+    public BenchRequestDto() {}
 
-        // ✅ Getters and Setters
+    // ✅ Getters and Setters
 
 
     public String getId() {
@@ -76,29 +76,26 @@ public class BenchRequestDto {
     }
 
     public String getFullName() {
-            return fullName;
-        }
-
-        public void setFullName(String fullName) {
-            this.fullName = fullName;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getReferredBy() {
-            return referredBy;
-        }
-
-        public void setReferredBy(String referredBy) {
-            this.referredBy = referredBy;
-        }
+        return fullName;
     }
 
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
 
+    public String getEmail() {
+        return email;
+    }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getReferredBy() {
+        return referredBy;
+    }
+
+    public void setReferredBy(String referredBy) {
+        this.referredBy = referredBy;
+    }
+}

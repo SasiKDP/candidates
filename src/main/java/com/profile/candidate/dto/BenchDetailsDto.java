@@ -1,3 +1,4 @@
+
 package com.profile.candidate.dto;
 
 import java.math.BigDecimal;
