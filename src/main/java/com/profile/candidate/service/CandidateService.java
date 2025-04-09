@@ -24,12 +24,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1134,6 +1132,125 @@ public class CandidateService {
             return node.get(fieldName).asText();
         }
         return defaultValue;
+    }
+    public List<CandidateGetResponseDto> getSubmissionsByUserIdAndDateRange(LocalDate startDate, LocalDate endDate) {
+        // 💥 First check: Total range must not exceed 1 month
+        if (ChronoUnit.DAYS.between(startDate, endDate) > 31) {
+            throw new DateRangeValidationException("Date range must not exceed one month.");
+        }
+
+        // 💥 Second check: End date must not be before start date
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date cannot be before start date.");
+        }
+
+        // 💥 Third check: Start date must be within 1 month from today
+        LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
+        if (startDate.isBefore(oneMonthAgo)) {
+            throw new DateRangeValidationException("Start date must be within the last 1 month.");
+        }
+
+        // ✅ Only hit DB after validations pass
+        List<CandidateDetails> candidates = candidateRepository.findByProfileReceivedDateBetween(startDate, endDate);
+
+        if (candidates.isEmpty()) {
+            throw new CandidateNotFoundException("No submissions found for Candidates between " + startDate + " and " + endDate);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        return candidates.stream().map(candidate -> {
+            String latestInterviewStatus = "Not Scheduled";
+            String interviewStatusJson = candidate.getInterviewStatus();
+
+            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                try {
+                    if (interviewStatusJson.trim().startsWith("[") || interviewStatusJson.trim().startsWith("{")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+
+                        if (!statusHistory.isEmpty()) {
+                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
+                            if (latestStatus.isPresent()) {
+                                latestInterviewStatus = (String) latestStatus.get().get("status");
+                            }
+                        }
+                    } else {
+                        latestInterviewStatus = interviewStatusJson;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error parsing interview status JSON: " + e.getMessage());
+                    latestInterviewStatus = interviewStatusJson;
+                }
+            }
+
+            CandidateGetResponseDto dto = new CandidateGetResponseDto(candidate);
+            dto.setInterviewStatus(latestInterviewStatus);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+
+    public List<GetInterviewResponseDto> getScheduledInterviewsByDateOnly(LocalDate startDate, LocalDate endDate) {
+        // Validation: Ensure date range is within the last 1 month
+        LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
+        if (startDate.isBefore(oneMonthAgo)) {
+            throw new DateRangeValidationException("Start date must be within the last 1 month.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date must not be before the start date.");
+        }
+        // Check if the date range exceeds one month
+        // Use ChronoUnit to count exact days
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+        if (daysBetween > 31) { // Strict 1-month cap
+            throw new DateRangeValidationException("Date range must not exceed one month.");
+        }
+        List<CandidateDetails> candidates = candidateRepository.findScheduledInterviewsByDateOnly(startDate, endDate);
+        List<GetInterviewResponseDto> response = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        for (CandidateDetails interview : candidates) {
+            String interviewStatusJson = interview.getInterviewStatus();
+            String latestInterviewStatus = null;
+
+            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                try {
+                    if (interviewStatusJson.trim().startsWith("{") || interviewStatusJson.trim().startsWith("[")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+                        if (!statusHistory.isEmpty()) {
+                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
+                            latestInterviewStatus = latestStatus.map(status -> (String) status.get("status")).orElse(null);
+                        }
+                    } else {
+                        latestInterviewStatus = interviewStatusJson;
+                    }
+                } catch (Exception e) {
+                    latestInterviewStatus = interviewStatusJson;
+                }
+            }
+
+            response.add(new GetInterviewResponseDto(
+                    interview.getJobId(),
+                    interview.getCandidateId(),
+                    interview.getFullName(),
+                    interview.getContactNumber(),
+                    interview.getCandidateEmailId(),
+                    interview.getUserEmail(),
+                    interview.getUserId(),
+                    interview.getInterviewDateTime(),
+                    interview.getDuration(),
+                    interview.getZoomLink(),
+                    interview.getTimestamp(),
+                    interview.getClientEmail(),
+                    interview.getClientName(),
+                    interview.getInterviewLevel(),
+                    latestInterviewStatus
+            ));
+        }
+
+        return response;
     }
 }
 
