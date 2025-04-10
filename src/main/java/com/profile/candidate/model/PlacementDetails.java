@@ -17,7 +17,7 @@ import java.time.LocalDate;
 @Setter
 @Getter
 @Entity
-@Table(name = "placement_prod")
+@Table(name = "placements")
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlacementDetails {
