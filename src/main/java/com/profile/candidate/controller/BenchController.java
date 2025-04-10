@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
         "http://mymulya.com:443",
         "http://182.18.177.16:443",
         "http://localhost/",
-       })
+})
 @RestController
 @RequestMapping("/candidate")
 public class BenchController {
