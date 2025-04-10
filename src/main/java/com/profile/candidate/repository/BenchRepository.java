@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,4 +33,7 @@ public interface BenchRepository extends JpaRepository<BenchDetails, String> {
     @Transactional
     void deleteByIdIgnoreCase(@Param("id") String id);
 
+    @Query("SELECT b FROM BenchDetails b WHERE b.createdDate BETWEEN :startDate AND :endDate")
+    List<BenchDetails> findByCreatedDateBetween(@Param("startDate") LocalDate startDate,
+                                                @Param("endDate") LocalDate endDate);
 }
