@@ -6,24 +6,28 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profile.candidate.dto.BenchDetailsDto;
 import com.profile.candidate.dto.BenchResponseDto;
 import com.profile.candidate.dto.ErrorResponseDto;
+import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.model.BenchDetails;
 import com.profile.candidate.repository.BenchRepository;
 import com.profile.candidate.service.BenchService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -37,6 +41,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/candidate")
 public class BenchController {
+
+    private static final Logger logger = LoggerFactory.getLogger(BenchController.class);
+
 
     private static final String UPLOAD_DIR = "/your/upload/directory"; // Ensu
     private final BenchService benchService;
@@ -125,7 +132,8 @@ public class BenchController {
                             bench.getContactNumber(),
                             bench.getSkills() != null ? bench.getSkills() : Collections.<String>emptyList(),  // ✅ Ensure skills is a List<String>
                             bench.getLinkedin(),
-                            bench.getReferredBy()
+                            bench.getReferredBy(),
+                            bench.getCreatedDate()
                     ))
                     .collect(Collectors.toList());
 
@@ -134,6 +142,49 @@ public class BenchController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
         }
     }
+
+    @GetMapping("/bench/filter-by-date")
+    public ResponseEntity<?> getBenchDetailsByDateRange(
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        try {
+            List<BenchDetails> filtered = benchService.findBenchDetailsByDateRange(startDate, endDate);
+            logger.info("✅ Fetched {} bench records between {} and {}", filtered.size(), startDate, endDate);
+
+            List<BenchDetailsDto> dtoList = filtered.stream()
+                    .map(bench -> new BenchDetailsDto(
+                            bench.getId(),
+                            bench.getFullName(),
+                            bench.getEmail(),
+                            bench.getRelevantExperience(),
+                            bench.getTotalExperience(),
+                            bench.getContactNumber(),
+                            bench.getSkills() != null ? bench.getSkills() : Collections.emptyList(),
+                            bench.getLinkedin(),
+                            bench.getReferredBy(),
+                            bench.getCreatedDate()
+                    ))
+                    .collect(Collectors.toList());
+
+            if (dtoList.isEmpty()) {
+                logger.warn("⚠️ No bench records found in the given date range: {} to {}", startDate, endDate);
+                return ResponseEntity.ok(Collections.singletonMap("error", "No bench details found in this date range."));
+            }
+
+
+            return ResponseEntity.ok(dtoList);
+        } catch (DateRangeValidationException e) {
+            logger.error("❌ Date Range Validation Error: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("🔥 Unexpected error while fetching bench details: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", "Something went wrong!"));
+        }
+    }
+
+
 
 
 
