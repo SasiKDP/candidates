@@ -79,4 +79,12 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             @Param("endDate") LocalDate endDate);
 
 
+    // Native SQL query to join candidates and requirements_model_prod tables based on jobId
+    @Query(value = "SELECT r.client_name FROM requirements_model_prod r WHERE r.job_id = :jobId", nativeQuery = true)
+    Optional<String> findClientNameByJobId(@Param("jobId") String jobId);
+
+
+
+
+
 }
