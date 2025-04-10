@@ -511,6 +511,51 @@ public class CandidateController {
         }
     }
 
+    @PutMapping("/interviews/update/{candidateId}")
+    public ResponseEntity<InterviewResponseDto> updateScheduledInterviewWithoutUserId(
+            @PathVariable String candidateId,
+            @RequestBody InterviewDto interviewRequest) {
+        try {
+            logger.info("Received interview update request for candidateId: {}", candidateId);
+
+            if (candidateId == null) {
+                return ResponseEntity.badRequest().body(new InterviewResponseDto(
+                        false, "Candidate ID cannot be null.", null, null
+                ));
+            }
+
+            InterviewResponseDto response = candidateService.updateScheduledInterviewWithoutUserId(
+                    candidateId,
+                    interviewRequest.getInterviewDateTime(),
+                    interviewRequest.getDuration(),
+                    interviewRequest.getZoomLink(),
+                    interviewRequest.getUserEmail(),
+                    interviewRequest.getClientEmail(),
+                    interviewRequest.getClientName(),
+                    interviewRequest.getInterviewLevel(),
+                    interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getInterviewStatus()
+            );
+
+            return ResponseEntity.ok(response);
+        } catch (CandidateNotFoundException e) {
+            logger.error("Candidate not found for candidateId: {}", candidateId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+                    false, "Candidate not found.", null, null
+            ));
+        } catch (InterviewNotScheduledException e) {
+            logger.error("No interview scheduled for candidateId: {}", candidateId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+                    false, "No scheduled interview found for this candidate.", null, null
+            ));
+        } catch (Exception e) {
+            logger.error("Error while updating interview: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
+                    false, "An error occurred while updating the interview.", null, null
+            ));
+        }
+    }
+
     @GetMapping("/scheduledCandidates/{candidateId}")
     public List<Map<String, Object>> getScheduledCandidates(@PathVariable String candidateId) {
         return candidateService.getScheduledCandidates(candidateId);
