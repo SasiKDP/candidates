@@ -29,6 +29,8 @@ public class CandidateGetResponseDto {
     private String overallFeedback;
     private String userEmail;
     private String interviewStatus;
+    private String clientName; // This is the new field you want to include
+
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -55,6 +57,7 @@ public class CandidateGetResponseDto {
         this.overallFeedback = candidate.getOverallFeedback();
         this.userEmail = candidate.getUserEmail();
         this.interviewStatus = extractLatestInterviewStatus(candidate.getInterviewStatus());
+        this.clientName = candidate.getClientName();
     }
 
     // Method to extract latest interview status
@@ -248,5 +251,13 @@ public class CandidateGetResponseDto {
 
     public void setInterviewStatus(String interviewStatus) {
         this.interviewStatus = interviewStatus;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 }
