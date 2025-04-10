@@ -1,19 +1,27 @@
 package com.profile.candidate.service;
 
+import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.model.BenchDetails;
 import com.profile.candidate.repository.BenchRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class BenchService {
     private final BenchRepository benchRepository;
+
+
+    private static final Logger logger = LoggerFactory.getLogger(BenchService.class);
 
     @Autowired
     public BenchService(BenchRepository benchRepository) {
@@ -74,6 +82,7 @@ public class BenchService {
         if (benchDetails.getId() == null || benchDetails.getId().isEmpty()) {
             benchDetails.setId(generateCustomId());
         }
+        benchDetails.setCreatedDate(LocalDate.now());
 
         // ✅ Store resume if provided
         if (resumeFile != null && !resumeFile.isEmpty()) {
@@ -140,5 +149,37 @@ public class BenchService {
 
     public boolean existsBenchDetailsByEmail(String email) {
         return benchRepository.existsByEmail(email);
+    }
+
+    public List<BenchDetails> findBenchDetailsByDateRange(LocalDate startDate, LocalDate endDate) {
+        try {
+            // ✅ Optional: Cap the date range to 31 days
+            long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+            if (daysBetween > 31) {
+                throw new DateRangeValidationException("Date range must not exceed one month.");
+            }
+
+            // ✅ Validate: Start date must be within the last 1 month
+            LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
+            // ✅ First validate basic date logic
+            if (endDate.isBefore(startDate)) {
+                throw new DateRangeValidationException("End date must not be before the start date.");
+            }
+
+            // ✅ Then validate start date is within the last month
+            if (startDate.isBefore(oneMonthAgo)) {
+                throw new DateRangeValidationException("Start date must be within the last 1 month.");
+            }
+
+            // ✅ Fetch bench details based on createdDate range
+            List<BenchDetails> benchDetails = benchRepository.findByCreatedDateBetween(startDate, endDate);
+            return benchDetails;
+        } catch (DateRangeValidationException e) {
+            logger.error("Date Range Validation Error: {}", e.getMessage());
+            throw e;  // Re-throw the exception for higher-level handling
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching bench details: ", e);
+            throw new RuntimeException("Something went wrong while processing your request. Please try again later.");
+        }
     }
 }

@@ -13,6 +13,7 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,6 +61,16 @@ public class BenchDetails {
  @Column(name = "referred_by")
  private String referredBy;
 
+ @Column(name = "created_date")
+ private LocalDate createdDate;
+
+ public LocalDate getCreatedDate() {
+  return createdDate;
+ }
+
+ public void setCreatedDate(LocalDate createdDate) {
+  this.createdDate = createdDate;
+ }
 
 
 
