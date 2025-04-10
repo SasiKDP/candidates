@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 @Service
 public class PlacementService {
 
+
     private final PlacementRepository placementRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 

@@ -73,6 +73,7 @@ public class GlobalExceptionHandler {
     }
 
     // Handle all other unchecked exceptions (generic fallback)
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<CandidateResponseDto> handleRuntimeException(RuntimeException ex) {
         // Assuming candidateId, employeeId, and jobId are null by default
