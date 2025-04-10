@@ -65,14 +65,14 @@ public class BenchDetails {
     private LocalDate createdDate;
 
     public LocalDate getCreatedDate() {
-     return createdDate;
+        return createdDate;
     }
 
     public void setCreatedDate(LocalDate createdDate) {
-     this.createdDate = createdDate;
+        this.createdDate = createdDate;
     }
 
- public List<String> getSkills() {
+    public List<String> getSkills() {
         return skills;
     }
 

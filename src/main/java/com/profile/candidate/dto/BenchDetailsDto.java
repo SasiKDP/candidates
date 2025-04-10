@@ -2,7 +2,6 @@
 package com.profile.candidate.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 public class BenchDetailsDto {
@@ -15,9 +14,8 @@ public class BenchDetailsDto {
     private List<String> skills;
     private String linkedin;
     private String referredBy;
-    private LocalDate createdDate;
 
-    public BenchDetailsDto(String id, String fullName, String email, BigDecimal relevantExperience, BigDecimal totalExperience, String contactNumber, List<String> skills, String linkedin, String referredBy,LocalDate createdDate) {
+    public BenchDetailsDto(String id, String fullName, String email, BigDecimal relevantExperience, BigDecimal totalExperience, String contactNumber, List<String> skills, String linkedin, String referredBy) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -27,7 +25,6 @@ public class BenchDetailsDto {
         this.skills = skills;
         this.linkedin = linkedin;
         this.referredBy = referredBy;
-        this.createdDate = createdDate;
     }
 
 
