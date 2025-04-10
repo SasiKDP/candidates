@@ -105,4 +105,12 @@ public class BenchDetailsDto {
     public void setReferredBy(String referredBy) {
         this.referredBy = referredBy;
     }
+
+    public LocalDate getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(LocalDate createdDate) {
+        this.createdDate = createdDate;
+    }
 }
