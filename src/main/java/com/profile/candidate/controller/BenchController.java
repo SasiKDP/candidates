@@ -132,7 +132,8 @@ public class BenchController {
                             bench.getContactNumber(),
                             bench.getSkills() != null ? bench.getSkills() : Collections.<String>emptyList(),  // ✅ Ensure skills is a List<String>
                             bench.getLinkedin(),
-                            bench.getReferredBy()
+                            bench.getReferredBy(),
+                            bench.getCreatedDate()
                     ))
                     .collect(Collectors.toList());
 
@@ -160,15 +161,16 @@ public class BenchController {
                             bench.getContactNumber(),
                             bench.getSkills() != null ? bench.getSkills() : Collections.emptyList(),
                             bench.getLinkedin(),
-                            bench.getReferredBy()
+                            bench.getReferredBy(),
+                            bench.getCreatedDate()
                     ))
                     .collect(Collectors.toList());
 
             if (dtoList.isEmpty()) {
                 logger.warn("⚠️ No bench records found in the given date range: {} to {}", startDate, endDate);
-                return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                        .body(Collections.singletonMap("error", "No bench details found in this date range."));
+                return ResponseEntity.ok(Collections.singletonMap("error", "No bench details found in this date range."));
             }
+
 
             return ResponseEntity.ok(dtoList);
         } catch (DateRangeValidationException e) {
