@@ -1,5 +1,6 @@
 package com.profile.candidate.dto;
 
+
 public class PlacementResponseDto {
     private String id;
     private String consultantName;

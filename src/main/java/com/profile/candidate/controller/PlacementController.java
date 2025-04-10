@@ -21,9 +21,11 @@ import java.util.Map;
         "http://192.168.0.135:80", "http://localhost/", "http://mymulya.com:443",
         "http://182.18.177.16:443", "http://localhost/"
 })
+
 @RestController
 @RequestMapping("/candidate")
 public class PlacementController {
+
 
     @Autowired
     private PlacementService service;

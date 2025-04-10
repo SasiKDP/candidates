@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class PlacementDto {
     private String id;
     private String consultantName;
