@@ -1,5 +1,6 @@
 package com.profile.candidate.service;
 
+import com.profile.candidate.dto.BenchDetailsDto;
 import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.model.BenchDetails;
 import com.profile.candidate.repository.BenchRepository;
@@ -180,6 +181,29 @@ public class BenchService {
         } catch (Exception e) {
             logger.error("An error occurred while fetching bench details: ", e);
             throw new RuntimeException("Something went wrong while processing your request. Please try again later.");
+        }
+    }
+    public BenchDetailsDto getBenchById(String benchId) {
+        Optional<BenchDetails> optionalBench = benchRepository.findById(benchId);
+        if (optionalBench.isPresent()) {
+            BenchDetails bench = optionalBench.get();
+
+            // Map BenchDetails to BenchDetailsDto manually
+            BenchDetailsDto dto = new BenchDetailsDto();
+            dto.setId(bench.getId());
+            dto.setFullName(bench.getFullName());
+            dto.setEmail(bench.getEmail());
+            dto.setRelevantExperience(bench.getRelevantExperience());
+            dto.setTotalExperience(bench.getTotalExperience());
+            dto.setContactNumber(bench.getContactNumber());
+            dto.setSkills(bench.getSkills());
+            dto.setLinkedin(bench.getLinkedin());
+            dto.setReferredBy(bench.getReferredBy());
+            dto.setCreatedDate(bench.getCreatedDate());
+
+            return dto;
+        } else {
+            return null;
         }
     }
 }

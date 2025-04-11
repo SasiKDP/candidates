@@ -31,7 +31,9 @@ public class BenchDetailsDto {
     }
 
 
+    public BenchDetailsDto() {
 
+    }
     // ✅ Getters & Setters
 
     public String getId() {
