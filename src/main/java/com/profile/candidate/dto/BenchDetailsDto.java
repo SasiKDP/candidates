@@ -30,6 +30,9 @@ public class BenchDetailsDto {
         this.createdDate = createdDate;
     }
 
+    public BenchDetailsDto() {
+
+    }
 
 
     // ✅ Getters & Setters
