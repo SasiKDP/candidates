@@ -184,41 +184,15 @@ public class BenchController {
         }
     }
 
-
-
-
-
-
-
-    @GetMapping("/bench/{id}")
-    public ResponseEntity<Object> getBenchDetailsById(@PathVariable String id) {
-        try {
-            Optional<BenchDetails> benchDetails = benchService.findBenchDetailsById(id);
-
-            if (benchDetails.isPresent()) {
-                BenchResponseDto.Payload payload = new BenchResponseDto.Payload(
-                        benchDetails.get().getId(),
-                        benchDetails.get().getFullName()
-                );
-
-                BenchResponseDto responseDto = new BenchResponseDto(
-                        "Success",
-                        "Fetched bench details successfully",
-                        (List<BenchResponseDto.Payload>) payload,
-                        null
-                );
-
-                return ResponseEntity.ok(responseDto);
-            } else {
-                ErrorResponseDto errorResponse = new ErrorResponseDto(false, "Bench details not found for ID " + id);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-            }
-        } catch (Exception e) {
-            ErrorResponseDto errorResponse = new ErrorResponseDto(false, "Error while fetching bench details: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    @GetMapping("/getBenchBy/{benchId}")
+    public ResponseEntity<BenchDetailsDto> getBenchById(@PathVariable String benchId) {
+        BenchDetailsDto dto = benchService.getBenchById(benchId);
+        if (dto != null) {
+            return ResponseEntity.ok(dto);
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
-
     @PutMapping("/bench/updatebench/{id}")
     public ResponseEntity<Object> updateBenchDetails(
             @PathVariable String id,
