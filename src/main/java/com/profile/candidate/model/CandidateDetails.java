@@ -131,6 +131,7 @@ public class CandidateDetails {
     @Column(name = "resume_file_path")
     private String resumeFilePath;
 
+    @Lob
     @Column(name = "interview_status", columnDefinition = "TEXT")
     private String interviewStatus; // Store JSON as String
 
