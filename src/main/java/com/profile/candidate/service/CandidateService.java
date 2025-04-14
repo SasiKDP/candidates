@@ -306,63 +306,57 @@ public class CandidateService {
 
     // Method to get candidate submissions by userId
     public List<CandidateGetResponseDto> getSubmissionsByUserId(String userId) {
-        // Retrieve candidates by userId from the repository
         List<CandidateDetails> candidates = candidateRepository.findByUserId(userId);
 
-        // If no candidates are found, throw a CandidateNotFoundException
         if (candidates.isEmpty()) {
             throw new CandidateNotFoundException("No submissions found for userId: " + userId);
         }
 
-        // Create ObjectMapper instance to parse interview status JSON
         ObjectMapper objectMapper = new ObjectMapper();
 
-        // Map the list of CandidateDetails to List<CandidateGetResponseDto>
         List<CandidateGetResponseDto> candidateDtos = candidates.stream().map(candidate -> {
-            String latestInterviewStatus = "Not Scheduled"; // Default status
+            String latestInterviewStatus = "Not Scheduled"; // Default fallback
             String interviewStatusJson = candidate.getInterviewStatus();
 
-            // Process the interview status JSON to get the latest status
             if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                String trimmedStatus = interviewStatusJson.trim();
+
                 try {
-                    // Check if JSON array or single JSON object
-                    if (interviewStatusJson.trim().startsWith("[") || interviewStatusJson.trim().startsWith("{")) {
-                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+                    // Only proceed if it's a JSON array
+                    if (trimmedStatus.startsWith("[") && trimmedStatus.endsWith("]")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(trimmedStatus, List.class);
 
                         if (!statusHistory.isEmpty()) {
-                            // Get the latest status based on timestamp
                             Optional<Map<String, Object>> latestStatus = statusHistory.stream()
-                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
+                                    .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
+                                    .max(Comparator.comparing(entry ->
+                                            OffsetDateTime.parse((String) entry.get("timestamp"))));
 
                             if (latestStatus.isPresent()) {
                                 latestInterviewStatus = (String) latestStatus.get().get("status");
                             }
                         }
-                    } else {
-                        // Handle legacy plain text status
-                        latestInterviewStatus = interviewStatusJson;
                     }
+
+                    // 🚫 Do NOT accept plain string values anymore
                 } catch (Exception e) {
                     System.err.println("Error parsing interview status JSON: " + e.getMessage());
-                    latestInterviewStatus = interviewStatusJson; // Fallback to raw text
+                    // Ignore and keep as "Not Scheduled"
                 }
             }
 
-            // Fetch the client name from the requirements_model_prod table using the jobId
             Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(candidate.getJobId());
-            String clientName = clientNameOpt.orElse(null); // Set clientName to null if not found
+            String clientName = clientNameOpt.orElse(null);
 
-            // Create the DTO and set the latest interview status and client name
             CandidateGetResponseDto dto = new CandidateGetResponseDto(candidate);
             dto.setInterviewStatus(latestInterviewStatus);
-            dto.setClientName(clientName); // Set the client name
+            dto.setClientName(clientName);
 
             return dto;
         }).collect(Collectors.toList());
 
         return candidateDtos;
     }
-
     public boolean isCandidateValidForUser(String userId, String candidateId) {
         // Fetch the candidate by candidateId
         CandidateDetails candidateDetails = candidateRepository.findById(candidateId)
@@ -546,165 +540,254 @@ public class CandidateService {
             String externalInterviewDetails,
             String interviewStatus) {
 
-        logger.info("Starting interview update for userId: {} and candidateId: {}", userId, candidateId);
+        try {
+            logger.info("Starting interview update for userId: {} and candidateId: {}", userId, candidateId);
 
-        if (candidateId == null) {
-            throw new CandidateNotFoundException("Candidate ID cannot be null for userId: " + userId);
-        }
+            if (candidateId == null) {
+                throw new CandidateNotFoundException("Candidate ID cannot be null for userId: " + userId);
+            }
 
-        // Retrieve candidate details
-        CandidateDetails candidate = candidateRepository.findByCandidateIdAndUserId(candidateId, userId)
-                .orElseThrow(() -> new CandidateNotFoundException(
-                        "Candidate not found for userId: " + userId + " and candidateId: " + candidateId));
+            CandidateDetails candidate = candidateRepository.findByCandidateIdAndUserId(candidateId, userId)
+                    .orElseThrow(() -> new CandidateNotFoundException("Candidate not found for userId: " + userId + " and candidateId: " + candidateId));
 
-        if (candidate.getInterviewDateTime() == null) {
-            throw new InterviewNotScheduledException("No interview scheduled for candidate ID: " + candidateId);
-        }
+            if (candidate.getInterviewDateTime() == null) {
+                throw new InterviewNotScheduledException("No interview scheduled for candidate ID: " + candidateId);
+            }
 
-        // Update fields only if values are provided
-        if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
-        if (duration != null) candidate.setDuration(duration);
-        if (zoomLink != null && !zoomLink.isEmpty()) candidate.setZoomLink(zoomLink);
-        if (userEmail != null && !userEmail.isEmpty()) candidate.setUserEmail(userEmail);
-        if (clientEmail != null && !clientEmail.isEmpty()) candidate.setClientEmail(clientEmail);
-        if (clientName != null && !clientName.isEmpty()) candidate.setClientName(clientName);
-        if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
-        if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
+            // 1. **Validate the interview level** (clientEmail required for internal interviews)
+            validateInterviewLevel(interviewLevel, clientEmail);
 
-        // Handle the interview status update if provided
-        if (interviewStatus != null && !interviewStatus.isEmpty()) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            ArrayNode historyArray;
+            // 🧠 Parse the existing status history (JSON) and check for redundant status
+            String existingStatusJson = candidate.getInterviewStatus();
+            if (existingStatusJson != null && !existingStatusJson.isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    // Convert the JSON string to an array node
+                    JsonNode statusArray = objectMapper.readTree(existingStatusJson);
 
-            try {
-                String existingStatus = candidate.getInterviewStatus();
-
-                if (existingStatus != null && !existingStatus.isEmpty()) {
-                    try {
-                        JsonNode jsonNode = objectMapper.readTree(existingStatus);
-                        if (jsonNode.isArray()) {
-                            historyArray = (ArrayNode) jsonNode;
-                        } else {
-                            logger.error("Existing interviewStatus is not a valid JSON array: {}", existingStatus);
-                            historyArray = objectMapper.createArrayNode(); // Reset to new array
+                    // Check if the new status already exists in the history
+                    for (JsonNode statusNode : statusArray) {
+                        String existingStatus = statusNode.get("status").asText();
+                        if (existingStatus != null && existingStatus.equalsIgnoreCase(interviewStatus)) {
+                            // If a match is found, throw an exception
+                            throw new IllegalArgumentException("Interview status is already set to the same value for candidate: " + candidateId);
                         }
-                    } catch (JsonProcessingException e) {
-                        logger.error("Error parsing existing interviewStatus JSON for candidate {}: {}",
-                                candidate.getCandidateId(), e.getMessage());
-                        historyArray = objectMapper.createArrayNode(); // Reset on failure
                     }
-                } else {
-                    historyArray = objectMapper.createArrayNode(); // Start fresh if no status exists
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Error processing interview status history JSON", e);
+                }
+            }
+
+            // 🧠 Update the status history only after validation
+            String latestStatus = "N/A";
+
+            if (interviewStatus != null && !interviewStatus.isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                ArrayNode historyArray;
+                try {
+                    // If the history exists, parse it
+                    if (existingStatusJson != null && !existingStatusJson.isEmpty()) {
+                        JsonNode jsonNode = objectMapper.readTree(existingStatusJson);
+                        historyArray = jsonNode.isArray() ? (ArrayNode) jsonNode : objectMapper.createArrayNode();
+                    } else {
+                        historyArray = objectMapper.createArrayNode();
+                    }
+
+                    // Determine the next stage number
+                    int nextStage = historyArray.size() + 1;
+
+                    // Add the new entry
+                    ObjectNode newEntry = objectMapper.createObjectNode();
+                    newEntry.put("stage", nextStage);
+                    newEntry.put("status", interviewStatus);
+                    newEntry.put("timestamp", OffsetDateTime.now().toString());
+                    historyArray.add(newEntry);
+
+                    // Set the new status history
+                    candidate.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
+                    latestStatus = interviewStatus;
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Error processing interview status JSON", e);
+                }
+            }
+
+            // 🧾 Normalize interview status
+            String normalizedStatus = latestStatus.trim().toLowerCase();
+
+            // 🚫 Handle Cancelled Interview Status
+            if ("cancelled".equals(normalizedStatus)) {
+                candidate.setTimestamp(LocalDateTime.now());
+                candidateRepository.save(candidate);
+                logger.info("Interview marked as cancelled for candidateId: {}", candidateId);
+
+                String subject = "Interview Cancelled for " + candidate.getFullName();
+                String emailBody = String.format(
+                        "<p>Hello %s,</p><p>We regret to inform you that your interview has been cancelled.</p>"
+                                + "<p>If you have any questions, please contact support.</p><p>Best regards,<br>Interview Team</p>",
+                        candidate.getFullName());
+
+                String candidateEmail = candidate.getCandidateEmailId();
+                if (candidateEmail != null && !candidateEmail.isEmpty()) {
+                    try {
+                        logger.info("Sending cancellation email to candidate: {}", candidateEmail);
+                        emailService.sendInterviewNotification(candidateEmail, subject, emailBody);
+                    } catch (Exception e) {
+                        logger.error("Failed to send cancellation email to {}: {}", candidateEmail, e.getMessage(), e);
+                    }
                 }
 
-                // If the status is provided, don't add "Scheduled" unless this is the first entry
-                int nextStage = historyArray.size() + 1; // Changed 'round' to 'stage'
-                ObjectNode newEntry = objectMapper.createObjectNode();
-
-                // Add the current status (from UI)
-                newEntry.put("stage", nextStage);
-                newEntry.put("status", interviewStatus); // The status passed from the UI
-                newEntry.put("timestamp", OffsetDateTime.now().toString());
-
-                historyArray.add(newEntry);
-
-                // Debugging Log
-                logger.info("Updated Interview Status JSON for Candidate {}: {}",
-                        candidate.getCandidateId(), objectMapper.writeValueAsString(historyArray));
-
-                candidate.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
-
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Error processing interview status JSON", e);
+                return new InterviewResponseDto(
+                        true,
+                        "Interview cancelled and notification sent to candidate.",
+                        new InterviewResponseDto.InterviewPayload(
+                                candidate.getCandidateId(),
+                                candidate.getUserEmail(),
+                                candidate.getCandidateEmailId(),
+                                candidate.getClientEmail()
+                        ),
+                        null
+                );
             }
-        }
 
-        // Determine interview type if interviewLevel is null
-        if (candidate.getInterviewLevel() == null) {
-            candidate.setInterviewLevel(determineInterviewType(clientEmail, zoomLink));
-        }
+            // ✅ Handle "Placed", "Selected", "Rejected" status-only updates
+            if (Set.of("placed", "selected", "rejected").contains(normalizedStatus)) {
+                candidate.setTimestamp(LocalDateTime.now());
+                candidateRepository.save(candidate);
+                logger.info("Only status '{}' updated for candidateId: {}", normalizedStatus, candidateId);
 
-        // Handle internal vs. external interview constraints
-        if ("External".equalsIgnoreCase(candidate.getInterviewLevel())) {
-            // External interview: Only update clientEmail and zoomLink if provided, don't nullify
-            if (clientEmail != null) candidate.setClientEmail(clientEmail);
-            if (zoomLink != null) candidate.setZoomLink(zoomLink);
-        } else {
-            // Internal interview: Ensure clientEmail and zoomLink are mandatory
-            if (clientEmail == null || clientEmail.isEmpty()) {
-                throw new IllegalArgumentException("Client email is required for Internal interviews.");
+                return new InterviewResponseDto(
+                        true,
+                        "Interview status updated successfully.",
+                        new InterviewResponseDto.InterviewPayload(
+                                candidate.getCandidateId(),
+                                candidate.getUserEmail(),
+                                candidate.getCandidateEmailId(),
+                                candidate.getClientEmail()
+                        ),
+                        null
+                );
             }
-            if (zoomLink == null || zoomLink.isEmpty()) {
-                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
+
+            // 🛠 Update interview details if applicable
+            if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
+            if (duration != null) candidate.setDuration(duration);
+            if (zoomLink != null && !zoomLink.isEmpty()) candidate.setZoomLink(zoomLink);
+            if (userEmail != null && !userEmail.isEmpty()) candidate.setUserEmail(userEmail);
+            if (clientEmail != null && !clientEmail.isEmpty()) candidate.setClientEmail(clientEmail);
+            if (clientName != null && !clientName.isEmpty()) candidate.setClientName(clientName);
+            if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
+            if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
+
+            // 🧠 Determine interview type dynamically based on presence of clientEmail
+            boolean isInternalInterview = "internal".equalsIgnoreCase(interviewLevel)
+                    || (interviewLevel == null && clientEmail != null && !clientEmail.trim().isEmpty());
+
+            // 🔒 Validate based on interview type
+            if (isInternalInterview) {
+                // Internal interview: clientEmail is required
+                if (clientEmail == null || clientEmail.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Client email is required for internal interviews.");
+                }
+
+                candidate.setClientEmail(clientEmail);
+                candidate.setZoomLink((zoomLink != null && !zoomLink.trim().isEmpty()) ? zoomLink : null);
+                candidate.setInterviewLevel("internal");
+
+            } else {
+                // External interview: both clientEmail and zoomLink are optional
+                candidate.setClientEmail(null); // Ensure it's cleared
+                candidate.setZoomLink((zoomLink != null && !zoomLink.trim().isEmpty()) ? zoomLink : null);
+                candidate.setInterviewLevel("external");
             }
-            candidate.setClientEmail(clientEmail);
-            candidate.setZoomLink(zoomLink);
-        }
 
-        // Update timestamp
-        candidate.setTimestamp(LocalDateTime.now());
+            candidate.setTimestamp(LocalDateTime.now());
+            candidateRepository.save(candidate);
 
-        // Save updated candidate details
-        candidateRepository.save(candidate);
-        logger.info("Interview details updated successfully for candidateId: {}", candidateId);
+            // 📧 Email Notification
+            String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
+            String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
+            String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
+            String formattedZoomLink = (zoomLink != null && !zoomLink.isEmpty()) ? "<a href='" + zoomLink + "'>Click here to join</a>" : "N/A";
 
+            String emailBody = String.format(
+                    "<p>Hello %s,</p>"
+                            + "<p>Hope you are doing well!</p>"
+                            + "<p>Thank you for your interest in the position <b>%s</b> for our client <b>%s</b>.</p>"
+                            + "<p>We’re pleased to inform you that your profile has been shortlisted for screening.</p>"
+                            + "<p><b>Interview Details:</b></p>"
+                            + "<ul>"
+                            + "<li><b>Date:</b> %s</li>"
+                            + "<li><b>Time:</b> %s</li>"
+                            + "<li><b>Duration:</b> Approx. %s</li>"
+                            + "<li><b>Join Zoom Meeting:</b> %s</li>"
+                            + "</ul>"
+                            + "<p>Kindly confirm your availability by replying to this email.</p>"
+                            + "<p>Best regards,<br>The Interview Team</p>",
+                    candidate.getFullName(), candidate.getInterviewLevel(), candidate.getClientName(),
+                    formattedDate, formattedTime, formattedDuration, formattedZoomLink
+            );
 
-        // Prepare email content
-        String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
-        String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
-        String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
-        String formattedZoomLink = (zoomLink != null && !zoomLink.isEmpty()) ? "<a href='" + zoomLink + "'>Click here to join</a>" : "N/A";
+            String subject = "Interview Update for " + candidate.getFullName();
 
-        String emailBody = String.format(
-                "<p>Hello %s,</p>"
-                        + "<p>Your interview has been rescheduled.</p>"
-                        + "<ul>"
-                        + "<li><b>New Date:</b> %s</li>"
-                        + "<li><b>New Time:</b> %s</li>"
-                        + "<li><b>Duration:</b> Approx. %s</li>"
-                        + "<li><b>New Zoom Link:</b> %s</li>"
-                        + "<li><b>Status:</b> %s</li>"
-                        + "</ul>"
-                        + "<p>Please confirm your availability.</p>"
-                        + "<p>Best regards,<br>The Interview Team</p>",
-                candidate.getFullName(), formattedDate, formattedTime, formattedDuration, formattedZoomLink, candidate.getInterviewStatus());
-
-        String subject = "Interview Update for " + candidate.getFullName();
-
-        // Validate userEmail before sending the email
-        String userEmailId = candidate.getUserEmail();
-        if (userEmailId == null || userEmailId.isEmpty()) {
-            logger.error("User email is null or empty for candidateId: {}", candidateId);
-        } else {
-            try {
-                Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), userEmailId)
-                        .filter(email -> email != null && !email.isEmpty())
-                        .forEach(email -> {
-                            try {
-                                logger.info("Sending email to: {}", email);
-                                emailService.sendInterviewNotification(email, subject, emailBody);
-                            } catch (Exception e) {
-                                logger.error("Failed to send email notification to {}: {}", email, e.getMessage(), e);
-                            }
-                        });
-            } catch (Exception e) {
-                logger.error("Failed to send email notification: {}", e.getMessage(), e);
+            String userEmailId = candidate.getUserEmail();
+            if (userEmailId != null && !userEmailId.isEmpty()) {
+                try {
+                    Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), userEmailId)
+                            .filter(email -> email != null && !email.isEmpty())
+                            .forEach(email -> {
+                                try {
+                                    logger.info("Sending email to: {}", email);
+                                    emailService.sendInterviewNotification(email, subject, emailBody);
+                                } catch (Exception e) {
+                                    logger.error("Failed to send email to {}: {}", email, e.getMessage(), e);
+                                }
+                            });
+                } catch (Exception e) {
+                    logger.error("Failed to send interview email: {}", e.getMessage(), e);
+                }
             }
-        }
 
-        // Return updated interview response
-        return new InterviewResponseDto(
-                true,
-                "Interview updated successfully and notifications sent.",
-                new InterviewResponseDto.InterviewPayload(
-                        candidate.getCandidateId(),
-                        candidate.getUserEmail(),
-                        candidate.getCandidateEmailId(),
-                        candidate.getClientEmail()
-                ),
-                null  // No errors
-        );
+            return new InterviewResponseDto(
+                    true,
+                    "Interview updated successfully and notifications sent.",
+                    new InterviewResponseDto.InterviewPayload(
+                            candidate.getCandidateId(),
+                            candidate.getUserEmail(),
+                            candidate.getCandidateEmailId(),
+                            candidate.getClientEmail()
+                    ),
+                    null
+            );
+        } catch (Exception e) {
+            logger.error("Error while updating interview: {}", e.getMessage(), e);
+            return new InterviewResponseDto(
+                    false,
+                    "An error occurred while updating the interview. " + e.getMessage(),
+                    null,
+                    null
+            );
+        }
     }
+
+    // Method to validate the interview level
+    private void validateInterviewLevel(String interviewLevel, String clientEmail) {
+        if ("internal".equalsIgnoreCase(interviewLevel)) {
+            // For internal interviews, clientEmail is required
+            if (clientEmail == null || clientEmail.trim().isEmpty()) {
+                throw new IllegalArgumentException("Client email is required for internal interviews.");
+            }
+        } else if ("external".equalsIgnoreCase(interviewLevel)) {
+            // For external interviews, clientEmail is not required
+            if (clientEmail != null && !clientEmail.trim().isEmpty()) {
+                logger.warn("For external interviews, clientEmail is not required.");
+            }
+        } else {
+            throw new IllegalArgumentException("Invalid interview level: " + interviewLevel);
+        }
+    }
+
+
+
 
     public InterviewResponseDto updateScheduledInterviewWithoutUserId(
             String candidateId,
@@ -724,7 +807,6 @@ public class CandidateService {
             throw new CandidateNotFoundException("Candidate ID cannot be null.");
         }
 
-        // Fetch candidate WITHOUT userId
         CandidateDetails candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new CandidateNotFoundException("Candidate not found for candidateId: " + candidateId));
 
@@ -732,31 +814,26 @@ public class CandidateService {
             throw new InterviewNotScheduledException("No interview scheduled for candidate ID: " + candidateId);
         }
 
-        // Same update logic follows here
-        if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
-        if (duration != null) candidate.setDuration(duration);
-        if (zoomLink != null && !zoomLink.isEmpty()) candidate.setZoomLink(zoomLink);
-        if (userEmail != null && !userEmail.isEmpty()) candidate.setUserEmail(userEmail);
-        if (clientEmail != null && !clientEmail.isEmpty()) candidate.setClientEmail(clientEmail);
-        if (clientName != null && !clientName.isEmpty()) candidate.setClientName(clientName);
-        if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
-        if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
+        // 🧠 Determine interview type dynamically before any update
+        boolean isInternalInterview = "internal".equalsIgnoreCase(interviewLevel)
+                || (interviewLevel == null && clientEmail != null && !clientEmail.trim().isEmpty());
 
+        // 🔒 Validation based on interview type
+        if (isInternalInterview && (clientEmail == null || clientEmail.trim().isEmpty())) {
+            throw new IllegalArgumentException("Client email is required for internal interviews.");
+        }
+
+        // 🧠 Update status history JSON
+        String latestStatus = "N/A";
         if (interviewStatus != null && !interviewStatus.isEmpty()) {
             ObjectMapper objectMapper = new ObjectMapper();
             ArrayNode historyArray;
-
             try {
                 String existingStatus = candidate.getInterviewStatus();
-
                 if (existingStatus != null && !existingStatus.isEmpty()) {
                     try {
                         JsonNode jsonNode = objectMapper.readTree(existingStatus);
-                        if (jsonNode.isArray()) {
-                            historyArray = (ArrayNode) jsonNode;
-                        } else {
-                            historyArray = objectMapper.createArrayNode();
-                        }
+                        historyArray = jsonNode.isArray() ? (ArrayNode) jsonNode : objectMapper.createArrayNode();
                     } catch (JsonProcessingException e) {
                         historyArray = objectMapper.createArrayNode();
                     }
@@ -772,53 +849,115 @@ public class CandidateService {
                 historyArray.add(newEntry);
 
                 candidate.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
-
+                latestStatus = interviewStatus;
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Error processing interview status JSON", e);
             }
         }
 
-        if (candidate.getInterviewLevel() == null) {
-            candidate.setInterviewLevel(determineInterviewType(clientEmail, zoomLink));
+        // Normalize status
+        String normalizedStatus = latestStatus.trim().toLowerCase();
+
+        // 🚫 CANCELLED → Email candidate only
+        if ("cancelled".equals(normalizedStatus)) {
+            candidate.setTimestamp(LocalDateTime.now());
+            candidateRepository.save(candidate);
+            logger.info("Interview marked as cancelled for candidateId: {}", candidateId);
+
+            String subject = "Interview Cancelled for " + candidate.getFullName();
+            String emailBody = String.format(
+                    "<p>Hello %s,</p><p>We regret to inform you that your interview has been cancelled.</p>"
+                            + "<p>If you have any questions, please contact support.</p><p>Best regards,<br>Interview Team</p>",
+                    candidate.getFullName()
+            );
+
+            String candidateEmail = candidate.getCandidateEmailId();
+            if (candidateEmail != null && !candidateEmail.isEmpty()) {
+                try {
+                    logger.info("Sending cancellation email to candidate: {}", candidateEmail);
+                    emailService.sendInterviewNotification(candidateEmail, subject, emailBody);
+                } catch (Exception e) {
+                    logger.error("Failed to send cancellation email to {}: {}", candidateEmail, e.getMessage(), e);
+                }
+            }
+
+            return new InterviewResponseDto(
+                    true,
+                    "Interview cancelled and notification sent to candidate.",
+                    new InterviewResponseDto.InterviewPayload(
+                            candidate.getCandidateId(),
+                            candidate.getUserEmail(),
+                            candidate.getCandidateEmailId(),
+                            candidate.getClientEmail()
+                    ),
+                    null
+            );
         }
 
-        if ("External".equalsIgnoreCase(candidate.getInterviewLevel())) {
-            if (clientEmail != null) candidate.setClientEmail(clientEmail);
-            if (zoomLink != null) candidate.setZoomLink(zoomLink);
-        } else {
-            if (clientEmail == null || clientEmail.isEmpty()) {
-                throw new IllegalArgumentException("Client email is required for Internal interviews.");
-            }
-            if (zoomLink == null || zoomLink.isEmpty()) {
-                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
-            }
+        // ✅ Status-only updates
+        if (Set.of("placed", "selected", "rejected").contains(normalizedStatus)) {
+            candidate.setTimestamp(LocalDateTime.now());
+            candidateRepository.save(candidate);
+            logger.info("Only status '{}' updated for candidateId: {}", normalizedStatus, candidateId);
+
+            return new InterviewResponseDto(
+                    true,
+                    "Interview status updated successfully.",
+                    new InterviewResponseDto.InterviewPayload(
+                            candidate.getCandidateId(),
+                            candidate.getUserEmail(),
+                            candidate.getCandidateEmailId(),
+                            candidate.getClientEmail()
+                    ),
+                    null
+            );
+        }
+
+        // ✅ Full update for other cases
+        if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
+        if (duration != null) candidate.setDuration(duration);
+        if (userEmail != null && !userEmail.isEmpty()) candidate.setUserEmail(userEmail);
+        if (clientName != null && !clientName.isEmpty()) candidate.setClientName(clientName);
+        if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
+        if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
+
+        // Reapply logic for internal vs external settings
+        if (isInternalInterview) {
             candidate.setClientEmail(clientEmail);
-            candidate.setZoomLink(zoomLink);
+            candidate.setZoomLink((zoomLink != null && !zoomLink.trim().isEmpty()) ? zoomLink : null);
+            candidate.setInterviewLevel("internal");
+        } else {
+            candidate.setClientEmail(null);
+            candidate.setZoomLink((zoomLink != null && !zoomLink.trim().isEmpty()) ? zoomLink : null);
+            candidate.setInterviewLevel("external");
         }
 
         candidate.setTimestamp(LocalDateTime.now());
-
         candidateRepository.save(candidate);
-        logger.info("Interview details updated successfully for candidateId: {}", candidateId);
 
+        // 📧 Send email
         String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
         String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
         String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
-        String formattedZoomLink = (zoomLink != null && !zoomLink.isEmpty()) ? "<a href='" + zoomLink + "'>Click here to join</a>" : "N/A";
+        String formattedZoomLink = (candidate.getZoomLink() != null && !candidate.getZoomLink().isEmpty()) ? "<a href='" + candidate.getZoomLink() + "'>Click here to join</a>" : "N/A";
 
         String emailBody = String.format(
                 "<p>Hello %s,</p>"
-                        + "<p>Your interview has been rescheduled.</p>"
+                        + "<p>Hope you are doing well!</p>"
+                        + "<p>Thank you for your interest in the position <b>%s</b> for our client <b>%s</b>.</p>"
+                        + "<p>We’re pleased to inform you that your profile has been shortlisted for screening.</p>"
+                        + "<p><b>Interview Details:</b></p>"
                         + "<ul>"
-                        + "<li><b>New Date:</b> %s</li>"
-                        + "<li><b>New Time:</b> %s</li>"
+                        + "<li><b>Date:</b> %s</li>"
+                        + "<li><b>Time:</b> %s</li>"
                         + "<li><b>Duration:</b> Approx. %s</li>"
-                        + "<li><b>New Zoom Link:</b> %s</li>"
-                        + "<li><b>Status:</b> %s</li>"
+                        + "<li><b>Join Zoom Meeting:</b> %s</li>"
                         + "</ul>"
-                        + "<p>Please confirm your availability.</p>"
+                        + "<p>Kindly confirm your availability by replying to this email.</p>"
                         + "<p>Best regards,<br>The Interview Team</p>",
-                candidate.getFullName(), formattedDate, formattedTime, formattedDuration, formattedZoomLink, candidate.getInterviewStatus());
+                candidate.getFullName(), candidate.getInterviewLevel(), candidate.getClientName(), formattedDate, formattedTime,
+                formattedDuration, formattedZoomLink
+        );
 
         String subject = "Interview Update for " + candidate.getFullName();
 
@@ -930,60 +1069,41 @@ public class CandidateService {
         ObjectMapper objectMapper = new ObjectMapper();
 
         for (CandidateDetails interview : candidates) {
-            // Get the interview status from the database
             String interviewStatusJson = interview.getInterviewStatus();
-
-            // Log the raw interview status for debugging
             System.out.println("Interview Status JSON (Raw): " + interviewStatusJson);
 
-            String latestInterviewStatus = null;  // Default value
+            String latestInterviewStatus = null;
 
-            // Check if the interview status is not null or empty
             if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
                 try {
-                    // Check if the status is a JSON array (indicating history)
                     if (interviewStatusJson.trim().startsWith("[") && interviewStatusJson.trim().endsWith("]")) {
-                        // Parse the JSON into a list of status history
                         List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
 
-                        // If the status history is not empty, find the latest status based on the timestamp
                         if (!statusHistory.isEmpty()) {
                             Optional<Map<String, Object>> latestStatus = statusHistory.stream()
                                     .max(Comparator.comparing(entry ->
-                                            OffsetDateTime.parse((String) entry.get("timestamp"))));  // Use OffsetDateTime to handle time zones
+                                            OffsetDateTime.parse((String) entry.get("timestamp"))));
 
                             if (latestStatus.isPresent()) {
                                 latestInterviewStatus = (String) latestStatus.get().get("status");
                             }
                         }
                     } else {
-                        // If it's not a JSON array, treat it as a plain text status
                         latestInterviewStatus = interviewStatusJson.trim();
                     }
                 } catch (JsonProcessingException e) {
-                    // Handle JSON parsing errors (invalid format)
                     System.err.println("Error parsing interview status JSON: " + e.getMessage());
                     e.printStackTrace();
-                    latestInterviewStatus = "Error Parsing Status";  // Fallback status
+                    latestInterviewStatus = "Error Parsing Status";
                 } catch (DateTimeParseException e) {
-                    // Handle timestamp parsing errors
                     System.err.println("Error parsing timestamp: " + e.getMessage());
                     e.printStackTrace();
-                    latestInterviewStatus = "Invalid Timestamp";  // Fallback if timestamp is invalid
+                    latestInterviewStatus = "Invalid Timestamp";
                 }
-            } else {
-                // If the status is null or empty, set to a default value
-                latestInterviewStatus = "Unknown Status";
             }
 
-            // Check if interview is "scheduled" or not based on interviewDateTime and clientName
-            boolean isScheduled = interview.getInterviewDateTime() != null
-                    && interview.getClientName() != null
-                    && !"not scheduled".equalsIgnoreCase(latestInterviewStatus);
-
-            // Exclude "not scheduled" or "cancelled" interviews
-            if (isScheduled) {
-                // Create DTO with the latest status
+            // ✅ Filter only by non-null interviewDateTime
+            if (interview.getInterviewDateTime() != null) {
                 GetInterviewResponseDto dto = new GetInterviewResponseDto(
                         interview.getJobId(),
                         interview.getCandidateId(),
@@ -1008,6 +1128,7 @@ public class CandidateService {
 
         return response;
     }
+
 
     // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
