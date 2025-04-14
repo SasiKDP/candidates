@@ -930,60 +930,41 @@ public class CandidateService {
         ObjectMapper objectMapper = new ObjectMapper();
 
         for (CandidateDetails interview : candidates) {
-            // Get the interview status from the database
             String interviewStatusJson = interview.getInterviewStatus();
-
-            // Log the raw interview status for debugging
             System.out.println("Interview Status JSON (Raw): " + interviewStatusJson);
 
-            String latestInterviewStatus = null;  // Default value
+            String latestInterviewStatus = null;
 
-            // Check if the interview status is not null or empty
             if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
                 try {
-                    // Check if the status is a JSON array (indicating history)
                     if (interviewStatusJson.trim().startsWith("[") && interviewStatusJson.trim().endsWith("]")) {
-                        // Parse the JSON into a list of status history
                         List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
 
-                        // If the status history is not empty, find the latest status based on the timestamp
                         if (!statusHistory.isEmpty()) {
                             Optional<Map<String, Object>> latestStatus = statusHistory.stream()
                                     .max(Comparator.comparing(entry ->
-                                            OffsetDateTime.parse((String) entry.get("timestamp"))));  // Use OffsetDateTime to handle time zones
+                                            OffsetDateTime.parse((String) entry.get("timestamp"))));
 
                             if (latestStatus.isPresent()) {
                                 latestInterviewStatus = (String) latestStatus.get().get("status");
                             }
                         }
                     } else {
-                        // If it's not a JSON array, treat it as a plain text status
                         latestInterviewStatus = interviewStatusJson.trim();
                     }
                 } catch (JsonProcessingException e) {
-                    // Handle JSON parsing errors (invalid format)
                     System.err.println("Error parsing interview status JSON: " + e.getMessage());
                     e.printStackTrace();
-                    latestInterviewStatus = "Error Parsing Status";  // Fallback status
+                    latestInterviewStatus = "Error Parsing Status";
                 } catch (DateTimeParseException e) {
-                    // Handle timestamp parsing errors
                     System.err.println("Error parsing timestamp: " + e.getMessage());
                     e.printStackTrace();
-                    latestInterviewStatus = "Invalid Timestamp";  // Fallback if timestamp is invalid
+                    latestInterviewStatus = "Invalid Timestamp";
                 }
-            } else {
-                // If the status is null or empty, set to a default value
-                latestInterviewStatus = "Unknown Status";
             }
 
-            // Check if interview is "scheduled" or not based on interviewDateTime and clientName
-            boolean isScheduled = interview.getInterviewDateTime() != null
-                    && interview.getClientName() != null
-                    && !"not scheduled".equalsIgnoreCase(latestInterviewStatus);
-
-            // Exclude "not scheduled" or "cancelled" interviews
-            if (isScheduled) {
-                // Create DTO with the latest status
+            // ✅ Filter only by non-null interviewDateTime
+            if (interview.getInterviewDateTime() != null) {
                 GetInterviewResponseDto dto = new GetInterviewResponseDto(
                         interview.getJobId(),
                         interview.getCandidateId(),
@@ -1008,6 +989,7 @@ public class CandidateService {
 
         return response;
     }
+
 
     // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
