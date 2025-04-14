@@ -306,63 +306,57 @@ public class CandidateService {
 
     // Method to get candidate submissions by userId
     public List<CandidateGetResponseDto> getSubmissionsByUserId(String userId) {
-        // Retrieve candidates by userId from the repository
         List<CandidateDetails> candidates = candidateRepository.findByUserId(userId);
 
-        // If no candidates are found, throw a CandidateNotFoundException
         if (candidates.isEmpty()) {
             throw new CandidateNotFoundException("No submissions found for userId: " + userId);
         }
 
-        // Create ObjectMapper instance to parse interview status JSON
         ObjectMapper objectMapper = new ObjectMapper();
 
-        // Map the list of CandidateDetails to List<CandidateGetResponseDto>
         List<CandidateGetResponseDto> candidateDtos = candidates.stream().map(candidate -> {
-            String latestInterviewStatus = "Not Scheduled"; // Default status
+            String latestInterviewStatus = "Not Scheduled"; // Default fallback
             String interviewStatusJson = candidate.getInterviewStatus();
 
-            // Process the interview status JSON to get the latest status
             if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                String trimmedStatus = interviewStatusJson.trim();
+
                 try {
-                    // Check if JSON array or single JSON object
-                    if (interviewStatusJson.trim().startsWith("[") || interviewStatusJson.trim().startsWith("{")) {
-                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+                    // Only proceed if it's a JSON array
+                    if (trimmedStatus.startsWith("[") && trimmedStatus.endsWith("]")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(trimmedStatus, List.class);
 
                         if (!statusHistory.isEmpty()) {
-                            // Get the latest status based on timestamp
                             Optional<Map<String, Object>> latestStatus = statusHistory.stream()
-                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
+                                    .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
+                                    .max(Comparator.comparing(entry ->
+                                            OffsetDateTime.parse((String) entry.get("timestamp"))));
 
                             if (latestStatus.isPresent()) {
                                 latestInterviewStatus = (String) latestStatus.get().get("status");
                             }
                         }
-                    } else {
-                        // Handle legacy plain text status
-                        latestInterviewStatus = interviewStatusJson;
                     }
+
+                    // 🚫 Do NOT accept plain string values anymore
                 } catch (Exception e) {
                     System.err.println("Error parsing interview status JSON: " + e.getMessage());
-                    latestInterviewStatus = interviewStatusJson; // Fallback to raw text
+                    // Ignore and keep as "Not Scheduled"
                 }
             }
 
-            // Fetch the client name from the requirements_model_prod table using the jobId
             Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(candidate.getJobId());
-            String clientName = clientNameOpt.orElse(null); // Set clientName to null if not found
+            String clientName = clientNameOpt.orElse(null);
 
-            // Create the DTO and set the latest interview status and client name
             CandidateGetResponseDto dto = new CandidateGetResponseDto(candidate);
             dto.setInterviewStatus(latestInterviewStatus);
-            dto.setClientName(clientName); // Set the client name
+            dto.setClientName(clientName);
 
             return dto;
         }).collect(Collectors.toList());
 
         return candidateDtos;
     }
-
     public boolean isCandidateValidForUser(String userId, String candidateId) {
         // Fetch the candidate by candidateId
         CandidateDetails candidateDetails = candidateRepository.findById(candidateId)
@@ -989,7 +983,6 @@ public class CandidateService {
 
         return response;
     }
-
 
     // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
