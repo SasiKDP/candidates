@@ -116,4 +116,9 @@ public class PlacementController {
             ));
         }
     }
+    @GetMapping("/dashboardcounts")
+    public ResponseEntity<Map<String, Long>> getDashboardCounts() {
+        Map<String, Long> counts = service.getCounts();
+        return ResponseEntity.ok(counts);
+    }
 }
