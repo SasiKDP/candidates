@@ -14,7 +14,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -222,5 +224,20 @@ public class PlacementService {
         entity.setStatus(dto.getStatus());
         entity.setStatusMessage(dto.getStatusMessage());
         return entity;
+    }
+
+    public Map<String, Long> getCounts() {
+        Object[] result = (Object[]) placementRepository.getAllCounts();
+
+        Map<String, Long> counts = new HashMap<>();
+        counts.put("requirements", ((Number) result[0]).longValue());
+        counts.put("candidates", ((Number) result[1]).longValue());
+        counts.put("clients", ((Number) result[2]).longValue());
+        counts.put("placements", ((Number) result[3]).longValue());
+        counts.put("bench", ((Number) result[4]).longValue());
+        counts.put("users", ((Number) result[5]).longValue());
+        counts.put("interviews", ((Number) result[6]).longValue());
+
+        return counts;
     }
 }
