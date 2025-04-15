@@ -315,14 +315,13 @@ public class CandidateService {
         ObjectMapper objectMapper = new ObjectMapper();
 
         List<CandidateGetResponseDto> candidateDtos = candidates.stream().map(candidate -> {
-            String latestInterviewStatus = "Not Scheduled"; // Default fallback
+            String latestInterviewStatus = null;
             String interviewStatusJson = candidate.getInterviewStatus();
 
-            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
-                String trimmedStatus = interviewStatusJson.trim();
+            try {
+                if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                    String trimmedStatus = interviewStatusJson.trim();
 
-                try {
-                    // Only proceed if it's a JSON array
                     if (trimmedStatus.startsWith("[") && trimmedStatus.endsWith("]")) {
                         List<Map<String, Object>> statusHistory = objectMapper.readValue(trimmedStatus, List.class);
 
@@ -337,12 +336,15 @@ public class CandidateService {
                             }
                         }
                     }
-
-                    // 🚫 Do NOT accept plain string values anymore
-                } catch (Exception e) {
-                    System.err.println("Error parsing interview status JSON: " + e.getMessage());
-                    // Ignore and keep as "Not Scheduled"
                 }
+            } catch (Exception e) {
+                System.err.println("Error parsing interview status JSON for candidate " +
+                        candidate.getCandidateId() + ": " + e.getMessage());
+            }
+
+            // ✅ Fallback ONLY if status is completely missing or couldn't be parsed
+            if (latestInterviewStatus == null) {
+                latestInterviewStatus = "Not Scheduled";
             }
 
             Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(candidate.getJobId());
@@ -357,6 +359,9 @@ public class CandidateService {
 
         return candidateDtos;
     }
+
+
+
     public boolean isCandidateValidForUser(String userId, String candidateId) {
         // Fetch the candidate by candidateId
         CandidateDetails candidateDetails = candidateRepository.findById(candidateId)
@@ -554,67 +559,52 @@ public class CandidateService {
                 throw new InterviewNotScheduledException("No interview scheduled for candidate ID: " + candidateId);
             }
 
-            // 1. **Validate the interview level** (clientEmail required for internal interviews)
             validateInterviewLevel(interviewLevel, clientEmail);
 
-            // 🧠 Parse the existing status history (JSON) and check for redundant status
+            ObjectMapper objectMapper = new ObjectMapper();
             String existingStatusJson = candidate.getInterviewStatus();
-            if (existingStatusJson != null && !existingStatusJson.isEmpty()) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                try {
-                    // Convert the JSON string to an array node
-                    JsonNode statusArray = objectMapper.readTree(existingStatusJson);
+            ArrayNode historyArray = objectMapper.createArrayNode();
 
-                    // Check if the new status already exists in the history
-                    for (JsonNode statusNode : statusArray) {
-                        String existingStatus = statusNode.get("status").asText();
+            if (existingStatusJson != null && !existingStatusJson.isEmpty()) {
+                logger.debug("Attempting to parse interview status JSON: {}", existingStatusJson);
+                try {
+                    JsonNode node = objectMapper.readTree(existingStatusJson);
+
+                    if (node.isArray()) {
+                        historyArray = (ArrayNode) node;
+                    } else if (node.isObject()) {
+                        historyArray.add(node);
+                    } else {
+                        logger.warn("Interview status is not a valid JSON array/object. Skipping parse.");
+                    }
+
+                    for (JsonNode statusNode : historyArray) {
+                        String existingStatus = statusNode.has("status") ? statusNode.get("status").asText() : null;
                         if (existingStatus != null && existingStatus.equalsIgnoreCase(interviewStatus)) {
-                            // If a match is found, throw an exception
                             throw new IllegalArgumentException("Interview status is already set to the same value for candidate: " + candidateId);
                         }
                     }
                 } catch (JsonProcessingException e) {
-                    throw new RuntimeException("Error processing interview status history JSON", e);
+                    logger.warn("Invalid interview status format. Skipping history parse. Value: {}", existingStatusJson);
                 }
             }
 
-            // 🧠 Update the status history only after validation
             String latestStatus = "N/A";
-
             if (interviewStatus != null && !interviewStatus.isEmpty()) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                ArrayNode historyArray;
-                try {
-                    // If the history exists, parse it
-                    if (existingStatusJson != null && !existingStatusJson.isEmpty()) {
-                        JsonNode jsonNode = objectMapper.readTree(existingStatusJson);
-                        historyArray = jsonNode.isArray() ? (ArrayNode) jsonNode : objectMapper.createArrayNode();
-                    } else {
-                        historyArray = objectMapper.createArrayNode();
-                    }
+                int nextStage = historyArray.size() + 1;
 
-                    // Determine the next stage number
-                    int nextStage = historyArray.size() + 1;
+                ObjectNode newEntry = objectMapper.createObjectNode();
+                newEntry.put("stage", nextStage);
+                newEntry.put("status", interviewStatus);
+                newEntry.put("timestamp", OffsetDateTime.now().toString());
 
-                    // Add the new entry
-                    ObjectNode newEntry = objectMapper.createObjectNode();
-                    newEntry.put("stage", nextStage);
-                    newEntry.put("status", interviewStatus);
-                    newEntry.put("timestamp", OffsetDateTime.now().toString());
-                    historyArray.add(newEntry);
-
-                    // Set the new status history
-                    candidate.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
-                    latestStatus = interviewStatus;
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException("Error processing interview status JSON", e);
-                }
+                historyArray.add(newEntry);
+                candidate.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
+                latestStatus = interviewStatus;
             }
 
-            // 🧾 Normalize interview status
             String normalizedStatus = latestStatus.trim().toLowerCase();
 
-            // 🚫 Handle Cancelled Interview Status
             if ("cancelled".equals(normalizedStatus)) {
                 candidate.setTimestamp(LocalDateTime.now());
                 candidateRepository.save(candidate);
@@ -649,7 +639,6 @@ public class CandidateService {
                 );
             }
 
-            // ✅ Handle "Placed", "Selected", "Rejected" status-only updates
             if (Set.of("placed", "selected", "rejected").contains(normalizedStatus)) {
                 candidate.setTimestamp(LocalDateTime.now());
                 candidateRepository.save(candidate);
@@ -668,7 +657,6 @@ public class CandidateService {
                 );
             }
 
-            // 🛠 Update interview details if applicable
             if (interviewDateTime != null) candidate.setInterviewDateTime(interviewDateTime);
             if (duration != null) candidate.setDuration(duration);
             if (zoomLink != null && !zoomLink.isEmpty()) candidate.setZoomLink(zoomLink);
@@ -678,13 +666,10 @@ public class CandidateService {
             if (interviewLevel != null && !interviewLevel.isEmpty()) candidate.setInterviewLevel(interviewLevel);
             if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty()) candidate.setExternalInterviewDetails(externalInterviewDetails);
 
-            // 🧠 Determine interview type dynamically based on presence of clientEmail
             boolean isInternalInterview = "internal".equalsIgnoreCase(interviewLevel)
                     || (interviewLevel == null && clientEmail != null && !clientEmail.trim().isEmpty());
 
-            // 🔒 Validate based on interview type
             if (isInternalInterview) {
-                // Internal interview: clientEmail is required
                 if (clientEmail == null || clientEmail.trim().isEmpty()) {
                     throw new IllegalArgumentException("Client email is required for internal interviews.");
                 }
@@ -692,10 +677,8 @@ public class CandidateService {
                 candidate.setClientEmail(clientEmail);
                 candidate.setZoomLink((zoomLink != null && !zoomLink.trim().isEmpty()) ? zoomLink : null);
                 candidate.setInterviewLevel("internal");
-
             } else {
-                // External interview: both clientEmail and zoomLink are optional
-                candidate.setClientEmail(null); // Ensure it's cleared
+                candidate.setClientEmail(null);
                 candidate.setZoomLink((zoomLink != null && !zoomLink.trim().isEmpty()) ? zoomLink : null);
                 candidate.setInterviewLevel("external");
             }
@@ -703,7 +686,6 @@ public class CandidateService {
             candidate.setTimestamp(LocalDateTime.now());
             candidateRepository.save(candidate);
 
-            // 📧 Email Notification
             String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
             String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
             String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
@@ -729,22 +711,17 @@ public class CandidateService {
 
             String subject = "Interview Update for " + candidate.getFullName();
 
-            String userEmailId = candidate.getUserEmail();
-            if (userEmailId != null && !userEmailId.isEmpty()) {
-                try {
-                    Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), userEmailId)
-                            .filter(email -> email != null && !email.isEmpty())
-                            .forEach(email -> {
-                                try {
-                                    logger.info("Sending email to: {}", email);
-                                    emailService.sendInterviewNotification(email, subject, emailBody);
-                                } catch (Exception e) {
-                                    logger.error("Failed to send email to {}: {}", email, e.getMessage(), e);
-                                }
-                            });
-                } catch (Exception e) {
-                    logger.error("Failed to send interview email: {}", e.getMessage(), e);
-                }
+            if (userEmail != null && !userEmail.isEmpty()) {
+                Stream.of(candidate.getCandidateEmailId(), candidate.getClientEmail(), userEmail)
+                        .filter(email -> email != null && !email.isEmpty())
+                        .forEach(email -> {
+                            try {
+                                logger.info("Sending email to: {}", email);
+                                emailService.sendInterviewNotification(email, subject, emailBody);
+                            } catch (Exception e) {
+                                logger.error("Failed to send email to {}: {}", email, e.getMessage(), e);
+                            }
+                        });
             }
 
             return new InterviewResponseDto(
@@ -768,6 +745,7 @@ public class CandidateService {
             );
         }
     }
+
 
     // Method to validate the interview level
     private void validateInterviewLevel(String interviewLevel, String clientEmail) {
