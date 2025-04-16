@@ -11,32 +11,30 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 @Entity
 @Table(name = "candidates")
 public class CandidateDetails {
-
     @Id
     @Column(unique = true, nullable = false)
     private String candidateId;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Job ID is required")
-    private String jobId;  // No unique constraint on jobId
+//        @Column(nullable = false)
+//        @NotBlank(message = "Job ID is required")
+//        private String jobId;  // No unique constraint on jobId
 
     @Column(name = "user_email")
     private String userEmail;
 
-    @Column(name = "client_email")
-    private String clientEmail;
-
+//        @Column(name = "client_email")
+//        private String clientEmail;
 
     @Column(nullable = false)  // Ensures userId is unique
     @NotBlank(message = "User ID is required")
     private String userId;
-
 
     @NotBlank(message = "Full name is required")
     @Size(max = 100, message = "Full name must not exceed 100 characters")
@@ -59,6 +57,10 @@ public class CandidateDetails {
     @Min(value = 0, message = "Total experience cannot be negative")
     private float totalExperience;
 
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+    //@JsonIgnore
+    private java.util.List<Submissions> submissions;
+
     private float relevantExperience;
 
     private String currentCTC;
@@ -69,128 +71,14 @@ public class CandidateDetails {
 
     private String currentLocation;
 
-    private String preferredLocation;
-
-    // Change the skills field from List<String> to String
-    private String skills;  // Now it's just a single string
-
-    private String communicationSkills;
-
-    private Double requiredTechnologiesRating;
-
-    private String overallFeedback;
-
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
-    private OffsetDateTime interviewDateTime;
-
-    private Integer duration; // in minutes
-
     private LocalDateTime timestamp;
 
 
-    public String getClientName() {
-        return clientName;
-    }
-
-    public void setClientName(String clientName) {
-        this.clientName = clientName;
-    }
-
-    public String getInterviewLevel() {
-        return interviewLevel;
-    }
-
-    public void setInterviewLevel(String interviewLevel) {
-        this.interviewLevel = interviewLevel;
-    }
-
-    private String zoomLink;
-
-    private String clientName;
-
-    private String interviewLevel;
-
-    private String externalInterviewDetails;
-
-    public String getExternalInterviewDetails() {
-        return externalInterviewDetails;
-    }
-
-    public void setExternalInterviewDetails(String externalInterviewDetails) {
-        this.externalInterviewDetails = externalInterviewDetails;
-    }
-
-    // New field profileReceivedDate
-    @Column(nullable = false)
-    private LocalDate profileReceivedDate;
-
-    @Lob
-    @Column(name = "resume", columnDefinition = "LONGBLOB")
-    private byte[] resume;  // Storing file as byte array in DB
-
-    @Column(name = "resume_file_path")
-    private String resumeFilePath;
-
-    @Lob
-    @Column(name = "interview_status", columnDefinition = "TEXT")
-    private String interviewStatus; // Store JSON as String
-
-    public String getInterviewStatus() {
-        return interviewStatus;
-    }
-
-    public void setInterviewStatus(String interviewStatus) {
-        this.interviewStatus = interviewStatus;
-    }
-
-    public void updateInterviewStatus(String round, String status) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, String> interviewHistory = new LinkedHashMap<>();
-
-        // Load existing interview status JSON (if available)
-        if (this.interviewStatus != null && !this.interviewStatus.isEmpty()) {
-            try {
-                interviewHistory = objectMapper.readValue(this.interviewStatus, LinkedHashMap.class);
-            } catch (JsonProcessingException e) {
-                // Log and reset interviewHistory in case of invalid JSON
-                System.err.println("Invalid JSON format in interviewStatus, resetting it.");
-                interviewHistory = new LinkedHashMap<>();
-            }
-        }
-
-        // Add or update the round status
-        interviewHistory.put(round, status);
-
-        // Convert back to JSON
-        try {
-            this.interviewStatus = objectMapper.writeValueAsString(interviewHistory);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting interview status to JSON", e);
-        }
-    }
-
-
-    public byte[] getResume() {
-        return resume;
-    }
-
-    public void setResume(byte[] resume) {
-        this.resume = resume;
-    }
-
-    public String getResumeFilePath() {
-        return resumeFilePath;
-    }
-
-    public void setResumeFilePath(String resumeFilePath) {
-        this.resumeFilePath = resumeFilePath;
-    }
-
     @PrePersist
     public void prePersist() {
-        if (this.profileReceivedDate == null) {
-            this.profileReceivedDate = LocalDate.now();  // Set the date before saving
-        }
+//            if (this.profileReceivedDate == null) {
+//                this.profileReceivedDate = LocalDate.now();  // Set the date before saving
+//            }
         if (this.candidateId == null) {
             generateCandidateId();  // Call the method to generate the candidate ID
         }
@@ -204,8 +92,6 @@ public class CandidateDetails {
         }
     }
 
-    // Getters and Setters for new fields
-
     public String getUserEmail() {
         return userEmail;
     }
@@ -214,21 +100,6 @@ public class CandidateDetails {
         this.userEmail = userEmail;
     }
 
-    public String getClientEmail() {
-        return clientEmail;
-    }
-
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
-    }
-
-    public LocalDate getProfileReceivedDate() {
-        return profileReceivedDate;
-    }
-
-    public void setProfileReceivedDate(LocalDate profileReceivedDate) {
-        this.profileReceivedDate = profileReceivedDate;
-    }
 
     // Getters and Setters for existing fields
     public String getCandidateId() {
@@ -239,13 +110,6 @@ public class CandidateDetails {
         this.candidateId = candidateId;
     }
 
-    public String getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
-    }
 
     public String getUserId() {
         return userId;
@@ -295,7 +159,7 @@ public class CandidateDetails {
         this.qualification = qualification;
     }
 
-    public float getTotalExperience() {
+    public @NotNull(message = "Total experience is required") @Min(value = 0, message = "Total experience cannot be negative") float getTotalExperience() {
         return totalExperience;
     }
 
@@ -343,61 +207,61 @@ public class CandidateDetails {
         this.currentLocation = currentLocation;
     }
 
-    public String getPreferredLocation() {
-        return preferredLocation;
-    }
-
-    public void setPreferredLocation(String preferredLocation) {
-        this.preferredLocation = preferredLocation;
-    }
-
-    public String getSkills() {
-        return skills;
-    }
-
-    public void setSkills(String skills) {
-        this.skills = skills;
-    }
-
-    public String getCommunicationSkills() {
-        return communicationSkills;
-    }
-
-    public void setCommunicationSkills(String communicationSkills) {
-        this.communicationSkills = communicationSkills;
-    }
-
-    public Double getRequiredTechnologiesRating() {
-        return requiredTechnologiesRating;
-    }
-
-    public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
-        this.requiredTechnologiesRating = requiredTechnologiesRating;
-    }
-
-    public String getOverallFeedback() {
-        return overallFeedback;
-    }
-
-    public void setOverallFeedback(String overallFeedback) {
-        this.overallFeedback = overallFeedback;
-    }
-
-    public OffsetDateTime getInterviewDateTime() {
-        return interviewDateTime;
-    }
-
-    public void setInterviewDateTime(OffsetDateTime interviewDateTime) {
-        this.interviewDateTime = interviewDateTime;
-    }
-
-    public Integer getDuration() {
-        return duration;
-    }
-
-    public void setDuration(Integer duration) {
-        this.duration = duration;
-    }
+//        public String getPreferredLocation() {
+//            return preferredLocation;
+//        }
+//
+//        public void setPreferredLocation(String preferredLocation) {
+//            this.preferredLocation = preferredLocation;
+//        }
+//
+//        public String getSkills() {
+//            return skills;
+//        }
+//
+//        public void setSkills(String skills) {
+//            this.skills = skills;
+//        }
+//
+//        public String getCommunicationSkills() {
+//            return communicationSkills;
+//        }
+//
+//        public void setCommunicationSkills(String communicationSkills) {
+//            this.communicationSkills = communicationSkills;
+//        }
+//
+//        public Double getRequiredTechnologiesRating() {
+//            return requiredTechnologiesRating;
+//        }
+//
+//        public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
+//            this.requiredTechnologiesRating = requiredTechnologiesRating;
+//        }
+//
+//        public String getOverallFeedback() {
+//            return overallFeedback;
+//        }
+//
+//        public void setOverallFeedback(String overallFeedback) {
+//            this.overallFeedback = overallFeedback;
+//        }
+//
+//        public OffsetDateTime getInterviewDateTime() {
+//            return interviewDateTime;
+//        }
+//
+//        public void setInterviewDateTime(OffsetDateTime interviewDateTime) {
+//            this.interviewDateTime = interviewDateTime;
+//        }
+//
+//        public Integer getDuration() {
+//            return duration;
+//        }
+//
+//        public void setDuration(Integer duration) {
+//            this.duration = duration;
+//        }
 
     public LocalDateTime getTimestamp() {
         return timestamp;
@@ -407,11 +271,29 @@ public class CandidateDetails {
         this.timestamp = timestamp;
     }
 
-    public String getZoomLink() {
-        return zoomLink;
+//        public String getZoomLink() {
+//            return zoomLink;
+//        }
+//
+//        public void setZoomLink(String zoomLink) {
+//            this.zoomLink = zoomLink;
+//        }
+
+    public List<Submissions> getSubmissions() {
+        return submissions;
     }
 
-    public void setZoomLink(String zoomLink) {
-        this.zoomLink = zoomLink;
+
+    public void setSubmissions(List<Submissions> submissions) {
+        this.submissions = submissions;
     }
+
+//        public List<InterviewDetails> getInterviewDetailsList() {
+//            return interviewDetailsList;
+//        }
+//
+//        public void setInterviewDetailsList(List<InterviewDetails> interviewDetailsList) {
+//            this.interviewDetailsList = interviewDetailsList;
+//        }
+
 }

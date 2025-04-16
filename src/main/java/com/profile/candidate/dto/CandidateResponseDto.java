@@ -14,7 +14,6 @@ public class CandidateResponseDto {
         this.payload = payload;
         this.errorMessage = errorMessage;
     }
-
     // Getters and Setters
     public String getStatus() {
         return status;
@@ -52,13 +51,12 @@ public class CandidateResponseDto {
     public static class Payload {
         private String candidateId;
         private String employeeId;
-        private String jobId;
-
+        private String submissionId;
         // Constructor
-        public Payload(String candidateId, String employeeId, String jobId) {
+        public Payload(String candidateId, String employeeId,String submissionId) {
             this.candidateId = candidateId;
             this.employeeId = employeeId;
-            this.jobId = jobId;
+            this.submissionId=submissionId;
         }
 
         // Getters and Setters
@@ -78,12 +76,11 @@ public class CandidateResponseDto {
             this.employeeId = employeeId;
         }
 
-        public String getJobId() {
-            return jobId;
+        public String getSubmissionId() {
+            return submissionId;
         }
-
-        public void setJobId(String jobId) {
-            this.jobId = jobId;
+        public void setSubmissionId(String submissionId) {
+            this.submissionId = submissionId;
         }
     }
 }
