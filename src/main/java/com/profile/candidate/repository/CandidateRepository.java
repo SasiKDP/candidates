@@ -17,6 +17,69 @@ import java.util.Optional;
 public interface CandidateRepository extends JpaRepository<CandidateDetails, String> {
     // Additional custom queries if needed
     // Find candidate by email
+//
+//    Optional<CandidateDetails> findByFullName(String fullName);
+//
+//    Optional<CandidateDetails> findByCandidateEmailId(String candidateEmailId);
+//
+//    Optional<CandidateDetails> findByContactNumber(String contactNumber);
+//
+//    // Find all candidates with specific total experience
+//    List<CandidateDetails> findByTotalExperience(Integer totalExperience);
+//
+//    // Find all candidates with specific skills (if skills are a list)
+//    List<CandidateDetails> findBySkillsContaining(String skill);
+//
+//    // Find candidates by notice period
+//    List<CandidateDetails> findByNoticePeriod(String noticePeriod);
+//
+//    // Fetch candidate by candidateId
+//    List<CandidateDetails> findAllByCandidateId(String candidateId);
+//    void deleteAllByCandidateId(String candidateId);
+//
+//
+//    Optional<CandidateDetails> findByFullNameAndCandidateEmailIdAndContactNumber(String fullName, String candidateEmailId, String contactNumber);
+//
+//    List<CandidateDetails> findByUserId(String userId);
+//
+//    Optional<CandidateDetails> findByCandidateIdAndUserId(String candidateId, String userId);
+//    Optional<CandidateDetails> findByCandidateIdAndInterviewDateTime(String candidateId, OffsetDateTime interviewDateTime);
+//    Optional<CandidateDetails> findByCandidateEmailIdAndJobIdAndClientName(
+//            String candidateEmailId,
+//            String jobId,
+//            String clientName);
+//
+//    Optional<CandidateDetails> findByContactNumberAndJobIdAndClientName(
+//            String contactNumber,
+//            String jobId,
+//            String clientEmail);
+//    // Method to fetch all candidates (this is already provided by JpaRepository)
+//    List<CandidateDetails> findAll();
+//
+//    @Modifying
+//    @Transactional
+//    @Query(value = "UPDATE requirements_model_prod r SET r.status = 'Submitted' " +
+//            "WHERE r.job_id = :jobId AND EXISTS " +
+//            "(SELECT 1 FROM candidates c WHERE c.job_id = :jobId)", nativeQuery = true)
+//    void updateRequirementStatus(@Param("jobId") String jobId);
+//
+//
+//    @Query("SELECT c FROM CandidateDetails c WHERE c.profileReceivedDate BETWEEN :startDate AND :endDate")
+//    List<CandidateDetails> findByProfileReceivedDateBetween(
+//            @Param("startDate") LocalDate startDate,
+//            @Param("endDate") LocalDate endDate
+//    );
+//
+//    @Query("SELECT c FROM CandidateDetails c " +
+//            "WHERE c.interviewDateTime IS NOT NULL " +
+//            "AND FUNCTION('DATE', c.timestamp) BETWEEN :startDate AND :endDate")
+//    List<CandidateDetails> findScheduledInterviewsByDateOnly(
+//            @Param("startDate") LocalDate startDate,
+//            @Param("endDate") LocalDate endDate);
+//
+//    // Native SQL query to join candidates and requirements_model_prod tables based on jobId
+//    @Query(value = "SELECT r.client_name FROM requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
+//    Optional<String> findClientNameByJobId(@Param("jobId") String jobId);
 
     Optional<CandidateDetails> findByFullName(String fullName);
 
@@ -28,7 +91,7 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     List<CandidateDetails> findByTotalExperience(Integer totalExperience);
 
     // Find all candidates with specific skills (if skills are a list)
-    List<CandidateDetails> findBySkillsContaining(String skill);
+    // List<CandidateDetails> findBySkillsContaining(String skill);
 
     // Find candidates by notice period
     List<CandidateDetails> findByNoticePeriod(String noticePeriod);
@@ -37,47 +100,36 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     List<CandidateDetails> findAllByCandidateId(String candidateId);
     void deleteAllByCandidateId(String candidateId);
 
-
     Optional<CandidateDetails> findByFullNameAndCandidateEmailIdAndContactNumber(String fullName, String candidateEmailId, String contactNumber);
 
     List<CandidateDetails> findByUserId(String userId);
 
     Optional<CandidateDetails> findByCandidateIdAndUserId(String candidateId, String userId);
-    Optional<CandidateDetails> findByCandidateIdAndInterviewDateTime(String candidateId, OffsetDateTime interviewDateTime);
-    Optional<CandidateDetails> findByCandidateEmailIdAndJobIdAndClientName(
-            String candidateEmailId,
-            String jobId,
-            String clientName);
+    //Optional<CandidateDetails> findByCandidateIdAndInterviewDateTime(String candidateId, OffsetDateTime interviewDateTime);
+    //Optional<CandidateDetails> findByCandidateEmailId(String candidateEmailId);
 
-    Optional<CandidateDetails> findByContactNumberAndJobIdAndClientName(
-            String contactNumber,
-            String jobId,
-            String clientEmail);
-    // Method to fetch all candidates (this is already provided by JpaRepository)
+    //    Optional<CandidateDetails> findByContactNumberAndJobIdAndClientName(
+//            String contactNumber,
+//            String jobId,
+//            String clientEmail);
+//    // Method to fetch all candidates (this is already provided by JpaRepository)
     List<CandidateDetails> findAll();
 
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE requirements_model_prod r SET r.status = 'Submitted' " +
-            "WHERE r.job_id = :jobId AND EXISTS " +
-            "(SELECT 1 FROM candidates c WHERE c.job_id = :jobId)", nativeQuery = true)
-    void updateRequirementStatus(@Param("jobId") String jobId);
+    //Optional<CandidateDetails> findByContactNumberAndJobId(String contactNumber, String jobId);
+
+//    @Modifying
+//    @Transactional
+//    @Query(value = "UPDATE requirements_model_prod r SET r.status = 'Submitted' " +
+//            "WHERE r.job_id = :jobId AND EXISTS " +
+//            "(SELECT 1 FROM candidates_prod c WHERE c.job_id = :jobId)", nativeQuery = true)
+//    void updateRequirementStatus(@Param("jobId") String jobId);
 
 
-    @Query("SELECT c FROM CandidateDetails c WHERE c.profileReceivedDate BETWEEN :startDate AND :endDate")
-    List<CandidateDetails> findByProfileReceivedDateBetween(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
-    );
+//    @Query("SELECT c.jobId FROM CandidateDetails c WHERE c.clientEmail = :clientEmail")
+//    String findJobIdsByClientEmail(@Param("clientEmail") String clientEmail);
 
-    @Query("SELECT c FROM CandidateDetails c " +
-            "WHERE c.interviewDateTime IS NOT NULL " +
-            "AND FUNCTION('DATE', c.timestamp) BETWEEN :startDate AND :endDate")
-    List<CandidateDetails> findScheduledInterviewsByDateOnly(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+//    @Query(value = "SELECT job_id FROM candidates_prod WHERE client_email = :clientEmail LIMIT 1", nativeQuery = true)
+//    String findJobIdByClientEmail(@Param("clientEmail") String clientEmail);
 
-    // Native SQL query to join candidates and requirements_model_prod tables based on jobId
-    @Query(value = "SELECT r.client_name FROM requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
-    Optional<String> findClientNameByJobId(@Param("jobId") String jobId);
+
 }

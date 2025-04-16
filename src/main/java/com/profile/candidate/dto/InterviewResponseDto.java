@@ -57,7 +57,6 @@ public class InterviewResponseDto {
                 ", errors=" + errors +
                 '}';
     }
-
     // Static inner class to represent the payload
     public static class InterviewPayload {
         private String candidateId;
@@ -105,7 +104,6 @@ public class InterviewResponseDto {
         public void setClientEmail(String clientEmail) {
             this.clientEmail = clientEmail;
         }
-
         @Override
         public String toString() {
             return "InterviewPayload{" +

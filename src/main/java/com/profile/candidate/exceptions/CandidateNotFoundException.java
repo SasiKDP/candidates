@@ -10,4 +10,5 @@ public class CandidateNotFoundException extends RuntimeException {
     public CandidateNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
+
 }

@@ -22,41 +22,35 @@ public class CandidateGetResponseDto {
     private String expectedCTC;
     private String noticePeriod;
     private String currentLocation;
-    private String preferredLocation;
-    private String skills;
-    private String communicationSkills;
-    private Double requiredTechnologiesRating;
-    private String overallFeedback;
     private String userEmail;
-    private String interviewStatus;
-    private String clientName; // This is the new field you want to include
+//    private String preferredLocation;
+//    private String skills;
+//    private String communicationSkills;
+//    private Double requiredTechnologiesRating;
+//    private String overallFeedback;
+//    private String interviewStatus;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Constructor that takes a CandidateDetails object
-    public CandidateGetResponseDto(CandidateDetails candidate) {
-        this.candidateId = candidate.getCandidateId();
-        this.jobId = candidate.getJobId();
-        this.userId = candidate.getUserId();
-        this.fullName = candidate.getFullName();
-        this.emailId = candidate.getCandidateEmailId();
-        this.contactNumber = candidate.getContactNumber();
-        this.currentOrganization = candidate.getCurrentOrganization();
-        this.qualification = candidate.getQualification();
-        this.totalExperience = candidate.getTotalExperience();
-        this.relevantExperience = candidate.getRelevantExperience();
-        this.currentCTC = candidate.getCurrentCTC();
-        this.expectedCTC = candidate.getExpectedCTC();
-        this.noticePeriod = candidate.getNoticePeriod();
-        this.currentLocation = candidate.getCurrentLocation();
-        this.preferredLocation = candidate.getPreferredLocation();
-        this.skills = candidate.getSkills();
-        this.communicationSkills = candidate.getCommunicationSkills();
-        this.requiredTechnologiesRating = candidate.getRequiredTechnologiesRating();
-        this.overallFeedback = candidate.getOverallFeedback();
-        this.userEmail = candidate.getUserEmail();
-        this.interviewStatus = extractLatestInterviewStatus(candidate.getInterviewStatus());
-        this.clientName = candidate.getClientName();
+
+
+    public CandidateGetResponseDto(String candidateId, String jobId, String userId, String fullName, String emailId, String contactNumber, String currentOrganization, String qualification, float totalExperience, float relevantExperience, String currentCTC, String expectedCTC, String noticePeriod, String currentLocation, String userEmail) {
+        this.candidateId = candidateId;
+        this.jobId = jobId;
+        this.userId = userId;
+        this.fullName = fullName;
+        this.emailId = emailId;
+        this.contactNumber = contactNumber;
+        this.currentOrganization = currentOrganization;
+        this.qualification = qualification;
+        this.totalExperience = totalExperience;
+        this.relevantExperience = relevantExperience;
+        this.currentCTC = currentCTC;
+        this.expectedCTC = expectedCTC;
+        this.noticePeriod = noticePeriod;
+        this.currentLocation = currentLocation;
+        this.userEmail = userEmail;
     }
 
     // Method to extract latest interview status
@@ -196,66 +190,11 @@ public class CandidateGetResponseDto {
         this.currentLocation = currentLocation;
     }
 
-    public String getPreferredLocation() {
-        return preferredLocation;
-    }
-
-    public void setPreferredLocation(String preferredLocation) {
-        this.preferredLocation = preferredLocation;
-    }
-
-    public String getSkills() {
-        return skills;
-    }
-
-    public void setSkills(String skills) {
-        this.skills = skills;
-    }
-
-    public String getCommunicationSkills() {
-        return communicationSkills;
-    }
-
-    public void setCommunicationSkills(String communicationSkills) {
-        this.communicationSkills = communicationSkills;
-    }
-
-    public Double getRequiredTechnologiesRating() {
-        return requiredTechnologiesRating;
-    }
-
-    public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
-        this.requiredTechnologiesRating = requiredTechnologiesRating;
-    }
-
-    public String getOverallFeedback() {
-        return overallFeedback;
-    }
-
-    public void setOverallFeedback(String overallFeedback) {
-        this.overallFeedback = overallFeedback;
-    }
-
     public String getUserEmail() {
         return userEmail;
     }
 
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
-    }
-
-    public String getInterviewStatus() {
-        return interviewStatus;
-    }
-
-    public void setInterviewStatus(String interviewStatus) {
-        this.interviewStatus = interviewStatus;
-    }
-    public String getClientName() {
-        return clientName;
-    }
-
-    public void setClientName(String clientName) {
-        this.clientName = clientName;
     }
 }

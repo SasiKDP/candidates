@@ -8,24 +8,7 @@ import javax.validation.constraints.*;
 import java.util.List;
 public class CandidateDto {
 
-    @NotBlank(message = "Job ID is required")
-    private String jobId;
 
-    public String getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
 
     @NotBlank(message = "User ID is required")
     private String userId;
@@ -49,17 +32,17 @@ public class CandidateDto {
 
     @NotNull(message = "Total experience is required")
     @Min(value = 0, message = "Total experience cannot be negative")
-    private Integer totalExperience;
+    private float totalExperience;
 
-    private String relevantExperience;
+    private float relevantExperience;
 
     @NotNull(message = "Current CTC is required")
     @Min(value = 0, message = "Current CTC cannot be negative")
-    private Double currentCTC;
+    private String currentCTC;
 
     @NotNull(message = "Expected CTC is required")
     @Min(value = 0, message = "Expected CTC cannot be negative")
-    private Double expectedCTC;
+    private String expectedCTC;
 
     @NotBlank(message = "Notice period is required")
     private String noticePeriod;
@@ -67,72 +50,15 @@ public class CandidateDto {
     @NotBlank(message = "Current location is required")
     private String currentLocation;
 
-    @NotBlank(message = "Preferred location is required")
-    private String preferredLocation;
 
-    @NotEmpty(message = "Skills are required")
-    private List<String> skills;
-
-
-    private String communicationSkills;
-    private Double requiredTechnologiesRating;
-    private String overallFeedback;
-
-
-
-    @Lob
-    @Column(name = "resume")
-    private byte[] resume;  // Store resume as binary data (BLOB)
-
-    @NotBlank(message = "Resume file path is required")
-    private String resumeFilePath;  // Stores the path/URL of the uploaded resume
-
-    public byte[] getResume() {
-        return resume;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setResume(byte[] resume) {
-        this.resume = resume;
-    }
-    // Getter and setter for resumeFilePath
-    public String getResumeFilePath() {
-        return resumeFilePath;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
-    public void setResumeFilePath(String resumeFilePath) {
-        this.resumeFilePath = resumeFilePath;
-    }
-
-    // Getters and Setters
-
-    public String getCommunicationSkills() {
-        return communicationSkills;
-    }
-
-    public void setCommunicationSkills(String communicationSkills) {
-        this.communicationSkills = communicationSkills;
-    }
-
-    public Double getRequiredTechnologiesRating() {
-        return requiredTechnologiesRating;
-    }
-
-    public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
-        this.requiredTechnologiesRating = requiredTechnologiesRating;
-    }
-
-    public String getOverallFeedback() {
-        return overallFeedback;
-    }
-
-    public void setOverallFeedback(String overallFeedback) {
-        this.overallFeedback = overallFeedback;
-    }
-
-
-
-
-    // Getters and Setters
 
     public String getFullName() {
         return fullName;
@@ -174,35 +100,37 @@ public class CandidateDto {
         this.qualification = qualification;
     }
 
-    public Integer getTotalExperience() {
-        return totalExperience;
-    }
 
-    public void setTotalExperience(Integer totalExperience) {
-        this.totalExperience = totalExperience;
-    }
 
-    public String getRelevantExperience() {
+    public float getRelevantExperience() {
         return relevantExperience;
     }
 
-    public void setRelevantExperience(String relevantExperience) {
+    public void setRelevantExperience(float relevantExperience) {
         this.relevantExperience = relevantExperience;
     }
 
-    public Double getCurrentCTC() {
+    public float getTotalExperience() {
+        return totalExperience;
+    }
+
+    public void setTotalExperience(float totalExperience) {
+        this.totalExperience = totalExperience;
+    }
+
+    public String getCurrentCTC() {
         return currentCTC;
     }
 
-    public void setCurrentCTC(Double currentCTC) {
+    public void setCurrentCTC(String currentCTC) {
         this.currentCTC = currentCTC;
     }
 
-    public Double getExpectedCTC() {
+    public String getExpectedCTC() {
         return expectedCTC;
     }
 
-    public void setExpectedCTC(Double expectedCTC) {
+    public void setExpectedCTC(String expectedCTC) {
         this.expectedCTC = expectedCTC;
     }
 
@@ -221,23 +149,5 @@ public class CandidateDto {
     public void setCurrentLocation(String currentLocation) {
         this.currentLocation = currentLocation;
     }
-
-    public String getPreferredLocation() {
-        return preferredLocation;
-    }
-
-    public void setPreferredLocation(String preferredLocation) {
-        this.preferredLocation = preferredLocation;
-    }
-
-    public List<String> getSkills() {
-        return skills;
-    }
-
-    public void setSkills(List<String> skills) {
-        this.skills = skills;
-    }
-
-
 
 }

@@ -6,12 +6,11 @@ import java.time.OffsetDateTime;
 
 public class InterviewDto {
 
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
     private OffsetDateTime interviewDateTime;
-
     private Integer duration;
     private String zoomLink;
-
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "UTC")
     private LocalDateTime scheduledTimeStamp;
 
@@ -20,44 +19,32 @@ public class InterviewDto {
     private String clientName;
     private String candidateId;
     private String fullName;
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
     private String externalInterviewDetails;
     private String contactNumber;
     private String userEmail;
     private String interviewLevel;
+
     private String clientEmail;
+
+    private String candidateEmailId;
 
     // Added interviewStatus field
     private String interviewStatus;
 
     // Constructor
-    public InterviewDto(OffsetDateTime interviewDateTime, Integer duration, String zoomLink,
-                        LocalDateTime scheduledTimeStamp, String userId, String jobId, String clientName,
-                        String candidateId, String fullName, String externalInterviewDetails, String contactNumber,
-                        String userEmail, String interviewLevel, String clientEmail, String interviewStatus) {
-        this.interviewDateTime = interviewDateTime;
-        this.duration = duration;
-        this.zoomLink = zoomLink;
-        this.scheduledTimeStamp = scheduledTimeStamp;
-        this.userId = userId;
-        this.jobId = jobId;
-        this.clientName = clientName;
-        this.candidateId = candidateId;
+
+    public String getFullName() {
+        return fullName;
+    }
+    public void setFullName(String fullName) {
         this.fullName = fullName;
-        this.externalInterviewDetails = externalInterviewDetails;
-        this.contactNumber = contactNumber;
-        this.userEmail = userEmail;
-        this.interviewLevel = interviewLevel;
-        this.clientEmail = clientEmail;
-        this.interviewStatus = interviewStatus;
+    }
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
     }
 
     // Getters and Setters
@@ -149,13 +136,7 @@ public class InterviewDto {
         this.contactNumber = contactNumber;
     }
 
-    public String getClientEmail() {
-        return clientEmail;
-    }
 
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
-    }
 
     public String getCandidateId() {
         return candidateId;
@@ -171,6 +152,14 @@ public class InterviewDto {
 
     public void setInterviewStatus(String interviewStatus) {
         this.interviewStatus = interviewStatus;
+    }
+
+    public String getClientEmail() {
+        return clientEmail;
+    }
+
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
     }
 
     @Override
