@@ -69,6 +69,7 @@ public class SubmissionService {
         dto.setPreferredLocation(sub.getPreferredLocation());
         dto.setProfileReceivedDate(sub.getProfileReceivedDate());
         dto.setRequiredTechnologiesRating(sub.getRequiredTechnologiesRating());
+        dto.setClientName(sub.getClientName());
         CandidateDetails candidate = sub.getCandidate();
         //CandidateDto candidateDto = new CandidateDto();
 

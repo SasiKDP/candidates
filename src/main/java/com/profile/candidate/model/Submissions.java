@@ -35,6 +35,8 @@ public class Submissions {
     // Change the skills field from List<String> to String
     private String skills;  // Now it's just a single string
 
+    private String clientName;
+
     private String communicationSkills;
 
     private Double requiredTechnologiesRating;
@@ -155,5 +157,13 @@ public class Submissions {
 
     public void setOverallFeedback(String overallFeedback) {
         this.overallFeedback = overallFeedback;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 }

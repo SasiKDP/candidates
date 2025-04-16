@@ -35,6 +35,8 @@ public class SubmissionsGetResponse {
 
     private String jobId;
 
+    private String clientName;
+
     private LocalDate profileReceivedDate;
 
     private String preferredLocation;
@@ -225,5 +227,12 @@ public class SubmissionsGetResponse {
 
     public void setCurrentLocation(String currentLocation) {
         this.currentLocation = currentLocation;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 }

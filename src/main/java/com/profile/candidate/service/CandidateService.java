@@ -101,6 +101,7 @@ public class CandidateService {
         submission.setOverallFeedback(submissionDetails.getOverallFeedback());
         submission.setPreferredLocation(submissionDetails.getPreferredLocation());
         submission.setProfileReceivedDate(LocalDate.now());
+        submission.setClientName(submissionDetails.getClientName());
         // Save the submission
         submissionRepository.save(submission);
         // ✅ After saving candidate, update the requirement status
