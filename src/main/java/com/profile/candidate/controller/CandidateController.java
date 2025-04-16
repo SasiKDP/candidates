@@ -83,7 +83,8 @@ public class CandidateController {
             @RequestParam(value = "relevantExperience", required = false) float relevantExperience,
             @RequestParam(value = "currentOrganization", required = false) String currentOrganization,
             @RequestParam(value = "userEmail", required = false) String userEmail,
-            @RequestParam("resumeFile") MultipartFile resumeFile) {
+            @RequestParam("resumeFile") MultipartFile resumeFile,
+            @RequestParam String clientName) {
 
         try {
             // Validate file size (10 MB max)
@@ -123,6 +124,7 @@ public class CandidateController {
             submission.setCommunicationSkills(communicationSkills);
             submission.setRequiredTechnologiesRating(requiredTechnologiesRating);
             submission.setOverallFeedback(overallFeedback);
+            submission.setClientName(clientName);
 
             // Call service method to submit the candidate and handle file upload
             CandidateResponseDto response = candidateService.submitCandidate(candidateDetails,submission, resumeFile);
