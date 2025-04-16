@@ -37,8 +37,6 @@ public class SubmissionsGetResponse {
 
     private LocalDate profileReceivedDate;
 
-
-
     private String preferredLocation;
 
     // Change the skills field from List<String> to String
