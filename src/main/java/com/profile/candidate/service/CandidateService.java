@@ -78,10 +78,10 @@ public class CandidateService {
         CandidateDetails savedCandidate;
         if (candidate.isPresent()) {
             CandidateDetails existingCandidate = candidate.get();
+            submissionDetails.setProfileReceivedDate(LocalDate.now());
             //existingCandidate.setJobId(candidateDetails.getJobId());
             savedCandidate = candidateRepository.save(existingCandidate);
         } else {
-            submissionDetails.setProfileReceivedDate(LocalDate.now());
             candidateDetails.setTimestamp(LocalDateTime.now());// for new record
             savedCandidate = candidateRepository.save(candidateDetails);
         }

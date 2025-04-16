@@ -41,7 +41,6 @@ public class Submissions {
 
     private String overallFeedback;
 
-    @Column()
     private LocalDate profileReceivedDate;
 
     private LocalDateTime submittedAt;
