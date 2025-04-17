@@ -360,6 +360,56 @@ public class CandidateService {
         return candidateDtos;
     }
 
+    public List<CandidateGetResponseDto> getSubmissionsByUserIdAndDateRange(String userId, LocalDate startDate, LocalDate endDate) {
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date cannot be before start date.");
+        }
+
+        List<CandidateDetails> candidates = candidateRepository.findByUserIdAndProfileReceivedDateBetween(userId, startDate, endDate);
+
+        if (candidates.isEmpty()) {
+            throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        return candidates.stream().map(candidate -> {
+            String latestInterviewStatus = "Not Scheduled";
+            String interviewStatusJson = candidate.getInterviewStatus();
+
+            try {
+                if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                    if (interviewStatusJson.trim().startsWith("[") && interviewStatusJson.trim().endsWith("]")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+
+                        if (!statusHistory.isEmpty()) {
+                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                    .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
+                                    .max(Comparator.comparing(entry -> OffsetDateTime.parse((String) entry.get("timestamp"))));
+
+                            if (latestStatus.isPresent()) {
+                                latestInterviewStatus = (String) latestStatus.get().get("status");
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error parsing interview status JSON for candidate " +
+                        candidate.getCandidateId() + ": " + e.getMessage());
+            }
+
+            Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(candidate.getJobId());
+            String clientName = clientNameOpt.orElse(null);
+
+            CandidateGetResponseDto dto = new CandidateGetResponseDto(candidate);
+            dto.setInterviewStatus(latestInterviewStatus);
+            dto.setClientName(clientName);
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+
 
 
     public boolean isCandidateValidForUser(String userId, String candidateId) {
@@ -1379,22 +1429,13 @@ public class CandidateService {
         return defaultValue;
     }
 
-    public List<CandidateGetResponseDto> getSubmissionsByUserIdAndDateRange(LocalDate startDate, LocalDate endDate) {
-        // 💥 First check: Total range must not exceed 1 month
-        if (ChronoUnit.DAYS.between(startDate, endDate) > 31) {
-            throw new DateRangeValidationException("Date range must not exceed one month.");
-        }
+    public List<CandidateGetResponseDto> getSubmissionsByDateRange(LocalDate startDate, LocalDate endDate) {
 
         // 💥 Second check: End date must not be before start date
         if (endDate.isBefore(startDate)) {
             throw new DateRangeValidationException("End date cannot be before start date.");
         }
 
-        // 💥 Third check: Start date must be within 1 month from today
-        LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
-        if (startDate.isBefore(oneMonthAgo)) {
-            throw new DateRangeValidationException("Start date must be within the last 1 month.");
-        }
 
         // ✅ Only hit DB after validations pass
         List<CandidateDetails> candidates = candidateRepository.findByProfileReceivedDateBetween(startDate, endDate);
@@ -1438,21 +1479,28 @@ public class CandidateService {
 
 
     public List<GetInterviewResponseDto> getScheduledInterviewsByDateOnly(LocalDate startDate, LocalDate endDate) {
-        // Validation: Ensure date range is within the last 1 month
-        LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
-        if (startDate.isBefore(oneMonthAgo)) {
-            throw new DateRangeValidationException("Start date must be within the last 1 month.");
-        }
+        // Log input validation
+        logger.info("Fetching interviews between {} and {}", startDate, endDate);
+
         if (endDate.isBefore(startDate)) {
+            logger.error("End date is before start date: {} and {}", startDate, endDate);
             throw new DateRangeValidationException("End date must not be before the start date.");
         }
-        // Check if the date range exceeds one month
-        // Use ChronoUnit to count exact days
-        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
-        if (daysBetween > 31) { // Strict 1-month cap
-            throw new DateRangeValidationException("Date range must not exceed one month.");
-        }
+
+        // Log before fetching data
+        logger.info("Fetching scheduled interviews between {} and {}", startDate, endDate);
+
         List<CandidateDetails> candidates = candidateRepository.findScheduledInterviewsByDateOnly(startDate, endDate);
+
+        // Log if no interviews found
+        if (candidates.isEmpty()) {
+            logger.warn("No interviews found between {} and {}", startDate, endDate);
+            throw new CandidateNotFoundException("No interviews found between " + startDate + " and " + endDate);
+        }
+
+        // Log interviews found
+        logger.info("Fetched {} interviews between {} and {}", candidates.size(), startDate, endDate);
+
         List<GetInterviewResponseDto> response = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -1474,8 +1522,12 @@ public class CandidateService {
                     }
                 } catch (Exception e) {
                     latestInterviewStatus = interviewStatusJson;
+                    logger.error("Error parsing interview status for candidateId: {}", interview.getCandidateId(), e);
                 }
             }
+
+            // Log each interview added to response
+            logger.info("Adding interview for candidateId: {} with jobId: {}", interview.getCandidateId(), interview.getJobId());
 
             response.add(new GetInterviewResponseDto(
                     interview.getJobId(),
@@ -1499,6 +1551,82 @@ public class CandidateService {
         return response;
     }
 
+
+    public List<GetInterviewResponseDto> getScheduledInterviewsByUserIdAndDateRange(String userId, LocalDate startDate, LocalDate endDate) {
+        // Log input validation
+        logger.info("Fetching interviews for userId: {} between {} and {}", userId, startDate, endDate);
+
+        if (endDate.isBefore(startDate)) {
+            logger.error("End date is before start date: {} and {}", startDate, endDate);
+            throw new DateRangeValidationException("End date must not be before the start date.");
+        }
+
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        // Log before fetching data
+        logger.info("Fetching scheduled interviews for userId: {} between {} and {}", userId, startDateTime, endDateTime);
+
+        List<CandidateDetails> candidates = candidateRepository.findScheduledInterviewsByUserIdAndDateRange(userId, startDateTime, endDateTime);
+
+        // Log if no candidates found
+        if (candidates.isEmpty()) {
+            logger.warn("No interviews found for userId: {} between {} and {}", userId, startDate, endDate);
+            throw new CandidateNotFoundException("No interviews found for userId: " + userId + " between " + startDate + " and " + endDate);
+        }
+
+        // Log if interviews found
+        logger.info("Fetched {} interviews for userId: {} between {} and {}", candidates.size(), userId, startDate, endDate);
+
+        List<GetInterviewResponseDto> response = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        for (CandidateDetails interview : candidates) {
+            String interviewStatusJson = interview.getInterviewStatus();
+            String latestInterviewStatus = null;
+
+            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                try {
+                    if (interviewStatusJson.trim().startsWith("{") || interviewStatusJson.trim().startsWith("[")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+                        if (!statusHistory.isEmpty()) {
+                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
+                            latestInterviewStatus = latestStatus.map(status -> (String) status.get("status")).orElse(null);
+                        }
+                    } else {
+                        latestInterviewStatus = interviewStatusJson;
+                    }
+                } catch (Exception e) {
+                    latestInterviewStatus = interviewStatusJson;
+                    logger.error("Error parsing interview status for candidateId: {}", interview.getCandidateId(), e);
+                }
+            }
+
+            // Log each interview added
+            logger.info("Adding interview for candidateId: {} with jobId: {}", interview.getCandidateId(), interview.getJobId());
+
+            response.add(new GetInterviewResponseDto(
+                    interview.getJobId(),
+                    interview.getCandidateId(),
+                    interview.getFullName(),
+                    interview.getContactNumber(),
+                    interview.getCandidateEmailId(),
+                    interview.getUserEmail(),
+                    interview.getUserId(),
+                    interview.getInterviewDateTime(),
+                    interview.getDuration(),
+                    interview.getZoomLink(),
+                    interview.getTimestamp(),
+                    interview.getClientEmail(),
+                    interview.getClientName(),
+                    interview.getInterviewLevel(),
+                    latestInterviewStatus
+            ));
+        }
+
+        return response;
+    }
 
 
 }

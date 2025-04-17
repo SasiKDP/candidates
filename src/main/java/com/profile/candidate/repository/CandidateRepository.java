@@ -9,36 +9,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface CandidateRepository extends JpaRepository<CandidateDetails, String> {
-    // Additional custom queries if needed
-    // Find candidate by email
-
-    Optional<CandidateDetails> findByFullName(String fullName);
-
-    Optional<CandidateDetails> findByCandidateEmailId(String candidateEmailId);
-
-    Optional<CandidateDetails> findByContactNumber(String contactNumber);
-
-    // Find all candidates with specific total experience
-    List<CandidateDetails> findByTotalExperience(Integer totalExperience);
-
-    // Find all candidates with specific skills (if skills are a list)
-    List<CandidateDetails> findBySkillsContaining(String skill);
-
-    // Find candidates by notice period
-    List<CandidateDetails> findByNoticePeriod(String noticePeriod);
 
     // Fetch candidate by candidateId
     List<CandidateDetails> findAllByCandidateId(String candidateId);
-    void deleteAllByCandidateId(String candidateId);
-
-
-    Optional<CandidateDetails> findByFullNameAndCandidateEmailIdAndContactNumber(String fullName, String candidateEmailId, String contactNumber);
 
     List<CandidateDetails> findByUserId(String userId);
 
@@ -71,6 +51,14 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             @Param("endDate") LocalDate endDate
     );
 
+    @Query("SELECT c FROM CandidateDetails c WHERE c.userId = :userId AND c.profileReceivedDate BETWEEN :startDate AND :endDate")
+    List<CandidateDetails> findByUserIdAndProfileReceivedDateBetween(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+
     @Query("SELECT c FROM CandidateDetails c " +
             "WHERE c.interviewDateTime IS NOT NULL " +
             "AND FUNCTION('DATE', c.timestamp) BETWEEN :startDate AND :endDate")
@@ -84,7 +72,9 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     Optional<String> findClientNameByJobId(@Param("jobId") String jobId);
 
 
-
-
-
+    @Query("SELECT c FROM CandidateDetails c WHERE c.userId = :userId AND c.timestamp BETWEEN :startDateTime AND :endDateTime")
+    List<CandidateDetails> findScheduledInterviewsByUserIdAndDateRange(
+            @Param("userId") String userId,
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime);
 }
