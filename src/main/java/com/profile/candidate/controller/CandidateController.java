@@ -29,10 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
         "http://192.168.0.135:80",
@@ -321,13 +318,50 @@ public class CandidateController {
         }
     }
 
+    @GetMapping("/submissions/{userId}/filterByDate")
+    public ResponseEntity<?> getSubmissionsByUserIdAndDateRange(
+            @PathVariable String userId,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        try {
+            // Fetch submissions by userId within the given date range
+            List<CandidateGetResponseDto> submissions = candidateService.getSubmissionsByUserIdAndDateRange(userId, startDate, endDate);
+
+            // Check if submissions are found
+            if (submissions.isEmpty()) {
+                logger.warn("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
+                throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
+            }
+
+            // Log success
+            logger.info("Fetched {} submissions successfully for userId: {} between {} and {}", submissions.size(), userId, startDate, endDate);
+
+            // Return all candidate details with status 200 OK
+            return ResponseEntity.ok(submissions);
+
+        } catch (CandidateNotFoundException ex) {
+            // Return message in JSON body for 404
+            logger.error("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("message", ex.getMessage()));
+
+        } catch (Exception ex) {
+            // Log the error and return HTTP 500 with message
+            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("message", "An internal error occurred while fetching submissions."));
+        }
+    }
+
+
     @GetMapping("/submissions/filterByDate")
     public ResponseEntity<?> getSubmissionsByDateRange(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         List<CandidateGetResponseDto> submissions =
-                candidateService.getSubmissionsByUserIdAndDateRange(startDate, endDate);
+                candidateService.getSubmissionsByDateRange(startDate, endDate);
 
         if (submissions.isEmpty()) {
             logger.warn("No submissions found between {} and {}", startDate, endDate);
@@ -606,35 +640,67 @@ public class CandidateController {
         }
     }
 
+    @GetMapping("/interviews/{userId}/filterByDate")
+    public ResponseEntity<?> getInterviewsByUserIdAndDateRange(
+            @PathVariable String userId,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        try {
+            List<GetInterviewResponseDto> interviews = candidateService.getScheduledInterviewsByUserIdAndDateRange(userId, startDate, endDate);
+
+            return ResponseEntity.ok(interviews);
+
+        } catch (CandidateNotFoundException ex) {
+            logger.warn("No interviews found for userId: {} between {} and {}", userId, startDate, endDate);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("message", ex.getMessage()));
+
+        } catch (DateRangeValidationException ex) {
+            logger.warn("Invalid date range for userId {}: {}", userId, ex.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("message", ex.getMessage()));
+
+        } catch (Exception ex) {
+            logger.error("An error occurred while fetching interviews for userId: {}: {}", userId, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("message", "An internal error occurred while fetching interview data."));
+        }
+    }
+
+
     @GetMapping("/interviews/filterByDate")
     public ResponseEntity<?> getInterviewsByDateRange(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
         try {
             List<GetInterviewResponseDto> interviews = candidateService.getScheduledInterviewsByDateOnly(startDate, endDate);
 
+            // 404: No interviews found
             if (interviews.isEmpty()) {
                 logger.warn("No interviews found between {} and {}", startDate, endDate);
-                Map<String, String> response = new HashMap<>();
-                response.put("error", "No interviews found in given date range.");
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Collections.singletonMap("message", "No interviews found between " + startDate + " and " + endDate));
             }
 
+            // ✅ Success
             logger.info("Fetched {} interviews between {} and {}", interviews.size(), startDate, endDate);
             return ResponseEntity.ok(interviews);
 
         } catch (DateRangeValidationException e) {
-            logger.warn("Validation error: {}", e.getMessage());
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse); // ✅ JSON response
+            // 400: Invalid date range
+            logger.warn("Date range validation failed: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("message", e.getMessage()));
+
         } catch (Exception ex) {
-            logger.error("Error fetching interviews by date range: {}", ex.getMessage(), ex);
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Something went wrong while fetching interview data.");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            // 500: Internal server error
+            logger.error("An error occurred while fetching interviews: {}", ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("message", "An internal error occurred while fetching interview data."));
         }
     }
+
 
     // Endpoint to fetch all scheduled interviews (no userId filter)
     @GetMapping("/allscheduledinterviews")

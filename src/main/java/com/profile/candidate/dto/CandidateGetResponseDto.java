@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profile.candidate.model.CandidateDetails;
 
+import java.time.LocalDate;
 import java.util.*;
 
 public class CandidateGetResponseDto {
@@ -30,6 +31,7 @@ public class CandidateGetResponseDto {
     private String userEmail;
     private String interviewStatus;
     private String clientName; // This is the new field you want to include
+    private LocalDate profileReceivedDate;
 
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -58,6 +60,7 @@ public class CandidateGetResponseDto {
         this.userEmail = candidate.getUserEmail();
         this.interviewStatus = extractLatestInterviewStatus(candidate.getInterviewStatus());
         this.clientName = candidate.getClientName();
+        this.profileReceivedDate = candidate.getProfileReceivedDate();
     }
 
     // Method to extract latest interview status
@@ -259,5 +262,13 @@ public class CandidateGetResponseDto {
 
     public void setClientName(String clientName) {
         this.clientName = clientName;
+    }
+
+    public LocalDate getProfileReceivedDate() {
+        return profileReceivedDate;
+    }
+
+    public void setProfileReceivedDate(LocalDate profileReceivedDate) {
+        this.profileReceivedDate = profileReceivedDate;
     }
 }
