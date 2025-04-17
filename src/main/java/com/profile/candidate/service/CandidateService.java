@@ -49,76 +49,74 @@ public class CandidateService {
 
     // Method to submit a candidate profile
     public CandidateResponseDto submitCandidate(CandidateDetails candidateDetails, Submissions submissionDetails, MultipartFile resumeFile) throws IOException {
-        // Validate input fields
+        // Step 1: Validate input fields
         validateCandidateDetails(candidateDetails);
 
-        // Check for duplicates
+        // Step 2: Check for duplicate submissions
         checkForDuplicates(submissionDetails);
 
-        // Optionally set userEmail and clientEmail if not already set
+        // Step 3: Set default emails if not already provided
         setDefaultEmailsIfMissing(candidateDetails);
 
-        // Process the resume file and set it as a BLOB
+        // Step 4: Handle resume file (store as blob + save file path)
         if (resumeFile != null && !resumeFile.isEmpty()) {
-            // Convert the resume file to byte[] and set it in the candidateDetails object
-            byte[] resumeData = resumeFile.getBytes();
-            //candidateDetails.setResume(resumeData);// Store the resume as binary data in DB
-            submissionDetails.setResume(resumeData);
+            if (!isValidFileType(resumeFile)) {
+                throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC, and DOCX files are allowed.");
+            }
 
-            // Save the resume to the file system and store the file path in DB
+            byte[] resumeData = resumeFile.getBytes();
             String resumeFilePath = saveResumeToFileSystem(resumeFile);
-            // candidateDetails.setResumeFilePath(resumeFilePath);// Store the file path in DB
+
+            submissionDetails.setResume(resumeData);
             submissionDetails.setResumeFilePath(resumeFilePath);
         }
-        if (!isValidFileType(resumeFile)) {
-            throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC and DOCX Files are allowed.");
-        }
-        //     Same Candidate Applying for Different Jobs
-        Optional<CandidateDetails> candidate = candidateRepository.findByCandidateEmailId(candidateDetails.getCandidateEmailId());
+
+        // Step 5: Check if candidate already exists
+        Optional<CandidateDetails> existingCandidateOpt = candidateRepository.findByCandidateEmailId(candidateDetails.getCandidateEmailId());
         CandidateDetails savedCandidate;
-        if (candidate.isPresent()) {
-            CandidateDetails existingCandidate = candidate.get();
-            submissionDetails.setProfileReceivedDate(LocalDate.now());
-            //existingCandidate.setJobId(candidateDetails.getJobId());
-            savedCandidate = candidateRepository.save(existingCandidate);
+        if (existingCandidateOpt.isPresent()) {
+            savedCandidate = existingCandidateOpt.get();
+            // Optional: update other candidate fields here if needed
         } else {
-            candidateDetails.setTimestamp(LocalDateTime.now());// for new record
+            candidateDetails.setTimestamp(LocalDateTime.now());
             savedCandidate = candidateRepository.save(candidateDetails);
         }
-        // generating submission Id
+
+        // Step 6: Set submission details
         String submissionId = savedCandidate.getCandidateId() + "_" + submissionDetails.getJobId();
 
-        Submissions submission = new Submissions();
-        submission.setCandidate(savedCandidate);
-        submission.setJobId(submissionDetails.getJobId());
-        submission.setSubmissionId(submissionId);
-        submission.setResume(submissionDetails.getResume());
-        submission.setResumeFilePath(submissionDetails.getResumeFilePath());
-        submission.setResume(submissionDetails.getResume());
-        submission.setSkills(submissionDetails.getSkills());
-        submission.setCommunicationSkills(submissionDetails.getCommunicationSkills());
-        submission.setRequiredTechnologiesRating(submissionDetails.getRequiredTechnologiesRating());
-        submission.setOverallFeedback(submissionDetails.getOverallFeedback());
-        submission.setPreferredLocation(submissionDetails.getPreferredLocation());
-        submission.setProfileReceivedDate(LocalDate.now());
-        submission.setClientName(submissionDetails.getClientName());
-        // Save the submission
-        submissionRepository.save(submission);
-        // ✅ After saving candidate, update the requirement status
-        //candidateRepository.updateRequirementStatus(savedCandidate.getJobId());
+        submissionDetails.setCandidate(savedCandidate);
+        submissionDetails.setSubmissionId(submissionId);
+        submissionDetails.setProfileReceivedDate(LocalDate.now());
 
-        // Create the payload with candidateId, employeeId,jobId and submissionId
+        // Step 7: Save the submission
+        submissionRepository.save(submissionDetails);
+
+        // Step 8: Fetch team lead and recruiter details
+        String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submissionDetails.getJobId());
+        String recruiterEmail = savedCandidate.getUserEmail();
+        String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+
+        // Step 9: Send notification if emails are available
+        if (recruiterEmail == null || teamLeadEmail == null) {
+            logger.warn("Email not sent: recruiterEmail or teamLeadEmail is null.");
+        } else {
+            String actionType = "submission";
+            emailService.sendCandidateNotification(submissionDetails, recruiterName, recruiterEmail, teamLeadEmail, actionType);
+        }
+
+        // Step 10: Prepare response payload
         CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
                 savedCandidate.getCandidateId(),
                 savedCandidate.getUserId(),
                 submissionId
         );
-// Return the response with status "Success" and the corresponding message
+
         return new CandidateResponseDto(
-                "Success",  // Status
-                "Candidate profile submitted successfully.",  // Message
-                payload,  // Payload containing the candidateId, employeeId, and jobId
-                null  // No error message
+                "Success",
+                "Candidate profile submitted successfully.",
+                payload,
+                null
         );
     }
     private boolean isValidFileType(MultipartFile file) {
@@ -178,7 +176,7 @@ public class CandidateService {
     // Set default values for userEmail and clientEmail if not provided
     private String saveResumeToFileSystem(MultipartFile resumeFile) throws IOException {
         // Set the directory where resumes will be stored
-        String resumeDirectory = "C:\\Users\\jaiva\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
+        String resumeDirectory = "C:\\Users\\User\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
 
         // Generate a unique file name using UUID to avoid conflicts
         String fileName = UUID.randomUUID().toString() + "-" + resumeFile.getOriginalFilename();
@@ -227,7 +225,6 @@ public class CandidateService {
             throw new IOException("Failed to save file to path: " + targetPath, e);  // Throw exception to indicate failure
         }
     }
-
     public CandidateResponseDto resubmitCandidate(String candidateId, CandidateDetails updatedCandidateDetails,Submissions updatedSubmissionsDetails, MultipartFile resumeFile) {
         try {
             // Fetch the existing candidate from the database
@@ -282,6 +279,24 @@ public class CandidateService {
 
             candidateRepository.save(existingCandidate);
             submissionRepository.save(submission);
+            // ------------------ 📧 Send Resubmission Notification Email ------------------
+            String recruiterEmail = existingCandidate.getUserEmail();
+            String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+            String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submission.getJobId());
+
+            if (recruiterEmail != null && teamLeadEmail != null) {
+                try {
+                    logger.info("Sending candidate resubmission email notification...");
+                    emailService.sendCandidateNotification(submission, recruiterName, recruiterEmail, teamLeadEmail, "submission");
+                } catch (Exception e) {
+                    logger.error("Error sending resubmission email: {}", e.getMessage(), e);
+                }
+            } else {
+                logger.warn("Email not sent. recruiterEmail or teamLeadEmail is null. RecruiterEmail: {}, TeamLeadEmail: {}",
+                        recruiterEmail, teamLeadEmail);
+            }
+// --------------------------------------------------------------------------
+
 
             // Return a success response with the updated candidate details
             CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
@@ -329,32 +344,33 @@ public class CandidateService {
         return true; // Candidate is valid for the user
     }
 
+
+
     @Transactional
     public DeleteCandidateResponseDto deleteCandidateById(String candidateId) {
-        logger.info("Received request to delete candidate with candidateId: {}", candidateId);
-        // Fetch candidate details before deletion
         CandidateDetails candidate = candidateRepository.findById(candidateId)
-                .orElseThrow(() -> {
-                    logger.error("Candidate with ID {} not found", candidateId);
-                    return new CandidateNotFoundException("Candidate not found with id: " + candidateId);
-                });
-        logger.info("Candidate found: {}, Proceeding with deletion", candidate.getFullName());
-        // Store the candidate details before deletion
-        String candidateIdBeforeDelete = candidate.getCandidateId();
-        String candidateNameBeforeDelete = candidate.getFullName();
+                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found with id: " + candidateId));
 
-        // Delete the candidate from the repository
+        // Fetch submission before deleting candidate
+        List<Submissions> submissions = submissionRepository.findByCandidate_CandidateId(candidateId);
+
+        String recruiterEmail = candidate.getUserEmail();
+        String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+
+        for (Submissions submission : submissions) {
+            String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submission.getJobId()); // customize as needed
+            emailService.sendCandidateNotification(submission, recruiterName, recruiterEmail, teamLeadEmail, "deletion");
+        }
+
         candidateRepository.delete(candidate);
-        logger.info("Candidate with ID {} deleted successfully", candidateId);
 
-        // Prepare the response with candidate details
-        DeleteCandidateResponseDto.Payload payload = new DeleteCandidateResponseDto.Payload(candidateIdBeforeDelete, candidateNameBeforeDelete);
+        DeleteCandidateResponseDto.Payload payload = new DeleteCandidateResponseDto.Payload(
+                candidate.getCandidateId(), candidate.getFullName()
+        );
 
-        return new DeleteCandidateResponseDto("Success",
-                "Candidate deleted successfully",
-                payload,
-                null);
+        return new DeleteCandidateResponseDto("Success", "Candidate deleted successfully", payload, null);
     }
+
     // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
         //if (updatedCandidateDetails.getJobId() != null) existingCandidate.setJobId(updatedCandidateDetails.getJobId());
@@ -381,6 +397,6 @@ public class CandidateService {
         existingCandidate.setTimestamp(LocalDateTime.now());
     }
 
-}
 
+}
 
