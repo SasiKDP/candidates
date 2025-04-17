@@ -85,12 +85,22 @@ public class CandidateService {
         // Step 6: Set submission details
         String submissionId = savedCandidate.getCandidateId() + "_" + submissionDetails.getJobId();
 
-        submissionDetails.setCandidate(savedCandidate);
-        submissionDetails.setSubmissionId(submissionId);
-        submissionDetails.setProfileReceivedDate(LocalDate.now());
-
-        // Step 7: Save the submission
-        submissionRepository.save(submissionDetails);
+        Submissions submission = new Submissions();
+        submission.setCandidate(savedCandidate);
+        submission.setJobId(submissionDetails.getJobId());
+        submission.setSubmissionId(submissionId);
+        submission.setResume(submissionDetails.getResume());
+        submission.setResumeFilePath(submissionDetails.getResumeFilePath());
+        submission.setResume(submissionDetails.getResume());
+        submission.setSkills(submissionDetails.getSkills());
+        submission.setCommunicationSkills(submissionDetails.getCommunicationSkills());
+        submission.setRequiredTechnologiesRating(submissionDetails.getRequiredTechnologiesRating());
+        submission.setOverallFeedback(submissionDetails.getOverallFeedback());
+        submission.setPreferredLocation(submissionDetails.getPreferredLocation());
+        submission.setProfileReceivedDate(LocalDate.now());
+        submission.setClientName(submissionDetails.getClientName());
+        // Save the submission
+        submissionRepository.save(submission);
 
         // Step 8: Fetch team lead and recruiter details
         String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submissionDetails.getJobId());
