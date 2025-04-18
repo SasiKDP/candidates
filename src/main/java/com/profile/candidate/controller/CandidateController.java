@@ -741,7 +741,7 @@ public class CandidateController {
             DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
                     "error",
                     "An error occurred while Removing the Scheduled Interview details." + e.getMessage(
-            );
+            ));
 
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
