@@ -167,6 +167,7 @@ public class InterviewController {
             InterviewResponseDto response = interviewService.updateScheduledInterview(
                     userId,
                     candidateId,
+                    interviewRequest.getCandidateEmailId(),
                     jobId,
                     interviewRequest.getInterviewDateTime(),
                     interviewRequest.getDuration(),
@@ -176,7 +177,9 @@ public class InterviewController {
                     interviewRequest.getClientName(),
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
-                    interviewRequest.getInterviewStatus()); // Added status update
+                    interviewRequest.getInterviewStatus(),
+                    interviewRequest.isSentEmails()
+                    ); // Added status update
 
             return ResponseEntity.ok(response);
         }
@@ -198,5 +201,114 @@ public class InterviewController {
 //                    false, "An error occurred while updating the interview.", null, null
 //            ));
 //        }
+
+    }
+    @PostMapping("/interview-schedule")
+    public ResponseEntity<InterviewResponseDto> scheduleInterviewWithoutUserId(
+            @RequestBody InterviewDto interviewRequest) {
+        try {
+            // Log the incoming interview request
+            logger.info("Received interview request for userId: {} with candidateId: {}",  interviewRequest.getCandidateId());
+
+            // Ensure the candidateId is not null
+            if (interviewRequest.getCandidateId() == null) {
+                return ResponseEntity.badRequest().body(new InterviewResponseDto(
+                        false,
+                        "Candidate ID cannot be null  " ,
+                        null,
+                        null
+                ));
+            }
+            // Check if an interview is already scheduled for the candidate at the specified time
+            boolean isInterviewScheduled = interviewService.isInterviewScheduled(interviewRequest.getCandidateId(),interviewRequest.getJobId(), interviewRequest.getInterviewDateTime());
+            if (isInterviewScheduled) {
+                // Return a 400 Bad Request response if an interview is already scheduled
+                return ResponseEntity.badRequest().body(new InterviewResponseDto(
+                        false,
+                        "An interview is already scheduled for this candidate at the specified time.",
+                        null,
+                        null
+                ));
+            }
+            //Check if the candidate belongs to the user
+
+            // Proceed with scheduling the interview if the validation passes
+            InterviewResponseDto response = interviewService.scheduleInterviewWithOutUserId(
+                    interviewRequest.getCandidateId(),
+                    interviewRequest.getInterviewDateTime(),
+                    interviewRequest.getDuration(),
+                    interviewRequest.getZoomLink(),
+                    interviewRequest.getClientEmail(),
+                    interviewRequest.getClientName(),
+                    interviewRequest.getInterviewLevel(),
+                    interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getJobId(),
+                    interviewRequest.getFullName(),
+                    interviewRequest.getContactNumber(),
+                    interviewRequest.getCandidateEmailId());
+            return ResponseEntity.ok(response);
+        } catch (CandidateNotFoundException e) {
+            // If the candidate is not found
+            logger.error("Candidate not found for userId: {}");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+                    false,
+                    "Candidate not found ",
+                    null,
+                    null
+            ));
+//        } catch (Exception e) {
+//            // Log unexpected errors and return 500
+//            logger.error("Error while scheduling interview: {}", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
+//                    false,
+//                    "An error occurred while scheduling the interview.",
+//                    null,
+//                    null
+//            ));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @PutMapping("/interview-update/{candidateId}/{jobId}")
+    public ResponseEntity<InterviewResponseDto> updateScheduledInterview(
+            @PathVariable String candidateId,
+            @PathVariable String jobId,
+            @RequestBody InterviewDto interviewRequest) {
+        try {
+            logger.info("Received interview update request for and candidateId: {}", candidateId);
+
+            if (candidateId == null || jobId == null) {
+                return ResponseEntity.badRequest().body(new InterviewResponseDto(
+                        false, "Candidate ID or JobID cannot be null.", null, null
+                ));
+            }
+            InterviewResponseDto response = interviewService.updateScheduledInterviewWithoutUserId(
+
+                    candidateId,
+                    interviewRequest.getCandidateEmailId(),
+                    jobId,
+                    interviewRequest.getInterviewDateTime(),
+                    interviewRequest.getDuration(),
+                    interviewRequest.getZoomLink(),
+                    interviewRequest.getClientEmail(),
+                    interviewRequest.getClientName(),
+                    interviewRequest.getInterviewLevel(),
+                    interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getInterviewStatus(),
+                    interviewRequest.isSentEmails()
+            ); // Added status update
+
+            return ResponseEntity.ok(response);
+        } catch (CandidateNotFoundException e) {
+            logger.error("Candidate not found for jobId: {}", jobId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+                    false, "Candidate not found for the User Id.", null, null
+            ));
+        }
+    }
+    @GetMapping("/interviews/interviewsByUserId/{userId}")
+    public ResponseEntity<GetInterviewResponse> getInterviewsByUserId(@PathVariable String userId){
+
+       return new ResponseEntity<>(interviewService.getInterviewsByUserId(userId),HttpStatus.OK);
     }
 }

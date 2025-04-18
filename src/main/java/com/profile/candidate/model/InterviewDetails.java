@@ -1,15 +1,17 @@
 package com.profile.candidate.model;
 
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
+import java.util.ArrayList;
 @Entity
 @Table(name="interview_details")
 public class InterviewDetails {
@@ -31,9 +33,6 @@ public class InterviewDetails {
     private Integer duration;
     private String zoomLink;
 
-//    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "UTC")
-//    private LocalDateTime scheduledTimeStamp;
-
     private String clientName;
     private String fullName;
 
@@ -45,14 +44,40 @@ public class InterviewDetails {
     @Lob
     @Column(name = "interview_status", columnDefinition = "TEXT")
     private String interviewStatus; // Store JSON as String
-
+    @Lob
+    @Column(name = "client_email", columnDefinition = "TEXT")
     private String clientEmail;
 
     private String candidateEmailId;
 
     private LocalDateTime timestamp;
 
-    public void updateInterviewStatus(String round, String status) {
+    @Transient
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public void setClientEmailList(List<String> emails) {
+        try {
+            // Serialize the list into a JSON string and store it in clientEmail
+            this.clientEmail = objectMapper.writeValueAsString(emails);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize client emails", e);
+        }
+    }
+    // Get the client emails from the JSON string
+    public List<String> getClientEmailList() {
+        try {
+            // If clientEmail is null or empty, return an empty list
+            if (this.clientEmail == null || this.clientEmail.isEmpty()) {
+                return new ArrayList<>();
+            }
+            // Deserialize the JSON string into a list of client emails
+            return objectMapper.readValue(this.clientEmail, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize client emails", e);
+        }
+    }
+
+   public void updateInterviewStatus(String round, String status) {
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> interviewHistory = new LinkedHashMap<>();
 
@@ -75,21 +100,6 @@ public class InterviewDetails {
             throw new RuntimeException("Error converting interview status to JSON", e);
         }
     }
-    public String getCandidateEmailId() {
-        return candidateEmailId;
-    }
-
-    public void setCandidateEmailId(String candidateEmailId) {
-        this.candidateEmailId = candidateEmailId;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
-    }
 
     public String getInterviewId() {
         return interviewId;
@@ -102,21 +112,27 @@ public class InterviewDetails {
     public String getClientId() {
         return clientId;
     }
+
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
+
     public String getUserId() {
         return userId;
     }
+
     public void setUserId(String userId) {
         this.userId = userId;
     }
+
     public String getJobId() {
         return jobId;
     }
+
     public void setJobId(String jobId) {
         this.jobId = jobId;
     }
+
     public String getCandidateId() {
         return candidateId;
     }
@@ -132,6 +148,7 @@ public class InterviewDetails {
     public void setInterviewDateTime(OffsetDateTime interviewDateTime) {
         this.interviewDateTime = interviewDateTime;
     }
+
     public Integer getDuration() {
         return duration;
     }
@@ -148,7 +165,6 @@ public class InterviewDetails {
         this.zoomLink = zoomLink;
     }
 
-
     public String getClientName() {
         return clientName;
     }
@@ -156,6 +172,7 @@ public class InterviewDetails {
     public void setClientName(String clientName) {
         this.clientName = clientName;
     }
+
     public String getFullName() {
         return fullName;
     }
@@ -163,6 +180,7 @@ public class InterviewDetails {
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
+
     public String getExternalInterviewDetails() {
         return externalInterviewDetails;
     }
@@ -209,6 +227,26 @@ public class InterviewDetails {
 
     public void setClientEmail(String clientEmail) {
         this.clientEmail = clientEmail;
+    }
+
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
     }
 }
 

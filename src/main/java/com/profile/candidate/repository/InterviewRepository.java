@@ -30,4 +30,16 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
 
     Optional<InterviewDetails> findByCandidateIdAndJobIdAndInterviewDateTime(String candidateId,String jobId, OffsetDateTime interviewDateTime);
 
+    List<InterviewDetails> findByUserId(String userId);
+
+    InterviewDetails findByCandidateIdAndClientNameAndJobId(String candidateId, String clientName, String jobId);
+
+    InterviewDetails findByCandidateIdAndJobId(String candidateId, String jobId);
+
+    InterviewDetails findByCandidateIdAndClientName(String candidateId, String clientName);
+
+    @Query(value = "SELECT r.job_title FROM `dataquad-prod`.requirements_model_prod r WHERE r.job_id = :jobId", nativeQuery = true)
+    String findJobTitleByJobId(@Param("jobId") String jobId);
+
+
 }

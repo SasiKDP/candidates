@@ -1,5 +1,7 @@
 package com.profile.candidate.dto;
 
+import java.util.List;
+
 public class InterviewResponseDto {
 
     private boolean success;
@@ -62,10 +64,10 @@ public class InterviewResponseDto {
         private String candidateId;
         private String userEmail;
         private String emailId;
-        private String clientEmail;
+        private List<String> clientEmail;
 
         // Constructor
-        public InterviewPayload(String candidateId, String userEmail, String emailId, String clientEmail) {
+        public InterviewPayload(String candidateId, String userEmail, String emailId, List<String> clientEmail) {
             this.candidateId = candidateId;
             this.userEmail = userEmail;
             this.emailId = emailId;
@@ -97,11 +99,10 @@ public class InterviewResponseDto {
             this.emailId = emailId;
         }
 
-        public String getClientEmail() {
+        public List<String> getClientEmail() {
             return clientEmail;
         }
-
-        public void setClientEmail(String clientEmail) {
+        public void setClientEmail(List<String> clientEmail) {
             this.clientEmail = clientEmail;
         }
         @Override
