@@ -40,10 +40,8 @@ public class CandidateService {
 
     @Autowired
     private CandidateRepository candidateRepository;
-
     @Autowired
     private InterviewEmailService emailService;
-
     @Autowired
     private SubmissionRepository submissionRepository;
 

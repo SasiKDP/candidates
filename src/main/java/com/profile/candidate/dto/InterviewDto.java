@@ -3,10 +3,12 @@ package com.profile.candidate.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public class InterviewDto {
 
 
+    private boolean sentEmails;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
     private OffsetDateTime interviewDateTime;
     private Integer duration;
@@ -24,7 +26,7 @@ public class InterviewDto {
     private String userEmail;
     private String interviewLevel;
 
-    private String clientEmail;
+    private List<String> clientEmail;
 
     private String candidateEmailId;
 
@@ -32,6 +34,15 @@ public class InterviewDto {
     private String interviewStatus;
 
     // Constructor
+
+
+    public boolean isSentEmails() {
+        return sentEmails;
+    }
+
+    public void setSentEmails(boolean sentEmails) {
+        this.sentEmails = sentEmails;
+    }
 
     public String getFullName() {
         return fullName;
@@ -136,8 +147,6 @@ public class InterviewDto {
         this.contactNumber = contactNumber;
     }
 
-
-
     public String getCandidateId() {
         return candidateId;
     }
@@ -154,30 +163,34 @@ public class InterviewDto {
         this.interviewStatus = interviewStatus;
     }
 
-    public String getClientEmail() {
+    public List<String> getClientEmail() {
         return clientEmail;
     }
 
-    public void setClientEmail(String clientEmail) {
+    public void setClientEmail(List<String> clientEmail) {
         this.clientEmail = clientEmail;
     }
 
     @Override
     public String toString() {
         return "InterviewDto{" +
-                "interviewDateTime=" + interviewDateTime +
+                "sentEmails=" + sentEmails +
+                ", interviewDateTime=" + interviewDateTime +
                 ", duration=" + duration +
                 ", zoomLink='" + zoomLink + '\'' +
                 ", scheduledTimeStamp=" + scheduledTimeStamp +
                 ", userId='" + userId + '\'' +
                 ", jobId='" + jobId + '\'' +
+                ", clientName='" + clientName + '\'' +
                 ", candidateId='" + candidateId + '\'' +
                 ", fullName='" + fullName + '\'' +
+                ", externalInterviewDetails='" + externalInterviewDetails + '\'' +
                 ", contactNumber='" + contactNumber + '\'' +
-                ", clientName='" + clientName + '\'' +
                 ", userEmail='" + userEmail + '\'' +
                 ", interviewLevel='" + interviewLevel + '\'' +
-                ", interviewStatus='" + interviewStatus + '\'' +  // Added interviewStatus in toString
+                ", clientEmail=" + clientEmail +
+                ", candidateEmailId='" + candidateEmailId + '\'' +
+                ", interviewStatus='" + interviewStatus + '\'' +
                 '}';
     }
 }

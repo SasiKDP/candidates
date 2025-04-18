@@ -22,15 +22,8 @@ public class CandidateDetails {
     @Column(unique = true, nullable = false)
     private String candidateId;
 
-//        @Column(nullable = false)
-//        @NotBlank(message = "Job ID is required")
-//        private String jobId;  // No unique constraint on jobId
-
     @Column(name = "user_email")
     private String userEmail;
-
-//        @Column(name = "client_email")
-//        private String clientEmail;
 
     @Column(nullable = false)  // Ensures userId is unique
     @NotBlank(message = "User ID is required")
@@ -207,62 +200,6 @@ public class CandidateDetails {
         this.currentLocation = currentLocation;
     }
 
-//        public String getPreferredLocation() {
-//            return preferredLocation;
-//        }
-//
-//        public void setPreferredLocation(String preferredLocation) {
-//            this.preferredLocation = preferredLocation;
-//        }
-//
-//        public String getSkills() {
-//            return skills;
-//        }
-//
-//        public void setSkills(String skills) {
-//            this.skills = skills;
-//        }
-//
-//        public String getCommunicationSkills() {
-//            return communicationSkills;
-//        }
-//
-//        public void setCommunicationSkills(String communicationSkills) {
-//            this.communicationSkills = communicationSkills;
-//        }
-//
-//        public Double getRequiredTechnologiesRating() {
-//            return requiredTechnologiesRating;
-//        }
-//
-//        public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
-//            this.requiredTechnologiesRating = requiredTechnologiesRating;
-//        }
-//
-//        public String getOverallFeedback() {
-//            return overallFeedback;
-//        }
-//
-//        public void setOverallFeedback(String overallFeedback) {
-//            this.overallFeedback = overallFeedback;
-//        }
-//
-//        public OffsetDateTime getInterviewDateTime() {
-//            return interviewDateTime;
-//        }
-//
-//        public void setInterviewDateTime(OffsetDateTime interviewDateTime) {
-//            this.interviewDateTime = interviewDateTime;
-//        }
-//
-//        public Integer getDuration() {
-//            return duration;
-//        }
-//
-//        public void setDuration(Integer duration) {
-//            this.duration = duration;
-//        }
-
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
@@ -287,13 +224,5 @@ public class CandidateDetails {
     public void setSubmissions(List<Submissions> submissions) {
         this.submissions = submissions;
     }
-
-//        public List<InterviewDetails> getInterviewDetailsList() {
-//            return interviewDetailsList;
-//        }
-//
-//        public void setInterviewDetailsList(List<InterviewDetails> interviewDetailsList) {
-//            this.interviewDetailsList = interviewDetailsList;
-//        }
 
 }

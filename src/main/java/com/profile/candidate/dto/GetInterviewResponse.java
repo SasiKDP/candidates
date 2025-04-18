@@ -64,10 +64,10 @@ public class GetInterviewResponse {
         private Integer duration;               // Duration of the interview
         private String zoomLink;                // Zoom Link for the interview
         private LocalDateTime interviewScheduledTimestamp; // Timestamp when interview is scheduled
-        private String clientEmail;             // Client Email
+        private List<String> clientEmail;             // Client Email
         private String clientName;              // Client Name
         private String interviewLevel;          // Interview Level (e.g., 1st, 2nd round)
-        private String interviewStatus;
+        private String latestInterviewStatus;
         //private String emailId;
 
 
@@ -170,11 +170,11 @@ public class GetInterviewResponse {
             this.interviewScheduledTimestamp = interviewScheduledTimestamp;
         }
 
-        public String getClientEmail() {
+        public List<String> getClientEmail() {
             return clientEmail;
         }
 
-        public void setClientEmail(String clientEmail) {
+        public void setClientEmail(List<String> clientEmail) {
             this.clientEmail = clientEmail;
         }
 
@@ -194,15 +194,15 @@ public class GetInterviewResponse {
             this.interviewLevel = interviewLevel;
         }
 
-        public String getInterviewStatus() {
-            return interviewStatus;
+        public String getLatestInterviewStatus() {
+            return latestInterviewStatus;
         }
 
-        public void setInterviewStatus(String interviewStatus) {
-            this.interviewStatus = interviewStatus;
+        public void setLatestInterviewStatus(String latestInterviewStatus) {
+            this.latestInterviewStatus = latestInterviewStatus;
         }
 
-        public InterviewPayload(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, String clientEmail, String clientName, String interviewLevel, String interviewStatus) {
+        public InterviewPayload(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus) {
             this.interviewId = interviewId;
             this.jobId = jobId;
             this.candidateId = candidateId;
@@ -218,8 +218,9 @@ public class GetInterviewResponse {
             this.clientEmail = clientEmail;
             this.clientName = clientName;
             this.interviewLevel = interviewLevel;
-            this.interviewStatus = interviewStatus;
+            this.latestInterviewStatus = latestInterviewStatus;
         }
+
         public InterviewPayload() {
         }
 
