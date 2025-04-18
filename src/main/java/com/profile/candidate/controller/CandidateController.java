@@ -159,7 +159,7 @@ public class CandidateController {
             logger.error("Error processing resume file for candidate {}. Error: {}", fullName, ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
-                    "Error processing resume file.",
+                    "Error processing resume file." + ex.getMessage(),
                     new CandidateResponseDto.Payload(null, null, null),
                     null
             );
@@ -170,7 +170,7 @@ public class CandidateController {
             logger.error("An error occurred while submitting the candidate {}. Error: {}", fullName, ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
-                    "An error occurred while submitting the candidate",
+                    "An error occurred while submitting the candidate" + ex.getMessage(),
                     new CandidateResponseDto.Payload(null, null, null),
                     null
             );
@@ -261,7 +261,7 @@ public class CandidateController {
             // Handle any exceptions and return an error response
             logger.error("An error occurred while resubmitting the candidate: {}", ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "An error occurred while resubmitting the candidate", null, null, null
+                    "An error occurred while resubmitting the candidate" + ex.getMessage(), null, null, null
             );
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -491,7 +491,7 @@ public class CandidateController {
             logger.error("Error while scheduling interview: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
                     false,
-                    "An error occurred while scheduling the interview.",
+                    "An error occurred while scheduling the interview." + e.getMessage(),
                     null,
                     null
             ));
@@ -539,7 +539,7 @@ public class CandidateController {
         } catch (Exception e) {
             logger.error("Error while updating interview: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
-                    false, "An error occurred while updating the interview.", null, null
+                    false, "An error occurred while updating the interview." + e.getMessage(), null, null
             ));
         }
     }
@@ -584,7 +584,7 @@ public class CandidateController {
         } catch (Exception e) {
             logger.error("Error while updating interview: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
-                    false, "An error occurred while updating the interview.", null, null
+                    false, "An error occurred while updating the interview." + e.getMessage(), null, null
             ));
         }
     }
@@ -611,7 +611,7 @@ public class CandidateController {
             // Create an error response DTO with error details
             DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
                     "error",
-                    "Error occurred while deleting the candidate.",
+                    "Error occurred while deleting the candidate." + ex.getMessage(),
                     null,
                     ex.getMessage()
             );
@@ -740,8 +740,8 @@ public class CandidateController {
 
             DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
                     "error",
-                    "An error occurred while Removing the Scheduled Interview details."
-            );
+                    "An error occurred while Removing the Scheduled Interview details." + e.getMessage(
+            ));
 
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
