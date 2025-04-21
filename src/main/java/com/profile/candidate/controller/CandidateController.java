@@ -258,7 +258,6 @@ public class CandidateController {
         updateSubmission.setRequiredTechnologiesRating(requiredTechnologiesRating);
         updateSubmission.setOverallFeedback(overallFeedback);
 
-
         // Call the service method to resubmit the candidate
         CandidateResponseDto response = candidateService.resubmitCandidate(candidateId, updatedCandidateDetails,updateSubmission, resumeFile);
 

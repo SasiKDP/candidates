@@ -69,9 +69,6 @@ public class CandidateDetails {
 
     @PrePersist
     public void prePersist() {
-//            if (this.profileReceivedDate == null) {
-//                this.profileReceivedDate = LocalDate.now();  // Set the date before saving
-//            }
         if (this.candidateId == null) {
             generateCandidateId();  // Call the method to generate the candidate ID
         }
@@ -207,14 +204,6 @@ public class CandidateDetails {
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
-
-//        public String getZoomLink() {
-//            return zoomLink;
-//        }
-//
-//        public void setZoomLink(String zoomLink) {
-//            this.zoomLink = zoomLink;
-//        }
 
     public List<Submissions> getSubmissions() {
         return submissions;

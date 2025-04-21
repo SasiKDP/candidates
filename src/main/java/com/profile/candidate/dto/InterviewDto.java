@@ -8,7 +8,7 @@ import java.util.List;
 public class InterviewDto {
 
 
-    private boolean sentEmails;
+    private boolean skipNotification;    //skipNotification
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
     private OffsetDateTime interviewDateTime;
     private Integer duration;
@@ -35,15 +35,12 @@ public class InterviewDto {
 
     // Constructor
 
-
-    public boolean isSentEmails() {
-        return sentEmails;
+    public boolean isSkipNotification() {
+        return skipNotification;
     }
-
-    public void setSentEmails(boolean sentEmails) {
-        this.sentEmails = sentEmails;
+    public void setSkipNotification(boolean skipNotification) {
+        this.skipNotification = skipNotification;
     }
-
     public String getFullName() {
         return fullName;
     }
@@ -171,26 +168,4 @@ public class InterviewDto {
         this.clientEmail = clientEmail;
     }
 
-    @Override
-    public String toString() {
-        return "InterviewDto{" +
-                "sentEmails=" + sentEmails +
-                ", interviewDateTime=" + interviewDateTime +
-                ", duration=" + duration +
-                ", zoomLink='" + zoomLink + '\'' +
-                ", scheduledTimeStamp=" + scheduledTimeStamp +
-                ", userId='" + userId + '\'' +
-                ", jobId='" + jobId + '\'' +
-                ", clientName='" + clientName + '\'' +
-                ", candidateId='" + candidateId + '\'' +
-                ", fullName='" + fullName + '\'' +
-                ", externalInterviewDetails='" + externalInterviewDetails + '\'' +
-                ", contactNumber='" + contactNumber + '\'' +
-                ", userEmail='" + userEmail + '\'' +
-                ", interviewLevel='" + interviewLevel + '\'' +
-                ", clientEmail=" + clientEmail +
-                ", candidateEmailId='" + candidateEmailId + '\'' +
-                ", interviewStatus='" + interviewStatus + '\'' +
-                '}';
-    }
 }

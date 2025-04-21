@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 @RestController
 @RequestMapping("/candidate")
 public class InterviewController {
@@ -84,7 +83,8 @@ public class InterviewController {
                     interviewRequest.getJobId(),
                     interviewRequest.getFullName(),
                     interviewRequest.getContactNumber(),
-                    interviewRequest.getCandidateEmailId());
+                    interviewRequest.getCandidateEmailId(),
+                    interviewRequest.isSkipNotification());
             return ResponseEntity.ok(response);
         } catch (CandidateNotFoundException e) {
             // If the candidate is not found
@@ -156,7 +156,7 @@ public class InterviewController {
             @PathVariable String candidateId,
             @PathVariable String jobId,
             @RequestBody InterviewDto interviewRequest) {
-        try {
+        //try {
             logger.info("Received interview update request for userId: {} and candidateId: {}", userId, candidateId);
 
             if (candidateId == null || userId == null) {
@@ -178,17 +178,16 @@ public class InterviewController {
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
                     interviewRequest.getInterviewStatus(),
-                    interviewRequest.isSentEmails()
+                    interviewRequest.isSkipNotification()
                     ); // Added status update
-
             return ResponseEntity.ok(response);
-        }
-        catch (CandidateNotFoundException e) {
-            logger.error("Candidate not found for userId: {}", userId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-                    false, "Candidate not found for the User Id.", null, null
-            ));
-        }
+       // }
+//        catch (CandidateNotFoundException e) {
+//            logger.error("Candidate not found for userId: {}", userId);
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+//                    false, "Candidate not found for the User Id.", null, null
+//            ));
+//        }
 //        catch (InterviewNotScheduledException e) {
 //            logger.error("No interview scheduled for candidateId: {}", candidateId);
 //            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
@@ -245,7 +244,8 @@ public class InterviewController {
                     interviewRequest.getJobId(),
                     interviewRequest.getFullName(),
                     interviewRequest.getContactNumber(),
-                    interviewRequest.getCandidateEmailId());
+                    interviewRequest.getCandidateEmailId(),
+                    interviewRequest.isSkipNotification());
             return ResponseEntity.ok(response);
         } catch (CandidateNotFoundException e) {
             // If the candidate is not found
@@ -270,11 +270,11 @@ public class InterviewController {
         }
     }
     @PutMapping("/interview-update/{candidateId}/{jobId}")
-    public ResponseEntity<InterviewResponseDto> updateScheduledInterview(
+    public ResponseEntity<InterviewResponseDto> updateScheduledInterviewWithOutUserId(
             @PathVariable String candidateId,
             @PathVariable String jobId,
             @RequestBody InterviewDto interviewRequest) {
-        try {
+        //try {
             logger.info("Received interview update request for and candidateId: {}", candidateId);
 
             if (candidateId == null || jobId == null) {
@@ -283,7 +283,6 @@ public class InterviewController {
                 ));
             }
             InterviewResponseDto response = interviewService.updateScheduledInterviewWithoutUserId(
-
                     candidateId,
                     interviewRequest.getCandidateEmailId(),
                     jobId,
@@ -295,16 +294,16 @@ public class InterviewController {
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
                     interviewRequest.getInterviewStatus(),
-                    interviewRequest.isSentEmails()
+                    interviewRequest.isSkipNotification()
             ); // Added status update
 
             return ResponseEntity.ok(response);
-        } catch (CandidateNotFoundException e) {
-            logger.error("Candidate not found for jobId: {}", jobId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-                    false, "Candidate not found for the User Id.", null, null
-            ));
-        }
+//        } catch (CandidateNotFoundException e) {
+//            logger.error("Candidate not found for jobId: {}", jobId);
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
+//                    false, "Candidate not found for the User Id.", null, null
+//            ));
+//        }
     }
     @GetMapping("/interviews/interviewsByUserId/{userId}")
     public ResponseEntity<GetInterviewResponse> getInterviewsByUserId(@PathVariable String userId){

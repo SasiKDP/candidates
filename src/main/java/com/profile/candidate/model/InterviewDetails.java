@@ -76,11 +76,9 @@ public class InterviewDetails {
             throw new RuntimeException("Failed to deserialize client emails", e);
         }
     }
-
    public void updateInterviewStatus(String round, String status) {
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> interviewHistory = new LinkedHashMap<>();
-
         // Load existing interview status JSON (if available)
         if (this.interviewStatus != null && !this.interviewStatus.isEmpty()) {
             try {
@@ -96,7 +94,8 @@ public class InterviewDetails {
         // Convert back to JSON
         try {
             this.interviewStatus = objectMapper.writeValueAsString(interviewHistory);
-        } catch (JsonProcessingException e) {
+        }
+        catch (JsonProcessingException e) {
             throw new RuntimeException("Error converting interview status to JSON", e);
         }
     }
