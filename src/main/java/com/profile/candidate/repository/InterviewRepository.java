@@ -41,5 +41,7 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
     @Query(value = "SELECT r.job_title FROM `dataquad-prod`.requirements_model_prod r WHERE r.job_id = :jobId", nativeQuery = true)
     String findJobTitleByJobId(@Param("jobId") String jobId);
 
+    @Query(value = "SELECT user_name FROM `dataquad-prod`.user_details_prod WHERE user_id = :userId", nativeQuery = true)
+    String findUsernameByUserId(@Param("userId") String userId);
 
 }

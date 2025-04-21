@@ -184,7 +184,7 @@ public class CandidateService {
     // Set default values for userEmail and clientEmail if not provided
     private String saveResumeToFileSystem(MultipartFile resumeFile) throws IOException {
         // Set the directory where resumes will be stored
-        String resumeDirectory = "C:\\Users\\User\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
+        String resumeDirectory = "C:\\Users\\jaiva\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
 
         // Generate a unique file name using UUID to avoid conflicts
         String fileName = UUID.randomUUID().toString() + "-" + resumeFile.getOriginalFilename();
@@ -351,8 +351,6 @@ public class CandidateService {
         }
         return true; // Candidate is valid for the user
     }
-
-
 
     @Transactional
     public DeleteCandidateResponseDto deleteCandidateById(String candidateId) {

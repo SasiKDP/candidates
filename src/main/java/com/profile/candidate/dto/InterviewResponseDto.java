@@ -49,16 +49,6 @@ public class InterviewResponseDto {
     public void setErrors(Object errors) {
         this.errors = errors;
     }
-
-    @Override
-    public String toString() {
-        return "InterviewResponseDto{" +
-                "success=" + success +
-                ", message='" + message + '\'' +
-                ", payload=" + payload +
-                ", errors=" + errors +
-                '}';
-    }
     // Static inner class to represent the payload
     public static class InterviewPayload {
         private String candidateId;
