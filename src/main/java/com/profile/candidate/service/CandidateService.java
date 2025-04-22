@@ -287,29 +287,41 @@ public class CandidateService {
 
 
     public List<CandidateGetResponseDto> getAllSubmissions() {
-        // Retrieve all candidates from the repository
-        List<CandidateDetails> candidates = candidateRepository.findAll();
+        // Calculate the start and end of the current month
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+
+        // Fetch candidates whose profileReceivedDate falls within current month
+        List<CandidateDetails> candidates =
+                candidateRepository.findByProfileReceivedDateBetween(startOfMonth, endOfMonth);
 
         // Check if there are no submissions
         if (candidates.isEmpty()) {
-            throw new CandidateNotFoundException("No candidate submissions found.");
+            throw new CandidateNotFoundException("No candidate submissions found for the current month.");
         }
 
         // Map CandidateDetails to CandidateGetResponseDto
         return candidates.stream()
-                .map(CandidateGetResponseDto::new)  // Use the DTO constructor for mapping
+                .map(CandidateGetResponseDto::new)
                 .collect(Collectors.toList());
     }
 
 
 
 
+
     // Method to get candidate submissions by userId
     public List<CandidateGetResponseDto> getSubmissionsByUserId(String userId) {
-        List<CandidateDetails> candidates = candidateRepository.findByUserId(userId);
+        // Get the current month's date range
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+
+        // Fetch submissions for user in the current month
+        List<CandidateDetails> candidates = candidateRepository
+                .findByUserIdAndProfileReceivedDateBetween(userId, startOfMonth, endOfMonth);
 
         if (candidates.isEmpty()) {
-            throw new CandidateNotFoundException("No submissions found for userId: " + userId);
+            throw new CandidateNotFoundException("No submissions found for userId: " + userId + " in the current month.");
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -342,7 +354,6 @@ public class CandidateService {
                         candidate.getCandidateId() + ": " + e.getMessage());
             }
 
-            // ✅ Fallback ONLY if status is completely missing or couldn't be parsed
             if (latestInterviewStatus == null) {
                 latestInterviewStatus = "Not Scheduled";
             }
@@ -1022,51 +1033,45 @@ public class CandidateService {
 
 
     public List<GetInterviewResponseDto> getAllScheduledInterviews() {
-        // Fetch all candidates
-        List<CandidateDetails> candidates = candidateRepository.findAll();
+        // Calculate the start and end of the current month
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+
+        // Use your custom query to fetch scheduled interviews for the current month
+        List<CandidateDetails> candidates = candidateRepository
+                .findScheduledInterviewsByDateOnly(startOfMonth, endOfMonth);
+
         List<GetInterviewResponseDto> response = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
 
         for (CandidateDetails interview : candidates) {
-            // Skip candidates where interview is not scheduled (i.e., interviewDateTime is null)
-            if (interview.getInterviewDateTime() == null) {
-                continue;  // Skip this iteration if interview is not scheduled
-            }
-
-            // Get the interview status (which can be a plain string or JSON)
             String interviewStatusJson = interview.getInterviewStatus();
             String latestInterviewStatus = null;
 
-            // Handle interviewStatus as a JSON or plain text
             if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
                 try {
-                    // Check if it's a valid JSON format
                     if (interviewStatusJson.trim().startsWith("{") || interviewStatusJson.trim().startsWith("[")) {
-                        // Deserialize the JSON into a List of Maps
                         List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
-                        // Extract the latest status from the history
                         if (!statusHistory.isEmpty()) {
                             Optional<Map<String, Object>> latestStatus = statusHistory.stream()
-                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));  // Sorting by timestamp
+                                    .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
+                                    .max(Comparator.comparing(entry ->
+                                            OffsetDateTime.parse((String) entry.get("timestamp"))));
                             if (latestStatus.isPresent()) {
                                 latestInterviewStatus = (String) latestStatus.get().get("status");
                             }
                         }
                     } else {
-                        // If it's a plain string, just treat it as the status
                         latestInterviewStatus = interviewStatusJson;
                     }
                 } catch (JsonParseException e) {
-                    // Handle invalid JSON (in case there's an error parsing the interviewStatus)
-                    System.err.println("Error parsing interview status JSON: Invalid JSON format detected.");
-                    latestInterviewStatus = interviewStatusJson;  // Treat it as plain string if JSON parsing fails
+                    System.err.println("Error parsing interview status JSON: Invalid JSON format.");
+                    latestInterviewStatus = interviewStatusJson;
                 } catch (IOException e) {
-                    // Handle other IO issues
                     System.err.println("Error reading interview status: " + e.getMessage());
                 }
             }
 
-            // Add the candidate's interview details regardless of the status (we do not filter out any specific status)
             GetInterviewResponseDto dto = new GetInterviewResponseDto(
                     interview.getJobId(),
                     interview.getCandidateId(),
@@ -1082,7 +1087,7 @@ public class CandidateService {
                     interview.getClientEmail(),
                     interview.getClientName(),
                     interview.getInterviewLevel(),
-                    latestInterviewStatus  // Include the latest interview status (which could be Scheduled, Rescheduled, etc.)
+                    latestInterviewStatus != null ? latestInterviewStatus : "Not Scheduled"
             );
             response.add(dto);
         }
@@ -1090,16 +1095,20 @@ public class CandidateService {
         return response;
     }
 
-
     public List<GetInterviewResponseDto> getAllScheduledInterviewsByUserId(String userId) {
-        List<CandidateDetails> candidates = candidateRepository.findByUserId(userId);
+        // Calculate start and end of current month
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusSeconds(1);
+
+        // Use the custom repository query to fetch only current month's scheduled interviews
+        List<CandidateDetails> candidates = candidateRepository
+                .findScheduledInterviewsByUserIdAndDateRange(userId, startOfMonth, endOfMonth);
+
         List<GetInterviewResponseDto> response = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
 
         for (CandidateDetails interview : candidates) {
             String interviewStatusJson = interview.getInterviewStatus();
-            System.out.println("Interview Status JSON (Raw): " + interviewStatusJson);
-
             String latestInterviewStatus = null;
 
             if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
@@ -1109,6 +1118,7 @@ public class CandidateService {
 
                         if (!statusHistory.isEmpty()) {
                             Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                    .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
                                     .max(Comparator.comparing(entry ->
                                             OffsetDateTime.parse((String) entry.get("timestamp"))));
 
@@ -1119,18 +1129,13 @@ public class CandidateService {
                     } else {
                         latestInterviewStatus = interviewStatusJson.trim();
                     }
-                } catch (JsonProcessingException e) {
-                    System.err.println("Error parsing interview status JSON: " + e.getMessage());
-                    e.printStackTrace();
-                    latestInterviewStatus = "Error Parsing Status";
-                } catch (DateTimeParseException e) {
-                    System.err.println("Error parsing timestamp: " + e.getMessage());
-                    e.printStackTrace();
-                    latestInterviewStatus = "Invalid Timestamp";
+                } catch (JsonProcessingException | DateTimeParseException e) {
+                    System.err.println("Error parsing interview status JSON or timestamp: " + e.getMessage());
+                    latestInterviewStatus = "Parsing Error";
                 }
             }
 
-            // ✅ Filter only by non-null interviewDateTime
+            // Filter only those with scheduled interviewDateTime
             if (interview.getInterviewDateTime() != null) {
                 GetInterviewResponseDto dto = new GetInterviewResponseDto(
                         interview.getJobId(),
@@ -1147,9 +1152,8 @@ public class CandidateService {
                         interview.getClientEmail(),
                         interview.getClientName(),
                         interview.getInterviewLevel(),
-                        latestInterviewStatus
+                        latestInterviewStatus != null ? latestInterviewStatus : "Not Scheduled"
                 );
-
                 response.add(dto);
             }
         }
