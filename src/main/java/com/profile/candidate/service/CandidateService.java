@@ -1087,7 +1087,7 @@ public class CandidateService {
                     interview.getClientEmail(),
                     interview.getClientName(),
                     interview.getInterviewLevel(),
-                    latestInterviewStatus != null ? latestInterviewStatus : "Not Scheduled"
+                    latestInterviewStatus
             );
             response.add(dto);
         }
