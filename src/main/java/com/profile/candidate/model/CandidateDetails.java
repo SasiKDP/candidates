@@ -164,6 +164,17 @@
             }
         }
 
+        @PreUpdate
+        public void preUpdate() {
+            if (this.profileReceivedDate == null) {
+                // Option 1: Set it to today's date
+                this.profileReceivedDate = LocalDate.now();
+
+                // Option 2 (better): fetch existing value from DB (requires service-layer change)
+                // this.profileReceivedDate = existingValueFromDB;
+            }
+        }
+
         public void generateCandidateId() {
             if (this.candidateId == null || this.candidateId.isEmpty()) {
                 Random random = new Random();

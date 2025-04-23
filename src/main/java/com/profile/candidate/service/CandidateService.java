@@ -77,6 +77,11 @@ public class CandidateService {
         }
 
         // Save the candidate details to the database
+        if (candidateDetails.getProfileReceivedDate() == null) {
+            candidateDetails.setProfileReceivedDate(LocalDate.now());
+        }
+
+        // Save the candidate details to the database
         CandidateDetails savedCandidate = candidateRepository.save(candidateDetails);
 
         // Update the requirement status after saving the candidate
