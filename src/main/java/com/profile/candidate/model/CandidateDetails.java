@@ -67,21 +67,6 @@ public class CandidateDetails {
     private LocalDateTime timestamp;
 
 
-    @PrePersist
-    public void prePersist() {
-        if (this.candidateId == null) {
-            generateCandidateId();  // Call the method to generate the candidate ID
-        }
-    }
-
-    public void generateCandidateId() {
-        if (this.candidateId == null || this.candidateId.isEmpty()) {
-            Random random = new Random();
-            int randomNumber = 1000 + random.nextInt(9000);  // Generates a random number between 100 and 999
-            this.candidateId = "CAND" + randomNumber;  // Combine the prefix with the random number
-        }
-    }
-
     public String getUserEmail() {
         return userEmail;
     }

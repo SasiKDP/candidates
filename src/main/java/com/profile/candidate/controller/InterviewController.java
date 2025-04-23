@@ -1,11 +1,9 @@
 package com.profile.candidate.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.profile.candidate.dto.DeleteInterviewResponseDto;
-import com.profile.candidate.dto.GetInterviewResponse;
-import com.profile.candidate.dto.InterviewDto;
-import com.profile.candidate.dto.InterviewResponseDto;
+import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.CandidateNotFoundException;
+import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.exceptions.InterviewNotScheduledException;
 import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.service.CandidateService;
@@ -13,9 +11,15 @@ import com.profile.candidate.service.InterviewService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+
 @RestController
 @RequestMapping("/candidate")
 public class InterviewController {
@@ -78,7 +82,7 @@ public class InterviewController {
                     interviewRequest.getUserEmail(), // Pass userEmail
                     interviewRequest.getClientEmail(),
                     interviewRequest.getClientName(),
-                    interviewRequest.getInterviewLevel(),// Pass clientEmail
+                    interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
                     interviewRequest.getJobId(),
                     interviewRequest.getFullName(),
@@ -298,16 +302,34 @@ public class InterviewController {
             ); // Added status update
 
             return ResponseEntity.ok(response);
-//        } catch (CandidateNotFoundException e) {
-//            logger.error("Candidate not found for jobId: {}", jobId);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-//                    false, "Candidate not found for the User Id.", null, null
-//            ));
-//        }
     }
     @GetMapping("/interviews/interviewsByUserId/{userId}")
     public ResponseEntity<GetInterviewResponse> getInterviewsByUserId(@PathVariable String userId){
 
        return new ResponseEntity<>(interviewService.getInterviewsByUserId(userId),HttpStatus.OK);
     }
+    @GetMapping("/interviews/{userId}/filterByDate")
+    public ResponseEntity<GetInterviewResponse> getInterviewsByUserIdAndDateRange(
+            @PathVariable String userId,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        GetInterviewResponse interviews = interviewService.getScheduledInterviewsByUserIdAndDateRange(userId, startDate, endDate);
+
+        return ResponseEntity.ok(interviews);
+
+    }
+
+    @GetMapping("/interviews/filterByDate")
+    public ResponseEntity<GetInterviewResponse> getInterviewsByDateRange(
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+            GetInterviewResponse interviews = interviewService.getScheduledInterviewsByDateOnly(startDate, endDate);
+
+            return ResponseEntity.ok(interviews);
+
+    }
+
+
 }

@@ -1,9 +1,11 @@
 package com.profile.candidate.controller;
 
+import com.profile.candidate.dto.CandidateResponseDto;
 import com.profile.candidate.dto.DeleteSubmissionResponseDto;
 import com.profile.candidate.dto.ErrorResponseDto;
 import com.profile.candidate.dto.SubmissionsGetResponse;
 import com.profile.candidate.exceptions.CandidateNotFoundException;
+import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.SubmissionRepository;
 import com.profile.candidate.service.CandidateService;
@@ -18,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -105,6 +108,60 @@ public class SubmissionController {
             DeleteSubmissionResponseDto response = submissionService.deleteSubmissionById(submissionId);
             // Return the response entity with status 200 OK
             return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    @PutMapping("/editSubmission/{candidateId}")
+    public ResponseEntity<CandidateResponseDto> editSubmission(
+            @PathVariable("candidateId") String candidateId,
+            @RequestParam(value = "jobId", required = false) String jobId,
+            @RequestParam(value = "userId", required = false) String userId,
+            @RequestParam(value = "fullName", required = false) String fullName,
+            @RequestParam(value = "candidateEmailId", required = false) String candidateEmailId,
+            @RequestParam(value = "contactNumber", required = false) String contactNumber,
+            @RequestParam(value = "qualification", required = false) String qualification,
+            @RequestParam(value = "totalExperience", required = false) Float totalExperience,
+            @RequestParam(value = "currentCTC", required = false) String currentCTC,
+            @RequestParam(value = "expectedCTC", required = false) String expectedCTC,
+            @RequestParam(value = "noticePeriod", required = false) String noticePeriod,
+            @RequestParam(value = "currentLocation", required = false) String currentLocation,
+            @RequestParam(value = "preferredLocation", required = false) String preferredLocation,
+            @RequestParam(value = "skills", required = false) String skills,
+            @RequestParam(value = "communicationSkills", required = false) String communicationSkills,
+            @RequestParam(value = "requiredTechnologiesRating", required = false) Double requiredTechnologiesRating,
+            @RequestParam(value = "overallFeedback", required = false) String overallFeedback,
+            @RequestParam(value = "relevantExperience", required = false) Float relevantExperience,
+            @RequestParam(value = "currentOrganization", required = false) String currentOrganization,
+            @RequestParam(value = "userEmail", required = false) String userEmail,
+            @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile) {
+
+        Submissions updateSubmission=new Submissions();
+        CandidateDetails updatedCandidateDetails = new CandidateDetails();
+        updateSubmission.setJobId(jobId);
+        updatedCandidateDetails .setUserId(userId);
+        updatedCandidateDetails .setFullName(fullName);
+        updatedCandidateDetails .setCandidateEmailId(candidateEmailId);
+        updatedCandidateDetails .setContactNumber(contactNumber);
+        updatedCandidateDetails .setQualification(qualification);
+        updatedCandidateDetails .setTotalExperience(totalExperience);
+        updatedCandidateDetails .setCurrentCTC(currentCTC);
+        updatedCandidateDetails .setExpectedCTC(expectedCTC);
+        updatedCandidateDetails .setNoticePeriod(noticePeriod);
+        updatedCandidateDetails .setCurrentLocation(currentLocation);
+        updatedCandidateDetails .setRelevantExperience(relevantExperience);
+        updatedCandidateDetails .setCurrentOrganization(currentOrganization);
+        updatedCandidateDetails .setUserEmail(userEmail);
+        updateSubmission.setCandidate(updatedCandidateDetails);
+        updateSubmission.setPreferredLocation(preferredLocation);
+        updateSubmission.setSkills(skills);
+        updateSubmission.setCommunicationSkills(communicationSkills);
+        updateSubmission.setRequiredTechnologiesRating(requiredTechnologiesRating);
+        updateSubmission.setOverallFeedback(overallFeedback);
+
+        // Call the service method to resubmit the candidate
+        CandidateResponseDto response = submissionService.editSubmission(candidateId, updatedCandidateDetails,updateSubmission, resumeFile);
+
+        // Return the response entity with status 200 OK
+        return new ResponseEntity<>(response, HttpStatus.OK);
+
     }
 
 }

@@ -4,6 +4,8 @@ package com.profile.candidate.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -76,29 +78,29 @@ public class InterviewDetails {
             throw new RuntimeException("Failed to deserialize client emails", e);
         }
     }
-   public void updateInterviewStatus(String round, String status) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, String> interviewHistory = new LinkedHashMap<>();
-        // Load existing interview status JSON (if available)
-        if (this.interviewStatus != null && !this.interviewStatus.isEmpty()) {
-            try {
-                interviewHistory = objectMapper.readValue(this.interviewStatus, LinkedHashMap.class);
-            } catch (JsonProcessingException e) {
-                // Log and reset interviewHistory in case of invalid JSON
-                System.err.println("Invalid JSON format in interviewStatus, resetting it.");
-                interviewHistory = new LinkedHashMap<>();
-            }
-        }
-        // Add or update the round status
-        interviewHistory.put(round, status);
-        // Convert back to JSON
-        try {
-            this.interviewStatus = objectMapper.writeValueAsString(interviewHistory);
-        }
-        catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting interview status to JSON", e);
-        }
-    }
+//    public void updateInterviewStatus(int stage, String status) {
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        ArrayNode statusArray;
+//        try {
+//            if (this.interviewStatus != null && !this.interviewStatus.isEmpty()) {
+//                statusArray = (ArrayNode) objectMapper.readTree(this.interviewStatus);
+//            } else {
+//                statusArray = objectMapper.createArrayNode();
+//            }
+//            ObjectNode statusEntry = objectMapper.createObjectNode();
+//            statusEntry.put("stage", stage);
+//            statusEntry.put("status", status);
+//            statusEntry.put("timestamp", OffsetDateTime.now().toString());
+//
+//            // Add interview level from entity field
+//            statusEntry.put("interviewLevel", this.interviewLevel != null ? this.interviewLevel : "");
+//
+//            statusArray.add(statusEntry);
+//            this.interviewStatus = objectMapper.writeValueAsString(statusArray);
+//        } catch (JsonProcessingException e) {
+//            throw new RuntimeException("Error updating interview status", e);
+//        }
+//    }
 
     public String getInterviewId() {
         return interviewId;
