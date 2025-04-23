@@ -118,4 +118,11 @@ public class GlobalExceptionHandler {
         GetInterviewResponse response=new GetInterviewResponse(false,"No Interviews Found",new ArrayList<>(),ex.getMessage());
         return new ResponseEntity<>(response,HttpStatus.NOT_FOUND);
     }
+    @ExceptionHandler(DateRangeValidationException.class)
+    public ResponseEntity<GetInterviewResponse> handleDateRangeValidationException(DateRangeValidationException ex){
+
+        GetInterviewResponse response=new GetInterviewResponse(false,"No Interviews Found",new ArrayList<>(),ex.getMessage());
+        return new ResponseEntity<>(response,HttpStatus.CONFLICT);
+
+    }
 }

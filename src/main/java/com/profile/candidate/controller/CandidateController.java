@@ -210,69 +210,7 @@ public class CandidateController {
         }
         return "";
     }
-    @PutMapping("/candidatesubmissions/{candidateId}")
-    public ResponseEntity<CandidateResponseDto> resubmitCandidate(
-            @PathVariable("candidateId") String candidateId,
-            @RequestParam(value = "jobId", required = false) String jobId,
-            @RequestParam(value = "userId", required = false) String userId,
-            @RequestParam(value = "fullName", required = false) String fullName,
-            @RequestParam(value = "candidateEmailId", required = false) String candidateEmailId,
-            @RequestParam(value = "contactNumber", required = false) String contactNumber,
-            @RequestParam(value = "qualification", required = false) String qualification,
-            @RequestParam(value = "totalExperience", required = false) Float totalExperience,
-            @RequestParam(value = "currentCTC", required = false) String currentCTC,
-            @RequestParam(value = "expectedCTC", required = false) String expectedCTC,
-            @RequestParam(value = "noticePeriod", required = false) String noticePeriod,
-            @RequestParam(value = "currentLocation", required = false) String currentLocation,
-            @RequestParam(value = "preferredLocation", required = false) String preferredLocation,
-            @RequestParam(value = "skills", required = false) String skills,
-            @RequestParam(value = "communicationSkills", required = false) String communicationSkills,
-            @RequestParam(value = "requiredTechnologiesRating", required = false) Double requiredTechnologiesRating,
-            @RequestParam(value = "overallFeedback", required = false) String overallFeedback,
-            @RequestParam(value = "relevantExperience", required = false) Float relevantExperience,
-            @RequestParam(value = "currentOrganization", required = false) String currentOrganization,
-            @RequestParam(value = "userEmail", required = false) String userEmail,
-            @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile) {
-//        try {
-//            // Create a CandidateDetails object from the request parameters
-        Submissions updateSubmission=new Submissions();
-        CandidateDetails updatedCandidateDetails = new CandidateDetails();
-        updateSubmission.setJobId(jobId);
-        updatedCandidateDetails .setUserId(userId);
-        updatedCandidateDetails .setFullName(fullName);
-        updatedCandidateDetails .setCandidateEmailId(candidateEmailId);
-        updatedCandidateDetails .setContactNumber(contactNumber);
-        updatedCandidateDetails .setQualification(qualification);
-        updatedCandidateDetails .setTotalExperience(totalExperience);
-        updatedCandidateDetails .setCurrentCTC(currentCTC);
-        updatedCandidateDetails .setExpectedCTC(expectedCTC);
-        updatedCandidateDetails .setNoticePeriod(noticePeriod);
-        updatedCandidateDetails .setCurrentLocation(currentLocation);
-        updatedCandidateDetails .setRelevantExperience(relevantExperience);
-        updatedCandidateDetails .setCurrentOrganization(currentOrganization);
-        updatedCandidateDetails .setUserEmail(userEmail);
-        updateSubmission.setCandidate(updatedCandidateDetails);
-        updateSubmission.setPreferredLocation(preferredLocation);
-        updateSubmission.setSkills(skills);
-        updateSubmission.setCommunicationSkills(communicationSkills);
-        updateSubmission.setRequiredTechnologiesRating(requiredTechnologiesRating);
-        updateSubmission.setOverallFeedback(overallFeedback);
 
-        // Call the service method to resubmit the candidate
-        CandidateResponseDto response = candidateService.resubmitCandidate(candidateId, updatedCandidateDetails,updateSubmission, resumeFile);
-
-        // Return the response entity with status 200 OK
-        return new ResponseEntity<>(response, HttpStatus.OK);
-
-//        } catch (Exception ex) {
-//            // Handle any exceptions and return an error response
-//            logger.error("An error occurred while resubmitting the candidate: {}", ex.getMessage());
-//            CandidateResponseDto errorResponse = new CandidateResponseDto(
-//                    "An error occurred while resubmitting the candidate", null, null, null
-//            );
-//            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-    }
     @DeleteMapping("/deletecandidate/{candidateId}")
     public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
         try {
