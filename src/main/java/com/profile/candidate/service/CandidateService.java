@@ -56,42 +56,84 @@ public class CandidateService {
         // Optionally set userEmail and clientEmail if not already set
         setDefaultEmailsIfMissing(candidateDetails);
 
+        // Generate candidate ID if not already set
+        if (candidateDetails.getCandidateId() == null || candidateDetails.getCandidateId().isEmpty()) {
+            String generatedId = generateCandidateId();
+            candidateDetails.setCandidateId(generatedId);
+        }
+
+
         // Process the resume file and set it as a BLOB
         if (resumeFile != null && !resumeFile.isEmpty()) {
-            // Convert the resume file to byte[] and set it in the candidateDetails object
             byte[] resumeData = resumeFile.getBytes();
             candidateDetails.setResume(resumeData);  // Store the resume as binary data in DB
 
-            // Save the resume to the file system and store the file path in DB
             String resumeFilePath = saveResumeToFileSystem(resumeFile);
             candidateDetails.setResumeFilePath(resumeFilePath);  // Store the file path in DB
         }
+
         if (!isValidFileType(resumeFile)) {
-            throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC and DOCX Files are allowed.");
+            throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC and DOCX files are allowed.");
         }
 
         // Save the candidate details to the database
         CandidateDetails savedCandidate = candidateRepository.save(candidateDetails);
 
-        // ✅ After saving candidate, update the requirement status
+        // Update the requirement status after saving the candidate
         candidateRepository.updateRequirementStatus(savedCandidate.getJobId());
 
-        // Create the payload with candidateId, employeeId, and jobId
+        // Get recruiter and team lead emails
+        String recruiterEmail = savedCandidate.getUserEmail();
+        String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(savedCandidate.getJobId());
+        String teamLeadName = candidateRepository.findUserNameByEmail(teamLeadEmail);
+
+        // Log more information about what is happening with email fetching
+        logger.info("Recruiter email: {}", recruiterEmail);
+        logger.info("Team lead email: {}", teamLeadEmail);
+
+        // Send email if both emails are available
+        if (recruiterEmail == null || teamLeadEmail == null) {
+            logger.warn("Email not sent: recruiterEmail or teamLeadEmail is null. recruiterEmail: {}, teamLeadEmail: {}",
+                    recruiterEmail, teamLeadEmail);
+        } else {
+            String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+            String actionType = "submission";
+            emailService.sendCandidateNotification(savedCandidate, recruiterName, recruiterEmail, teamLeadName, teamLeadEmail, actionType);
+        }
+
+        // Prepare response payload
         CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
                 savedCandidate.getCandidateId(),
                 savedCandidate.getUserId(),
                 savedCandidate.getJobId()
         );
 
-// Return the response with status "Success" and the corresponding message
+        // Return the success response
         return new CandidateResponseDto(
-                "Success",  // Status
-                "Candidate profile submitted successfully.",  // Message
-                payload,  // Payload containing the candidateId, employeeId, and jobId
-                null  // No error message
+                "Success",
+                "Candidate profile submitted successfully.",
+                payload,
+                null
         );
-
     }
+
+    private String generateCandidateId() {
+        String maxCandidateId = candidateRepository.findMaxCandidateId();
+
+        int nextIdNumber = 1;
+
+        if (maxCandidateId != null && maxCandidateId.startsWith("CAND")) {
+            try {
+                int currentNumber = Integer.parseInt(maxCandidateId.substring(4));
+                nextIdNumber = currentNumber + 1;
+            } catch (NumberFormatException e) {
+                // Log warning or handle appropriately
+            }
+        }
+
+        return "CAND" + nextIdNumber;
+    }
+
     private boolean isValidFileType(MultipartFile file) {
         String fileName = file.getOriginalFilename();
         if (fileName != null) {
@@ -224,37 +266,44 @@ public class CandidateService {
 
     public CandidateResponseDto resubmitCandidate(String candidateId, CandidateDetails updatedCandidateDetails, MultipartFile resumeFile) {
         try {
-            // Fetch the existing candidate from the database
             Optional<CandidateDetails> existingCandidateOpt = candidateRepository.findById(candidateId);
             if (!existingCandidateOpt.isPresent()) {
-                // Candidate not found, return error
                 throw new CandidateNotFoundException(candidateId);
             }
 
             CandidateDetails existingCandidate = existingCandidateOpt.get();
 
-            // ✅ If a resume file is provided, validate and update it
             if (resumeFile != null && !resumeFile.isEmpty()) {
                 if (!isValidFileType(resumeFile)) {
                     throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC, and DOCX are allowed.");
                 }
-                saveFile(existingCandidate, resumeFile);  // Save the file & update resume path
+                saveFile(existingCandidate, resumeFile);
             }
 
-
-            // Update candidate fields with the new data (e.g., name, contact, etc.)
+            // Update fields
             updateCandidateFields(existingCandidate, updatedCandidateDetails);
 
-            // Save the resume file and update the candidate with the new file path
-            saveFile(existingCandidate, resumeFile);  // This saves the file and updates the candidate's resumeFilePath
+            // Reset interview status
+            existingCandidate.setInterviewStatus("");
 
-            // **Reset interview status**
-            existingCandidate.setInterviewStatus(""); // Set it to empty string OR use null: existingCandidate.setInterviewStatus(null);
-
-            // Save the updated candidate details (including the new resume file path)
+            // Save updated candidate
             candidateRepository.save(existingCandidate);
 
-            // Return a success response with the updated candidate details
+            // ✅ Fetch recruiter and team lead emails
+            String recruiterEmail = existingCandidate.getUserEmail();
+            String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(existingCandidate.getJobId());
+            String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+            String teamLeadName = candidateRepository.findUserNameByEmail(teamLeadEmail);
+
+
+            // ✅ Send email notification if emails are valid
+            if (recruiterEmail == null || teamLeadEmail == null) {
+                logger.warn("Email not sent during update: recruiterEmail or teamLeadEmail is null. recruiterEmail: {}, teamLeadEmail: {}", recruiterEmail, teamLeadEmail);
+            } else {
+                String actionType = "update";
+                emailService.sendCandidateNotification(existingCandidate, recruiterName, recruiterEmail, teamLeadName, teamLeadEmail,"update");
+            }
+
             CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
                     existingCandidate.getCandidateId(),
                     existingCandidate.getUserId(),
@@ -265,7 +314,7 @@ public class CandidateService {
                     "Success",
                     "Candidate successfully updated",
                     payload,
-                    null // No error message since no error occurred
+                    null
             );
 
         } catch (CandidateNotFoundException ex) {

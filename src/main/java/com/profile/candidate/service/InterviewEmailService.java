@@ -1,5 +1,6 @@
 package com.profile.candidate.service;
 
+import com.profile.candidate.model.CandidateDetails;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -86,6 +87,139 @@ public class InterviewEmailService {
             return false;
         }
     }
+
+    public void sendCandidateNotification(CandidateDetails candidateDetails, String recruiterName,
+                                          String recruiterEmail,String teamLeadName, String teamLeadEmail, String actionType) {
+        String subject = "";
+        String bodyForRecruiter = "";
+        String bodyForTeamLead = "";
+
+        String jobId = candidateDetails.getJobId();
+        String skills = candidateDetails.getSkills();
+        String overallFeedback = candidateDetails.getOverallFeedback();
+        String candidateName = candidateDetails.getFullName();
+        String candidateEmail = candidateDetails.getCandidateEmailId();
+
+        // Set subject and body based on actionType (submission, update, deletion)
+        switch (actionType.toLowerCase()) {
+            case "submission":
+                subject = "New Candidate Submission - Job ID: " + jobId;
+                bodyForRecruiter = String.format(
+                        "<p>Dear %s,</p>"
+                                + "<p>You have successfully submitted the following candidate:</p>"
+                                + "<ul>"
+                                + "<li><b>Candidate ID:</b> %s</li>"
+                                + "<li><b>Job ID:</b> %s</li>"
+                                + "<li><b>Candidate Name:</b> %s</li>"
+                                + "<li><b>Email Address:</b> %s</li>"
+                                + "<li><b>Total Experience:</b> %.1f years</li>"
+                                + "<li><b>Primary Skills:</b> %s</li>"
+                                + "<li><b>Overall Feedback:</b> %s</li>"
+                                + "</ul>"
+                                + "<p>Keep up the good work!</p>"
+                                + "<p><b><span style='font-size:18px;'>Please do not reply to this email address as it is sent from an unmonitored mailbox.</span></b></p>",
+                        recruiterName, candidateDetails.getCandidateId(), jobId, candidateName,
+                        candidateEmail, candidateDetails.getTotalExperience(), skills, overallFeedback
+                );
+
+                bodyForTeamLead = String.format(
+                        "<p>Dear %s,</p>"
+                                + "<p>The following candidate has been submitted by <b>%s</b>:</p>"
+                                + "<ul>"
+                                + "<li><b>Candidate ID:</b> %s</li>"
+                                + "<li><b>Job ID:</b> %s</li>"
+                                + "<li><b>Candidate Name:</b> %s</li>"
+                                + "<li><b>Email Address:</b> %s</li>"
+                                + "<li><b>Total Experience:</b> %.1f years</li>"
+                                + "<li><b>Primary Skills:</b> %s</li>"
+                                + "<li><b>Overall Feedback:</b> %s</li>"
+                                + "</ul>"
+                                + "<p><b><span style='font-size:18px;'>Please do not reply to this email address as it is sent from an unmonitored mailbox.</span></b></p>",
+                        teamLeadName, recruiterName, candidateDetails.getCandidateId(), jobId, candidateName,
+                        candidateEmail, candidateDetails.getTotalExperience(), skills, overallFeedback
+                );
+
+                break;
+
+            case "update":
+                subject = "Candidate Profile Updated - Job ID: " + jobId;
+                bodyForRecruiter = String.format(
+                        "<p>Dear %s,</p>"
+                                + "<p>You have updated the following candidate's profile:</p>"
+                                + "<ul>"
+                                + "<li><b>Candidate ID:</b> %s</li>"
+                                + "<li><b>Job ID:</b> %s</li>"
+                                + "<li><b>Candidate Name:</b> %s</li>"
+                                + "<li><b>Email Address:</b> %s</li>"
+                                + "<li><b>Total Experience:</b> %.1f years</li>"
+                                + "<li><b>Primary Skills:</b> %s</li>"
+                                + "<li><b>Overall Feedback:</b> %s</li>"
+                                + "</ul>"
+                                + "<p>The updated profile is now available on the portal.</p>"
+                                + "<p><b><span style='font-size:18px;'>Please do not reply to this email address as it is sent from an unmonitored mailbox.</span></b></p>",
+                        recruiterName, candidateDetails.getCandidateId(), jobId, candidateName,
+                        candidateEmail, candidateDetails.getTotalExperience(), skills, overallFeedback
+                );
+
+                bodyForTeamLead = String.format(
+                        "<p>Dear %s,</p>"
+                                + "<p>The following candidate's profile has been updated by <b>%s</b>:</p>"
+                                + "<ul>"
+                                + "<li><b>Candidate ID:</b> %s</li>"
+                                + "<li><b>Job ID:</b> %s</li>"
+                                + "<li><b>Candidate Name:</b> %s</li>"
+                                + "<li><b>Email Address:</b> %s</li>"
+                                + "<li><b>Total Experience:</b> %.1f years</li>"
+                                + "<li><b>Primary Skills:</b> %s</li>"
+                                + "<li><b>Overall Feedback:</b> %s</li>"
+                                + "</ul>"
+                                + "<p>Kindly log in to the portal to review the updated profile.</p>"
+                                + "<p><b><span style='font-size:18px;'>Please do not reply to this email address as it is sent from an unmonitored mailbox.</span></b></p>",
+                        teamLeadName, recruiterName, candidateDetails.getCandidateId(), jobId, candidateName,
+                        candidateEmail, candidateDetails.getTotalExperience(), skills, overallFeedback
+                );
+                break;
+
+            case "deletion":
+                subject = "Candidate Profile Deleted - Job ID: " + jobId;
+                bodyForRecruiter = String.format(
+                        "<p>Dear %s,</p>"
+                                + "<p>You have deleted the following candidate's profile:</p>"
+                                + "<ul>"
+                                + "<li><b>Candidate ID:</b> %s</li>"
+                                + "<li><b>Job ID:</b> %s</li>"
+                                + "<li><b>Candidate Name:</b> %s</li>"
+                                + "<li><b>Email Address:</b> %s</li>"
+                                + "</ul>"
+                                + "<p>If this was unintentional, please contact your team lead immediately.</p>"
+                                + "<p><b><span style='font-size:18px;'>Please do not reply to this email address as it is sent from an unmonitored mailbox.</span></b></p>",
+                        recruiterName, candidateDetails.getCandidateId(), jobId, candidateName, candidateEmail
+                );
+
+                bodyForTeamLead = String.format(
+                        "<p>Dear %s,</p>"
+                                + "<p>The following candidate profile has been deleted by %s:</p>"
+                                + "<ul>"
+                                + "<li><b>Candidate ID:</b> %s</li>"
+                                + "<li><b>Job ID:</b> %s</li>"
+                                + "<li><b>Candidate Name:</b> %s</li>"
+                                + "<li><b>Email Address:</b> %s</li>"
+                                + "</ul>"
+                                + "<p>If this was unintentional or further details are required, please follow up with the recruiter.</p>"
+                                + "<p><b><span style='font-size:18px;'>Please do not reply to this email address as it is sent from an unmonitored mailbox.</span></b></p>",
+                        teamLeadName, recruiterName, candidateDetails.getCandidateId(), jobId, candidateName, candidateEmail
+                );
+                break;
+
+            default:
+                throw new IllegalArgumentException("Invalid action type: " + actionType);
+        }
+
+        // Send email to the recruiter and team lead only
+        sendInterviewNotification(recruiterEmail, subject, bodyForRecruiter); // To Recruiter
+        sendInterviewNotification(teamLeadEmail, subject, bodyForTeamLead);   // To Team Lead
+    }
+
 
     // Custom Exception for Email Configuration Issues
     public static class EmailConfigurationException extends RuntimeException {
