@@ -56,12 +56,6 @@ public class CandidateService {
         // Optionally set userEmail and clientEmail if not already set
         setDefaultEmailsIfMissing(candidateDetails);
 
-        // Generate candidate ID if not already set
-        if (candidateDetails.getCandidateId() == null || candidateDetails.getCandidateId().isEmpty()) {
-            String generatedId = generateCandidateId();
-            candidateDetails.setCandidateId(generatedId);
-        }
-
 
         // Process the resume file and set it as a BLOB
         if (resumeFile != null && !resumeFile.isEmpty()) {
@@ -80,6 +74,12 @@ public class CandidateService {
         if (candidateDetails.getProfileReceivedDate() == null) {
             candidateDetails.setProfileReceivedDate(LocalDate.now());
         }
+
+        if (candidateDetails.getCandidateId() == null || candidateDetails.getCandidateId().isEmpty()) {
+            String newCandidateId = generateCustomCandidateId();
+            candidateDetails.setCandidateId(newCandidateId);
+        }
+
 
         // Save the candidate details to the database
         CandidateDetails savedCandidate = candidateRepository.save(candidateDetails);
@@ -122,22 +122,18 @@ public class CandidateService {
         );
     }
 
-    private String generateCandidateId() {
-        String maxCandidateId = candidateRepository.findMaxCandidateId();
+    private String generateCustomCandidateId() {
+        List<Integer> existingNumbers = candidateRepository.findAll().stream()
+                .map(CandidateDetails::getCandidateId)
+                .filter(id -> id != null && id.matches("CAND\\d{4,}")) // Match CAND0001+ (4+ digits)
+                .map(id -> Integer.parseInt(id.replace("CAND", "")))
+                .toList();
 
-        int nextIdNumber = 1;
+        int nextNumber = existingNumbers.stream().max(Integer::compare).orElse(0) + 1;
 
-        if (maxCandidateId != null && maxCandidateId.startsWith("CAND")) {
-            try {
-                int currentNumber = Integer.parseInt(maxCandidateId.substring(4));
-                nextIdNumber = currentNumber + 1;
-            } catch (NumberFormatException e) {
-                // Log warning or handle appropriately
-            }
-        }
-
-        return "CAND" + nextIdNumber;
+        return String.format("CAND%04d", nextNumber);
     }
+
 
     private boolean isValidFileType(MultipartFile file) {
         String fileName = file.getOriginalFilename();
