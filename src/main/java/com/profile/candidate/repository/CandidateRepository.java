@@ -18,10 +18,16 @@ import java.util.Optional;
 @Repository
 public interface CandidateRepository extends JpaRepository<CandidateDetails, String> {
 
+    @Query("SELECT MAX(c.candidateId) FROM CandidateDetails c WHERE c.candidateId LIKE 'CAND%'")
+    String findMaxCandidateId();
+
     // Fetch candidate by candidateId
     List<CandidateDetails> findAllByCandidateId(String candidateId);
 
-    List<CandidateDetails> findByUserId(String userId);
+    // Native query to find the user name by email from the user_details_prod table
+    @Query(value = "SELECT user_name FROM user_details_prod WHERE email = :email", nativeQuery = true)
+    String findUserNameByEmail(@Param("email") String email);
+
 
     Optional<CandidateDetails> findByCandidateIdAndUserId(String candidateId, String userId);
     Optional<CandidateDetails> findByCandidateIdAndInterviewDateTime(String candidateId, OffsetDateTime interviewDateTime);
@@ -79,23 +85,8 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime);
 
-    // Fetch self submissions by userId (submitted by the user themselves)
-    @Query(value = """
-    SELECT 
-        c.candidate_id AS candidate_id,
-        c.full_name AS full_name,
-        c.skills AS skills,
-        c.job_id AS job_id,
-        c.user_id AS user_id,
-        c.user_email AS user_email,
-        c.preferred_location AS preferred_location,
-        DATE_FORMAT(c.profile_received_date, '%Y-%m-%d') AS profile_received_date,  -- Corrected to profile_received_date
-        r.job_title AS job_title,
-        r.client_name AS client_name,
-        c.interview_status AS interview_status
-    FROM candidates_prod c
-    JOIN requirements_model_prod r ON c.job_id = r.job_id
-    WHERE c.user_id = :userId
-    """, nativeQuery = true)
-    List<Tuple> findSelfSubmissionsByTeamlead(@Param("userId") String userId);
+    @Query(value = "SELECT u.email FROM user_details_prod u " +
+            "JOIN requirements_model_prod r ON LOWER(r.assigned_by) = LOWER(u.user_name) " +
+            "WHERE r.job_id = :jobId", nativeQuery = true)
+    String findTeamLeadEmailByJobId(@Param("jobId") String jobId);
 }
