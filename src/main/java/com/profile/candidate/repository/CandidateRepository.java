@@ -89,4 +89,81 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             "JOIN requirements_model_prod r ON LOWER(r.assigned_by) = LOWER(u.user_name) " +
             "WHERE r.job_id = :jobId", nativeQuery = true)
     String findTeamLeadEmailByJobId(@Param("jobId") String jobId);
+
+    // Fetch self submissions by userId (submitted by the user themselves)
+    @Query(value = """
+            SELECT 
+                c.candidate_id AS candidate_id,
+                c.full_name AS full_name,
+                c.skills AS skills,
+                c.job_id AS job_id,
+                c.user_id AS user_id,
+                c.user_email AS user_email,
+                c.preferred_location AS preferred_location,
+                DATE_FORMAT(c.profile_received_date, '%Y-%m-%d') AS profile_received_date,  -- Corrected to profile_received_date
+                r.job_title AS job_title,
+                r.client_name AS client_name,
+                c.interview_status AS interview_status
+            FROM candidates_prod c
+            JOIN requirements_model_prod r ON c.job_id = r.job_id
+            WHERE c.user_id = :userId
+            """, nativeQuery = true)
+    List<Tuple> findSelfSubmissionsByTeamlead(@Param("userId") String userId);
+
+
+    // Fetch team submissions by userId (submitted by team members, not the user themselves)
+    @Query(value = """
+            SELECT 
+                c.candidate_id AS candidate_id,
+                c.full_name AS full_name,
+                c.skills AS skills,
+                c.job_id AS job_id,
+                c.user_id AS user_id,
+                c.user_email AS user_email,
+                c.preferred_location AS preferred_location,
+                DATE_FORMAT(c.profile_received_date, '%Y-%m-%d') AS profile_received_date,
+                r.job_title AS job_title,
+                r.client_name AS client_name,
+                c.interview_status AS interview_status
+            FROM user_details_prod u
+            JOIN requirements_model_prod r ON r.assigned_by = u.user_name
+            JOIN candidates_prod c ON c.job_id = r.job_id
+            WHERE u.user_id = :userId
+              AND c.user_id != u.user_id
+              AND c.job_id IN (
+                  SELECT r2.job_id
+                  FROM requirements_model_prod r2
+                  WHERE r2.assigned_by = u.user_name
+              )
+            """, nativeQuery = true)
+    List<Tuple> findTeamSubmissionsByTeamlead(@Param("userId") String userId);
+
+
+    // Self Interviews (done by the teamlead themselves)
+    @Query(value = """
+                SELECT c.* 
+                FROM candidates_prod c
+                JOIN requirements_model_prod r ON c.job_id = r.job_id
+                WHERE c.user_id = :userId
+                  AND c.interview_date_time IS NOT NULL
+                  AND c.client_name = r.client_name  -- Ensures client_name matches between candidates and requirements
+            """, nativeQuery = true)
+    List<CandidateDetails> findSelfScheduledInterviewsByTeamlead(@Param("userId") String userId);
+
+
+    // Team Interviews (by recruiters, but jobs assigned by teamlead)
+    @Query(value = """
+    SELECT c.* 
+    FROM user_details_prod u
+    JOIN requirements_model_prod r ON r.assigned_by = u.user_name
+    JOIN candidates_prod c ON c.job_id = r.job_id
+    WHERE u.user_id = :userId
+      AND c.user_id != u.user_id
+      AND c.interview_date_time IS NOT NULL
+       AND c.job_id IN (
+                        SELECT r2.job_id
+                        FROM requirements_model_prod r2
+                        WHERE r2.client_name = r.client_name AND r2.assigned_by = u.user_name)  -- Ensures client_name matches between candidates and requirements
+""", nativeQuery = true)
+    List<CandidateDetails> findTeamScheduledInterviewsByTeamlead(@Param("userId") String userId);
 }

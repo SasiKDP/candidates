@@ -746,4 +746,56 @@ public class CandidateController {
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    // Endpoint to get submissions for a teamlead based on userId
+    @GetMapping("/submissions/teamlead/{userId}")
+    public ResponseEntity<TeamleadSubmissionsDTO> getSubmissionsForTeamlead(@PathVariable String userId) {
+        try {
+            // Call the service to get the submissions
+            TeamleadSubmissionsDTO submissionsDTO = candidateService.getSubmissionsForTeamlead(userId);
+
+            // Logging number of submissions fetched
+            int selfSubmissionsCount = submissionsDTO.getSelfSubmissions() != null ? submissionsDTO.getSelfSubmissions().size() : 0;
+            int teamSubmissionsCount = submissionsDTO.getTeamSubmissions() != null ? submissionsDTO.getTeamSubmissions().size() : 0;
+
+            logger.info("Fetched {} self submissions for userId: {}", selfSubmissionsCount, userId);
+            logger.info("Fetched {} team submissions for userId: {}", teamSubmissionsCount, userId);
+
+            // Return the response with status 200 OK
+            return ResponseEntity.ok(submissionsDTO);
+
+        } catch (CandidateNotFoundException ex) {
+            logger.error("No submissions found for userId: {}", userId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        } catch (Exception ex) {
+            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/interviews/teamlead/{userId}")
+    public ResponseEntity<TeamleadInterviewsDTO> getInterviewsForTeamlead(@PathVariable String userId) {
+        try {
+            // Call the service to get the teamlead interviews
+            TeamleadInterviewsDTO teamleadInterviewsDTO = candidateService.getTeamleadScheduledInterviews(userId);
+
+            // Logging the number of self and team interviews fetched
+            int selfInterviewsCount = teamleadInterviewsDTO.getSelfInterviews() != null ? teamleadInterviewsDTO.getSelfInterviews().size() : 0;
+            int teamInterviewsCount = teamleadInterviewsDTO.getTeamInterviews() != null ? teamleadInterviewsDTO.getTeamInterviews().size() : 0;
+
+            logger.info("Fetched {} self interviews for teamlead with userId: {}", selfInterviewsCount, userId);
+            logger.info("Fetched {} team interviews for teamlead with userId: {}", teamInterviewsCount, userId);
+
+            // Return the response with status 200 OK
+            return ResponseEntity.ok(teamleadInterviewsDTO);
+
+        } catch (CandidateNotFoundException ex) {
+            logger.error("No interviews found for teamlead with userId: {}", userId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        } catch (Exception ex) {
+            logger.error("An error occurred while fetching interviews for teamlead with userId: {}: {}", userId, ex.getMessage(), ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

@@ -62,14 +62,19 @@ public class GlobalExceptionHandler {
     // Handle CandidateAlreadyExistsException
     @ExceptionHandler(CandidateAlreadyExistsException.class)
     public ResponseEntity<CandidateResponseDto> handleCandidateAlreadyExistsException(CandidateAlreadyExistsException ex) {
-        // Assuming candidateId, employeeId, and jobId are null by default
+        // Create Payload with null values as no candidate-specific data is available
+        CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(null, null, null);
+
+        // Create the CandidateResponseDto object with the correct response structure
         CandidateResponseDto response = new CandidateResponseDto(
-                ex.getMessage(),  // Custom exception message
-                null,  // candidateId = null
-                null,  // employeeId = null
-                null   // jobId = null
+                "Error",  // status (indicating this is an error)
+                ex.getMessage(),  // message (exception message that caused the error)
+                payload,  // payload with candidate-related information (null in this case)
+                ex.getMessage()  // errorMessage (same as message or custom error message)
         );
-        return new ResponseEntity<>(response, HttpStatus.CONFLICT); // HTTP 409
+
+        // Return the response with HTTP 409 Conflict status
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT); // HTTP 409 for "Conflict"
     }
 
     // Handle all other unchecked exceptions (generic fallback)
