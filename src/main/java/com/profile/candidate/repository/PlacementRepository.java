@@ -9,8 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface PlacementRepository extends JpaRepository<PlacementDetails, String> {
-    boolean existsByPhone(String phone);
-    boolean existsByConsultantEmail(String consultantEmail);
+
+    boolean existsByClientEmail(String clientEmail);
+    boolean existsByCandidateContactNo(String candidateContactNo);
+
     @Query(value = "SELECT " +
             "(SELECT COUNT(*) FROM requirements_model_prod) AS requirementsCount, " +
             "(SELECT COUNT(*) FROM candidates_prod) AS candidatesCount, " +

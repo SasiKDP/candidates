@@ -10,8 +10,6 @@ import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,11 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -315,42 +309,6 @@ public class CandidateController {
             // Log the error and return HTTP 500
             logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/submissions/{userId}/filterByDate")
-    public ResponseEntity<?> getSubmissionsByUserIdAndDateRange(
-            @PathVariable String userId,
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        try {
-            // Fetch submissions by userId within the given date range
-            List<CandidateGetResponseDto> submissions = candidateService.getSubmissionsByUserIdAndDateRange(userId, startDate, endDate);
-
-            // Check if submissions are found
-            if (submissions.isEmpty()) {
-                logger.warn("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
-                throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
-            }
-
-            // Log success
-            logger.info("Fetched {} submissions successfully for userId: {} between {} and {}", submissions.size(), userId, startDate, endDate);
-
-            // Return all candidate details with status 200 OK
-            return ResponseEntity.ok(submissions);
-
-        } catch (CandidateNotFoundException ex) {
-            // Return message in JSON body for 404
-            logger.error("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Collections.singletonMap("message", ex.getMessage()));
-
-        } catch (Exception ex) {
-            // Log the error and return HTTP 500 with message
-            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An internal error occurred while fetching submissions."));
         }
     }
 
@@ -744,6 +702,58 @@ public class CandidateController {
             ));
 
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    // Endpoint to get submissions for a teamlead based on userId
+    @GetMapping("/submissions/teamlead/{userId}")
+    public ResponseEntity<TeamleadSubmissionsDTO> getSubmissionsForTeamlead(@PathVariable String userId) {
+        try {
+            // Call the service to get the submissions
+            TeamleadSubmissionsDTO submissionsDTO = candidateService.getSubmissionsForTeamlead(userId);
+
+            // Logging number of submissions fetched
+            int selfSubmissionsCount = submissionsDTO.getSelfSubmissions() != null ? submissionsDTO.getSelfSubmissions().size() : 0;
+            int teamSubmissionsCount = submissionsDTO.getTeamSubmissions() != null ? submissionsDTO.getTeamSubmissions().size() : 0;
+
+            logger.info("Fetched {} self submissions for userId: {}", selfSubmissionsCount, userId);
+            logger.info("Fetched {} team submissions for userId: {}", teamSubmissionsCount, userId);
+
+            // Return the response with status 200 OK
+            return ResponseEntity.ok(submissionsDTO);
+
+        } catch (CandidateNotFoundException ex) {
+            logger.error("No submissions found for userId: {}", userId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        } catch (Exception ex) {
+            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/interviews/teamlead/{userId}")
+    public ResponseEntity<TeamleadInterviewsDTO> getInterviewsForTeamlead(@PathVariable String userId) {
+        try {
+            // Call the service to get the teamlead interviews
+            TeamleadInterviewsDTO teamleadInterviewsDTO = candidateService.getTeamleadScheduledInterviews(userId);
+
+            // Logging the number of self and team interviews fetched
+            int selfInterviewsCount = teamleadInterviewsDTO.getSelfInterviews() != null ? teamleadInterviewsDTO.getSelfInterviews().size() : 0;
+            int teamInterviewsCount = teamleadInterviewsDTO.getTeamInterviews() != null ? teamleadInterviewsDTO.getTeamInterviews().size() : 0;
+
+            logger.info("Fetched {} self interviews for teamlead with userId: {}", selfInterviewsCount, userId);
+            logger.info("Fetched {} team interviews for teamlead with userId: {}", teamInterviewsCount, userId);
+
+            // Return the response with status 200 OK
+            return ResponseEntity.ok(teamleadInterviewsDTO);
+
+        } catch (CandidateNotFoundException ex) {
+            logger.error("No interviews found for teamlead with userId: {}", userId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        } catch (Exception ex) {
+            logger.error("An error occurred while fetching interviews for teamlead with userId: {}: {}", userId, ex.getMessage(), ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

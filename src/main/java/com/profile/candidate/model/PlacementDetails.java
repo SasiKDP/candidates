@@ -26,13 +26,13 @@ public class PlacementDetails {
 
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is mandatory")
-    @Column(name = "consultant_email")
-    private String consultantEmail;
+    @Column(name = "client_email")
+    private String clientEmail;
 
     @Pattern(regexp = "^\\d{10}$", message = "Phone number must be 10 digits")
     @NotBlank(message = "Phone number is required")
-    @Column(name = "phone")
-    private String phone;
+    @Column(name = "candidateContactNo")
+    private String candidateContactNo;
 
     @Column(name = "technology")
     private String technology;
@@ -99,20 +99,20 @@ public class PlacementDetails {
         this.consultantName = consultantName;
     }
 
-    public String getConsultantEmail() {
-        return consultantEmail;
+    public String getClientEmail() {
+        return clientEmail;
     }
 
-    public void setConsultantEmail(String consultantEmail) {
-        this.consultantEmail = consultantEmail;
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
     }
 
-    public String getPhone() {
-        return phone;
+    public String getCandidateContactNo() {
+        return candidateContactNo;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setCandidateContactNo(String candidateContactNo) {
+        this.candidateContactNo = candidateContactNo;
     }
 
     public String getTechnology() {

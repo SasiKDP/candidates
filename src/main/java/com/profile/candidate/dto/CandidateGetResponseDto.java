@@ -1,13 +1,19 @@
 package com.profile.candidate.dto;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profile.candidate.model.CandidateDetails;
 
+import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class CandidateGetResponseDto {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class CandidateGetResponseDto implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private String candidateId;
     private String jobId;
@@ -30,13 +36,17 @@ public class CandidateGetResponseDto {
     private String overallFeedback;
     private String userEmail;
     private String interviewStatus;
-    private String clientName; // This is the new field you want to include
+    private String clientName;
     private LocalDate profileReceivedDate;
-
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Constructor that takes a CandidateDetails object
+
+    // Default constructor for cases when no CandidateDetails is available
+    public CandidateGetResponseDto() {
+    }
+
+    // Constructor for when you need to create the DTO with CandidateDetails
     public CandidateGetResponseDto(CandidateDetails candidate) {
         this.candidateId = candidate.getCandidateId();
         this.jobId = candidate.getJobId();
@@ -62,32 +72,33 @@ public class CandidateGetResponseDto {
         this.clientName = candidate.getClientName();
         this.profileReceivedDate = candidate.getProfileReceivedDate();
     }
-
-    // Method to extract latest interview status
+    // Method to extract the latest interview status from the JSON string
     private String extractLatestInterviewStatus(String interviewStatusJson) {
         if (interviewStatusJson == null || interviewStatusJson.trim().isEmpty()) {
-            return "Not Scheduled";
+            return "Not Scheduled";  // Default status
         }
 
         try {
             if (interviewStatusJson.trim().startsWith("[") || interviewStatusJson.trim().startsWith("{")) {
-                // JSON format detected
                 List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
 
+                DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+
                 return statusHistory.stream()
-                        .max(Comparator.comparing(entry -> (String) entry.get("timestamp"))) // Sort by latest timestamp
+                        .filter(entry -> entry.get("timestamp") != null && entry.get("status") != null)
+                        .max(Comparator.comparing(entry -> LocalDateTime.parse((String) entry.get("timestamp"), formatter)))
                         .map(entry -> (String) entry.get("status"))
                         .orElse("Not Scheduled");
             }
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             System.err.println("Error parsing interview status JSON: " + e.getMessage());
         }
 
-        // If it's not JSON, assume it's a simple status string
-        return interviewStatusJson;
+        return interviewStatusJson;  // Fallback in case of parsing failure
     }
 
     // Getters and Setters
+
     public String getCandidateId() {
         return candidateId;
     }

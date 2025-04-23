@@ -12,8 +12,8 @@ import java.math.BigDecimal;
 public class PlacementDto {
     private String id;
     private String consultantName;
-    private String phone;
-    private String consultantEmail;
+    private String candidateContactNo;
+    private String clientEmail;
     private String technology;
     private String client;
     private String vendorName;
@@ -30,6 +30,7 @@ public class PlacementDto {
     private java.math.BigDecimal grossProfit;
     private String status;
     private String statusMessage;
+
 
     public void setStatus(String status) {
         this.status = status;
@@ -55,20 +56,20 @@ public class PlacementDto {
         this.consultantName = consultantName;
     }
 
-    public String getPhone() {
-        return phone;
+    public String getCandidateContactNo() {
+        return candidateContactNo;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setCandidateContactNo(String candidateContactNo) {
+        this.candidateContactNo = candidateContactNo;
     }
 
-    public String getConsultantEmail() {
-        return consultantEmail;
+    public String getClientEmail() {
+        return clientEmail;
     }
 
-    public void setConsultantEmail(String consultantEmail) {
-        this.consultantEmail = consultantEmail;
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
     }
 
     public String getTechnology() {
