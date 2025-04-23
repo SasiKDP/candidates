@@ -1,6 +1,7 @@
 package com.profile.candidate.repository;
 
 import com.profile.candidate.model.CandidateDetails;
+import jakarta.persistence.Tuple;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -77,4 +78,24 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
             @Param("userId") String userId,
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime);
+
+    // Fetch self submissions by userId (submitted by the user themselves)
+    @Query(value = """
+    SELECT 
+        c.candidate_id AS candidate_id,
+        c.full_name AS full_name,
+        c.skills AS skills,
+        c.job_id AS job_id,
+        c.user_id AS user_id,
+        c.user_email AS user_email,
+        c.preferred_location AS preferred_location,
+        DATE_FORMAT(c.profile_received_date, '%Y-%m-%d') AS profile_received_date,  -- Corrected to profile_received_date
+        r.job_title AS job_title,
+        r.client_name AS client_name,
+        c.interview_status AS interview_status
+    FROM candidates_prod c
+    JOIN requirements_model_prod r ON c.job_id = r.job_id
+    WHERE c.user_id = :userId
+    """, nativeQuery = true)
+    List<Tuple> findSelfSubmissionsByTeamlead(@Param("userId") String userId);
 }

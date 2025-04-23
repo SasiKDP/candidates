@@ -12,6 +12,7 @@ import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.repository.CandidateRepository;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
+import jakarta.persistence.Tuple;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -419,8 +421,6 @@ public class CandidateService {
             return dto;
         }).collect(Collectors.toList());
     }
-
-
 
 
     public boolean isCandidateValidForUser(String userId, String candidateId) {
@@ -1160,6 +1160,8 @@ public class CandidateService {
 
         return response;
     }
+
+
 
 
     // Method to update the candidate fields with new values
