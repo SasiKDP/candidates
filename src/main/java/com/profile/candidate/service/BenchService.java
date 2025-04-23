@@ -29,8 +29,21 @@ public class BenchService {
     }
 
     public List<BenchDetails> findAllBenchDetails() {
-        return benchRepository.findAll();
+        // Define start and end of the current month
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+
+        logger.info("Fetching bench details from {} to {}", startOfMonth, endOfMonth);
+
+        // Fetch only current month bench records
+        List<BenchDetails> benchDetailsList = benchRepository.findByCreatedDateBetween(startOfMonth, endOfMonth);
+
+        logger.info("Total bench records fetched for current month: {}", benchDetailsList.size());
+
+        return benchDetailsList;
     }
+
+
 
     public Optional<BenchDetails> findBenchDetailsById(String id) {
         return benchRepository.findById(id);
