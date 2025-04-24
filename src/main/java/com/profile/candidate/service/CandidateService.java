@@ -364,13 +364,25 @@ public class CandidateService {
 
     // Method to get candidate submissions by userId
     public List<CandidateGetResponseDto> getSubmissionsByUserId(String userId) {
-        // Get the current month's date range
-        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
-        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+        // ✅ Validate user existence and fetch role
+        String role = candidateRepository.findRoleByUserId(userId); // Native query to join user_roles_prod and roles_prod
+        if (role == null) {
+            throw new ResourceNotFoundException("User ID '" + userId + "' not found or role not assigned.");
+        }
 
-        // Fetch submissions for user in the current month
-        List<CandidateDetails> candidates = candidateRepository
-                .findByUserIdAndProfileReceivedDateBetween(userId, startOfMonth, endOfMonth);
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+
+        List<CandidateDetails> candidates;
+
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            candidates = candidateRepository.findByUserIdAndProfileReceivedDateBetween(userId, startOfMonth, endOfMonth);
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            candidates = candidateRepository.findSubmissionsByBdmUserIdAndDateRange(userId, startOfMonth, endOfMonth);
+        } else {
+            throw new UnsupportedOperationException("Only EMPLOYEE and BDM roles are supported.");
+        }
 
         if (candidates.isEmpty()) {
             throw new CandidateNotFoundException("No submissions found for userId: " + userId + " in the current month.");
@@ -378,26 +390,22 @@ public class CandidateService {
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        List<CandidateGetResponseDto> candidateDtos = candidates.stream().map(candidate -> {
-            String latestInterviewStatus = null;
+        return candidates.stream().map(candidate -> {
+            String latestInterviewStatus = "Not Scheduled";
             String interviewStatusJson = candidate.getInterviewStatus();
 
             try {
                 if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
-                    String trimmedStatus = interviewStatusJson.trim();
+                    String trimmed = interviewStatusJson.trim();
+                    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(trimmed, List.class);
 
-                    if (trimmedStatus.startsWith("[") && trimmedStatus.endsWith("]")) {
-                        List<Map<String, Object>> statusHistory = objectMapper.readValue(trimmedStatus, List.class);
+                        Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
+                                .max(Comparator.comparing(entry -> OffsetDateTime.parse((String) entry.get("timestamp"))));
 
-                        if (!statusHistory.isEmpty()) {
-                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
-                                    .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
-                                    .max(Comparator.comparing(entry ->
-                                            OffsetDateTime.parse((String) entry.get("timestamp"))));
-
-                            if (latestStatus.isPresent()) {
-                                latestInterviewStatus = (String) latestStatus.get().get("status");
-                            }
+                        if (latestStatus.isPresent()) {
+                            latestInterviewStatus = (String) latestStatus.get().get("status");
                         }
                     }
                 }
@@ -406,29 +414,34 @@ public class CandidateService {
                         candidate.getCandidateId() + ": " + e.getMessage());
             }
 
-            if (latestInterviewStatus == null) {
-                latestInterviewStatus = "Not Scheduled";
-            }
-
             Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(candidate.getJobId());
             String clientName = clientNameOpt.orElse(null);
 
             CandidateGetResponseDto dto = new CandidateGetResponseDto(candidate);
             dto.setInterviewStatus(latestInterviewStatus);
             dto.setClientName(clientName);
-
             return dto;
         }).collect(Collectors.toList());
-
-        return candidateDtos;
     }
+
 
     public List<CandidateGetResponseDto> getSubmissionsByUserIdAndDateRange(String userId, LocalDate startDate, LocalDate endDate) {
         if (endDate.isBefore(startDate)) {
             throw new DateRangeValidationException("End date cannot be before start date.");
         }
 
-        List<CandidateDetails> candidates = candidateRepository.findByUserIdAndProfileReceivedDateBetween(userId, startDate, endDate);
+        // Fetch role
+        String role = candidateRepository.findRoleByUserId(userId); // write this query to join user_roles_prod and roles_prod
+
+        List<CandidateDetails> candidates;
+
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            candidates = candidateRepository.findByUserIdAndProfileReceivedDateBetween(userId, startDate, endDate);
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            candidates = candidateRepository.findSubmissionsByBdmUserIdAndDateRange(userId, startDate, endDate);
+        } else {
+            throw new UnsupportedOperationException("Only EMPLOYEE and BDM roles are supported.");
+        }
 
         if (candidates.isEmpty()) {
             throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
@@ -1147,64 +1160,133 @@ public class CandidateService {
 
     public List<GetInterviewResponseDto> getAllScheduledInterviewsByUserId(String userId) {
         // Calculate start and end of current month
-        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusSeconds(1);
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
 
-        // Use the custom repository query to fetch only current month's scheduled interviews
-        List<CandidateDetails> candidates = candidateRepository
-                .findScheduledInterviewsByUserIdAndDateRange(userId, startOfMonth, endOfMonth);
+        // Convert to LocalDateTime for repository calls
+        LocalDateTime startDateTime = startOfMonth.atStartOfDay();
+        LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
 
+        logger.info("Fetching interviews for userId: {} between {} and {}", userId, startOfMonth, endOfMonth);
+
+        // Fetch role
+        String role = candidateRepository.findRoleByUserId(userId);
+        logger.info("User role for userId {}: {}", userId, role);
+
+        List<CandidateDetails> employeeCandidates = new ArrayList<>();
+        List<Tuple> bdmCandidates = new ArrayList<>();
+
+        // Fetch data based on role
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for EMPLOYEE userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            employeeCandidates = candidateRepository.findScheduledInterviewsByUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (employeeCandidates.isEmpty()) {
+                logger.warn("No interviews found for EMPLOYEE userId: {} in the current month",
+                        userId);
+                return new ArrayList<>();
+            }
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for BDM userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            bdmCandidates = candidateRepository.findScheduledInterviewsByBdmUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (bdmCandidates.isEmpty()) {
+                logger.warn("No interviews found for BDM userId: {} in the current month",
+                        userId);
+                return new ArrayList<>();
+            }
+        } else {
+            logger.error("Unsupported role {} for userId {}", role, userId);
+            throw new UnsupportedOperationException("Only EMPLOYEE and BDM roles are supported.");
+        }
+
+        // Process and return results
         List<GetInterviewResponseDto> response = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
 
-        for (CandidateDetails interview : candidates) {
-            String interviewStatusJson = interview.getInterviewStatus();
-            String latestInterviewStatus = null;
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            logger.info("Processing {} interviews for EMPLOYEE userId: {}", employeeCandidates.size(), userId);
 
-            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
-                try {
-                    if (interviewStatusJson.trim().startsWith("[") && interviewStatusJson.trim().endsWith("]")) {
-                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+            for (CandidateDetails interview : employeeCandidates) {
+                String interviewStatusJson = interview.getInterviewStatus();
+                String latestInterviewStatus = processInterviewStatus(interviewStatusJson, objectMapper, interview.getCandidateId());
 
-                        if (!statusHistory.isEmpty()) {
-                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
-                                    .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
-                                    .max(Comparator.comparing(entry ->
-                                            OffsetDateTime.parse((String) entry.get("timestamp"))));
+                // Only add if interviewDateTime is not null
+                if (interview.getInterviewDateTime() != null) {
+                    logger.debug("Adding interview for candidateId: {} with jobId: {}",
+                            interview.getCandidateId(), interview.getJobId());
 
-                            if (latestStatus.isPresent()) {
-                                latestInterviewStatus = (String) latestStatus.get().get("status");
-                            }
-                        }
-                    } else {
-                        latestInterviewStatus = interviewStatusJson.trim();
-                    }
-                } catch (JsonProcessingException | DateTimeParseException e) {
-                    System.err.println("Error parsing interview status JSON or timestamp: " + e.getMessage());
-                    latestInterviewStatus = "Parsing Error";
+                    response.add(new GetInterviewResponseDto(
+                            interview.getJobId(),
+                            interview.getCandidateId(),
+                            interview.getFullName(),
+                            interview.getContactNumber(),
+                            interview.getCandidateEmailId(),
+                            interview.getUserEmail(),
+                            interview.getUserId(),
+                            interview.getInterviewDateTime(),
+                            interview.getDuration(),
+                            interview.getZoomLink(),
+                            interview.getTimestamp(),
+                            interview.getClientEmail(),
+                            interview.getClientName(),
+                            interview.getInterviewLevel(),
+                            latestInterviewStatus
+                    ));
                 }
             }
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            logger.info("Processing {} interviews for BDM userId: {}", bdmCandidates.size(), userId);
 
-            // Filter only those with scheduled interviewDateTime
-            if (interview.getInterviewDateTime() != null) {
-                GetInterviewResponseDto dto = new GetInterviewResponseDto(
-                        interview.getJobId(),
-                        interview.getCandidateId(),
-                        interview.getFullName(),
-                        interview.getContactNumber(),
-                        interview.getCandidateEmailId(),
-                        interview.getUserEmail(),
-                        interview.getUserId(),
-                        interview.getInterviewDateTime(),
-                        interview.getDuration(),
-                        interview.getZoomLink(),
-                        interview.getTimestamp(),
-                        interview.getClientEmail(),
-                        interview.getClientName(),
-                        interview.getInterviewLevel(),
-                        latestInterviewStatus
-                );
-                response.add(dto);
+            for (Tuple tuple : bdmCandidates) {
+                String candidateId = tuple.get("candidate_id", String.class);
+                String interviewStatusJson = tuple.get("interview_status", String.class);
+                String latestInterviewStatus = processInterviewStatus(interviewStatusJson, objectMapper, candidateId);
+
+                String interviewDateTimeStr = tuple.get("interview_date_time", String.class);
+                OffsetDateTime interviewDateTime = null;
+
+                if (interviewDateTimeStr != null) {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                    LocalDateTime localDateTime = LocalDateTime.parse(interviewDateTimeStr, formatter);
+                    interviewDateTime = localDateTime.atOffset(ZoneOffset.ofHoursMinutes(5, 30)); // IST
+                }
+
+                // Only add if interviewDateTime is not null
+                if (interviewDateTime != null) {
+                    String timestampStr = tuple.get("timestamp", String.class);
+                    LocalDateTime timestamp = null;
+                    if (timestampStr != null) {
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                        timestamp = LocalDateTime.parse(timestampStr, formatter);
+                    }
+
+                    logger.debug("Adding interview for candidateId: {} with jobId: {}",
+                            candidateId, tuple.get("job_id", String.class));
+
+                    response.add(new GetInterviewResponseDto(
+                            tuple.get("job_id", String.class),
+                            candidateId,
+                            tuple.get("full_name", String.class),
+                            tuple.get("contact_number", String.class),
+                            tuple.get("candidate_email_id", String.class),
+                            tuple.get("user_email", String.class),
+                            tuple.get("user_id", String.class),
+                            interviewDateTime,
+                            tuple.get("duration", Integer.class),
+                            tuple.get("zoom_link", String.class),
+                            timestamp,
+                            tuple.get("client_email", String.class),
+                            tuple.get("client_name", String.class),
+                            tuple.get("interview_level", String.class),
+                            latestInterviewStatus
+                    ));
+                }
             }
         }
 
@@ -1620,70 +1702,151 @@ public class CandidateService {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
 
-        // Log before fetching data
-        logger.info("Fetching scheduled interviews for userId: {} between {} and {}", userId, startDateTime, endDateTime);
+        // Fetch role
+        String role = candidateRepository.findRoleByUserId(userId);
+        logger.info("User role for userId {}: {}", userId, role);
 
-        List<CandidateDetails> candidates = candidateRepository.findScheduledInterviewsByUserIdAndDateRange(userId, startDateTime, endDateTime);
+        List<CandidateDetails> employeeCandidates = new ArrayList<>();
+        List<Tuple> bdmCandidates = new ArrayList<>();
 
-        // Log if no candidates found
-        if (candidates.isEmpty()) {
-            logger.warn("No interviews found for userId: {} between {} and {}", userId, startDate, endDate);
-            throw new CandidateNotFoundException("No interviews found for userId: " + userId + " between " + startDate + " and " + endDate);
+        // Fetch data based on role
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for EMPLOYEE userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            employeeCandidates = candidateRepository.findScheduledInterviewsByUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (employeeCandidates.isEmpty()) {
+                logger.warn("No interviews found for EMPLOYEE userId: {} between {} and {}",
+                        userId, startDate, endDate);
+                throw new CandidateNotFoundException("No interviews found for EMPLOYEE userId: " +
+                        userId + " between " + startDate + " and " + endDate);
+            }
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for BDM userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            bdmCandidates = candidateRepository.findScheduledInterviewsByBdmUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (bdmCandidates.isEmpty()) {
+                logger.warn("No interviews found for BDM userId: {} between {} and {}",
+                        userId, startDate, endDate);
+                throw new CandidateNotFoundException("No interviews found for BDM userId: " +
+                        userId + " between " + startDate + " and " + endDate);
+            }
+        } else {
+            logger.error("Unsupported role {} for userId {}", role, userId);
+            throw new UnsupportedOperationException("Only EMPLOYEE and BDM roles are supported.");
         }
 
-        // Log if interviews found
-        logger.info("Fetched {} interviews for userId: {} between {} and {}", candidates.size(), userId, startDate, endDate);
-
+        // Process and return results
         List<GetInterviewResponseDto> response = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
 
-        for (CandidateDetails interview : candidates) {
-            String interviewStatusJson = interview.getInterviewStatus();
-            String latestInterviewStatus = null;
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            logger.info("Processing {} interviews for EMPLOYEE userId: {}", employeeCandidates.size(), userId);
 
-            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
-                try {
-                    if (interviewStatusJson.trim().startsWith("{") || interviewStatusJson.trim().startsWith("[")) {
-                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
-                        if (!statusHistory.isEmpty()) {
-                            Optional<Map<String, Object>> latestStatus = statusHistory.stream()
-                                    .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
-                            latestInterviewStatus = latestStatus.map(status -> (String) status.get("status")).orElse(null);
-                        }
-                    } else {
-                        latestInterviewStatus = interviewStatusJson;
-                    }
-                } catch (Exception e) {
-                    latestInterviewStatus = interviewStatusJson;
-                    logger.error("Error parsing interview status for candidateId: {}", interview.getCandidateId(), e);
-                }
+            for (CandidateDetails interview : employeeCandidates) {
+                String interviewStatusJson = interview.getInterviewStatus();
+                String latestInterviewStatus = processInterviewStatus(interviewStatusJson, objectMapper, interview.getCandidateId());
+
+                logger.debug("Adding interview for candidateId: {} with jobId: {}",
+                        interview.getCandidateId(), interview.getJobId());
+
+                response.add(new GetInterviewResponseDto(
+                        interview.getJobId(),
+                        interview.getCandidateId(),
+                        interview.getFullName(),
+                        interview.getContactNumber(),
+                        interview.getCandidateEmailId(),
+                        interview.getUserEmail(),
+                        interview.getUserId(),
+                        interview.getInterviewDateTime(),
+                        interview.getDuration(),
+                        interview.getZoomLink(),
+                        interview.getTimestamp(),
+                        interview.getClientEmail(),
+                        interview.getClientName(),
+                        interview.getInterviewLevel(),
+                        latestInterviewStatus
+                ));
             }
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            logger.info("Processing {} interviews for BDM userId: {}", bdmCandidates.size(), userId);
 
-            // Log each interview added
-            logger.info("Adding interview for candidateId: {} with jobId: {}", interview.getCandidateId(), interview.getJobId());
+            for (Tuple tuple : bdmCandidates) {
+                String candidateId = tuple.get("candidate_id", String.class);
+                String interviewStatusJson = tuple.get("interview_status", String.class);
+                String latestInterviewStatus = processInterviewStatus(interviewStatusJson, objectMapper, candidateId);
 
-            response.add(new GetInterviewResponseDto(
-                    interview.getJobId(),
-                    interview.getCandidateId(),
-                    interview.getFullName(),
-                    interview.getContactNumber(),
-                    interview.getCandidateEmailId(),
-                    interview.getUserEmail(),
-                    interview.getUserId(),
-                    interview.getInterviewDateTime(),
-                    interview.getDuration(),
-                    interview.getZoomLink(),
-                    interview.getTimestamp(),
-                    interview.getClientEmail(),
-                    interview.getClientName(),
-                    interview.getInterviewLevel(),
-                    latestInterviewStatus
-            ));
+                logger.debug("Adding interview for candidateId: {} with jobId: {}",
+                        candidateId, tuple.get("job_id", String.class));
+
+                String interviewDateTimeStr = tuple.get("interview_date_time", String.class);
+                OffsetDateTime interviewDateTime = null;
+
+                if (interviewDateTimeStr != null) {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                    LocalDateTime localDateTime = LocalDateTime.parse(interviewDateTimeStr, formatter);
+                    interviewDateTime = localDateTime.atOffset(ZoneOffset.ofHoursMinutes(5, 30)); // IST
+                }
+// In the BDM section of the code:
+                String timestampStr = tuple.get("timestamp", String.class);
+                LocalDateTime timestamp = null;
+                if (timestampStr != null) {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                    timestamp = LocalDateTime.parse(timestampStr, formatter);
+                }
+
+// Then in the DTO constructor call, you're passing timestampStr (the String)
+// when you should be passing timestamp (the LocalDateTime)
+                response.add(new GetInterviewResponseDto(
+                        tuple.get("job_id", String.class),
+                        candidateId,
+                        tuple.get("full_name", String.class),
+                        tuple.get("contact_number", String.class),
+                        tuple.get("candidate_email_id", String.class),
+                        tuple.get("user_email", String.class),
+                        tuple.get("user_id", String.class),
+                        interviewDateTime,
+                        tuple.get("duration", Integer.class),
+                        tuple.get("zoom_link", String.class),
+                        timestamp,  // Change this from timestampStr to timestamp
+                        tuple.get("client_email", String.class),
+                        tuple.get("client_name", String.class),
+                        tuple.get("interview_level", String.class),
+                        latestInterviewStatus
+                ));
+            }
         }
 
         return response;
     }
 
+    // Helper method to process interview status
+    private String processInterviewStatus(String interviewStatusJson, ObjectMapper objectMapper, String candidateId) {
+        String latestInterviewStatus = null;
+
+        if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+            try {
+                if (interviewStatusJson.trim().startsWith("{") || interviewStatusJson.trim().startsWith("[")) {
+                    List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+                    if (!statusHistory.isEmpty()) {
+                        Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                .max(Comparator.comparing(entry -> (String) entry.get("timestamp")));
+                        latestInterviewStatus = latestStatus.map(status -> (String) status.get("status")).orElse(null);
+                    }
+                } else {
+                    latestInterviewStatus = interviewStatusJson;
+                }
+            } catch (Exception e) {
+                latestInterviewStatus = interviewStatusJson;
+                logger.error("Error parsing interview status for candidateId: {}", candidateId, e);
+            }
+        }
+
+        return latestInterviewStatus;
+    }
 
 }
 
