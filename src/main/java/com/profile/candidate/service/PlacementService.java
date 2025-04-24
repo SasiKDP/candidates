@@ -3,6 +3,7 @@ package com.profile.candidate.service;
 import com.profile.candidate.dto.InterviewDto;
 import com.profile.candidate.dto.PlacementDto;
 import com.profile.candidate.dto.PlacementResponseDto;
+import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
 import com.profile.candidate.exceptions.InvalidRateException;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
 import com.profile.candidate.model.PlacementDetails;
@@ -45,12 +46,12 @@ public class PlacementService {
     public PlacementResponseDto savePlacement(PlacementDto placementDto) {
         PlacementDetails placementDetails = convertToEntity(placementDto);
 
-        if (placementRepository.existsByPhone(placementDetails.getPhone())) {
-            throw new IllegalArgumentException("Phone number already exists: " + placementDetails.getPhone());
+        if (placementRepository.existsByCandidateContactNo(placementDetails.getCandidateContactNo())) {
+            throw new CandidateAlreadyExistsException("Candidate already exist in Placements");
         }
 
-        if (placementRepository.existsByConsultantEmail(placementDetails.getConsultantEmail())) {
-            throw new IllegalArgumentException("Email already exists: " + placementDetails.getConsultantEmail());
+        if (placementRepository.existsByClientEmail(placementDetails.getClientEmail())) {
+            throw new  CandidateAlreadyExistsException("Email already exists: " + placementDetails.getClientEmail());
         }
 
         if (placementDetails.getPayRate() != null && placementDetails.getBillRateUSD() != null) {
@@ -83,18 +84,18 @@ public class PlacementService {
         PlacementDetails existing = placementRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Placement not found with ID: " + id));
 
-        if (dto.getConsultantEmail() != null && !dto.getConsultantEmail().equals(existing.getConsultantEmail())) {
-            if (placementRepository.existsByConsultantEmail(dto.getConsultantEmail())) {
-                throw new IllegalArgumentException("Email already exists: " + dto.getConsultantEmail());
+        if (dto.getClientEmail()!= null && !dto.getClientEmail().equals(existing.getClientEmail())) {
+            if (placementRepository.existsByClientEmail(dto.getClientEmail())) {
+                throw new IllegalArgumentException("Email already exists: " + dto.getClientEmail());
             }
-            existing.setConsultantEmail(dto.getConsultantEmail());
+            existing.setClientEmail(dto.getClientEmail());
         }
 
-        if (dto.getPhone() != null && !dto.getPhone().equals(existing.getPhone())) {
-            if (placementRepository.existsByPhone(dto.getPhone())) {
-                throw new IllegalArgumentException("Phone number already exists: " + dto.getPhone());
+        if (dto.getCandidateContactNo() != null && !dto.getCandidateContactNo().equals(existing.getCandidateContactNo())) {
+            if (placementRepository.existsByCandidateContactNo(dto.getCandidateContactNo())) {
+                throw new IllegalArgumentException("Phone number already exists: " + dto.getCandidateContactNo());
             }
-            existing.setPhone(dto.getPhone());
+            existing.setCandidateContactNo(dto.getCandidateContactNo());
         }
 
         Optional.ofNullable(dto.getConsultantName()).ifPresent(existing::setConsultantName);
@@ -156,17 +157,26 @@ public class PlacementService {
 
     public void autoAddPlacementFromInterview(InterviewDto interviewDto) {
         if ("Placed".equalsIgnoreCase(interviewDto.getInterviewStatus())) {
+            String consultantName = interviewDto.getFullName();
+            String clientName = interviewDto.getClientName();
+            String contactNumber = interviewDto.getContactNumber();
+            String recruiter = interviewDto.getCandidateId(); // ✅ corrected from userId
+            String client = interviewDto.getClientName();
+            String clientEmail = interviewDto.getClientEmail();
+            String interviewStatus = interviewDto.getInterviewStatus();
             PlacementDetails placement = new PlacementDetails();
             placement.setId(generateCustomId());
-            placement.setConsultantName(interviewDto.getFullName());
-            placement.setConsultantEmail(interviewDto.getUserEmail());
-            placement.setPhone(interviewDto.getContactNumber());
+            placement.setConsultantName(consultantName);
+            placement.setClientEmail(clientEmail);
+            placement.setCandidateContactNo(contactNumber);
+            placement.setRecruiter(recruiter);
+            placement.setClient(client);
+            placement.setClientEmail(clientEmail);
             placement.setTechnology("N/A");
             placement.setStartDate(LocalDate.now());
-            placement.setRecruiter(interviewDto.getUserId());
-            placement.setClient(interviewDto.getClientName());
             placement.setEmploymentType("C2C");
             placement.setStatus("Running");
+            placement.setStatusMessage(interviewStatus);
 
             placementRepository.save(placement);
         }
@@ -176,8 +186,8 @@ public class PlacementService {
         PlacementDto dto = new PlacementDto();
         dto.setId(saved.getId());
         dto.setConsultantName(saved.getConsultantName());
-        dto.setPhone(saved.getPhone());
-        dto.setConsultantEmail(saved.getConsultantEmail());
+        dto.setCandidateContactNo(saved.getCandidateContactNo());
+        dto.setClientEmail(saved.getClientEmail());
         dto.setTechnology(saved.getTechnology());
         dto.setClient(saved.getClient());
         dto.setVendorName(saved.getVendorName());
@@ -200,16 +210,16 @@ public class PlacementService {
         return new PlacementResponseDto(
                 saved.getId(),
                 saved.getConsultantName(),
-                saved.getPhone(),
-                saved.getConsultantEmail()
+                saved.getCandidateContactNo(),
+                saved.getClientEmail()
         );
     }
 
     private PlacementDetails convertToEntity(PlacementDto dto) {
         PlacementDetails entity = new PlacementDetails();
         entity.setConsultantName(dto.getConsultantName());
-        entity.setPhone(dto.getPhone());
-        entity.setConsultantEmail(dto.getConsultantEmail());
+        entity.setCandidateContactNo(dto.getCandidateContactNo());
+        entity.setClientEmail(dto.getClientEmail());
         entity.setTechnology(dto.getTechnology());
         entity.setClient(dto.getClient());
         entity.setVendorName(dto.getVendorName());

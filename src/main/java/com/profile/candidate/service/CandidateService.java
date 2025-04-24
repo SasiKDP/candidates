@@ -505,7 +505,150 @@ public class CandidateService {
         // Return true if an interview already exists, otherwise false
         return existingInterview.isPresent();
     }
+    public TeamleadSubmissionsDTO getSubmissionsForTeamlead(String userId) {
+        // Fetch self submissions (submitted by the user themselves)
+        List<Tuple> selfSubs = candidateRepository.findSelfSubmissionsByTeamlead(userId);
 
+        // Fetch team submissions (submitted by team members, not the user themselves)
+        List<Tuple> teamSubs = candidateRepository.findTeamSubmissionsByTeamlead(userId);
+
+        // Convert Tuple data to DTO for both self and team submissions
+        List<CandidateGetResponseDto> selfSubDtos = mapTuplesToResponseDto(selfSubs);
+        List<CandidateGetResponseDto> teamSubDtos = mapTuplesToResponseDto(teamSubs);
+
+        // Return the DTO containing both self and team submissions
+        return new TeamleadSubmissionsDTO(selfSubDtos, teamSubDtos);
+    }
+
+    public List<CandidateGetResponseDto> mapTuplesToResponseDto(List<Tuple> tuples) {
+        return tuples.stream().map(tuple -> {
+            CandidateGetResponseDto dto = new CandidateGetResponseDto();
+
+            // Mapping fields from the Tuple to DTO
+            dto.setCandidateId(tuple.get("candidate_id", String.class));
+            dto.setFullName(tuple.get("full_name", String.class));
+            dto.setSkills(tuple.get("skills", String.class)); // Corrected field mapping
+            dto.setPreferredLocation(tuple.get("preferred_location", String.class)); // Corrected field mapping
+            dto.setJobId(tuple.get("job_id", String.class));
+            dto.setUserId(tuple.get("user_id",String.class));
+            dto.setUserEmail(tuple.get("user_email", String.class)); // Corrected field mapping
+            dto.setClientName(tuple.get("client_name", String.class)); // Corrected field mapping
+
+            // Parsing profileReceivedDate as LocalDate (ensure it comes in a valid format)
+            String timestamp = tuple.get("profile_received_date", String.class);  // Assuming timestamp is a string
+            if (timestamp != null) {
+                try {
+                    LocalDate profileReceivedDate = LocalDate.parse(timestamp, DateTimeFormatter.ISO_DATE);
+                    dto.setProfileReceivedDate(profileReceivedDate);
+                } catch (Exception e) {
+                    // Fallback if date parsing fails
+                    System.err.println("Error parsing profileReceivedDate: " + e.getMessage());
+                }
+            }
+
+            // Parse the interview status JSON and extract the latest status
+            String interviewStatusJson = tuple.get("interview_status", String.class); // Corrected field mapping
+            String latestInterviewStatus = extractLatestInterviewStatus(interviewStatusJson);
+
+            dto.setInterviewStatus(latestInterviewStatus);
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    // Helper method to extract the latest interview status from the JSON string
+    private String extractLatestInterviewStatus(String interviewStatusJson) {
+        try {
+            if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                String trimmedStatus = interviewStatusJson.trim();
+
+                if (trimmedStatus.startsWith("[") && trimmedStatus.endsWith("]")) {
+                    // Parse the JSON array into a list of status entries
+                    List<Map<String, Object>> statusHistory = objectMapper.readValue(trimmedStatus, List.class);
+
+                    // Extract the latest interview status based on the timestamp
+                    if (!statusHistory.isEmpty()) {
+                        Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                .filter(entry -> entry.containsKey("timestamp") && entry.containsKey("status"))
+                                .max(Comparator.comparing(entry -> OffsetDateTime.parse((String) entry.get("timestamp"))));
+
+                        if (latestStatus.isPresent()) {
+                            return (String) latestStatus.get().get("status");
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error parsing interview status JSON: " + e.getMessage());
+        }
+
+        return "Not Scheduled"; // Default fallback status if parsing fails
+    }
+    public TeamleadInterviewsDTO getTeamleadScheduledInterviews(String userId) {
+        // Fetch self and team interviews using native queries
+        List<CandidateDetails> selfInterviewsRaw = candidateRepository.findSelfScheduledInterviewsByTeamlead(userId);
+        List<CandidateDetails> teamInterviewsRaw = candidateRepository.findTeamScheduledInterviewsByTeamlead(userId);
+
+        // Parse the raw data into response DTOs using the updated GetInterviewResponseDto
+        List<GetInterviewResponseDto> selfInterviews = parseInterviewCandidates(selfInterviewsRaw);
+        List<GetInterviewResponseDto> teamInterviews = parseInterviewCandidates(teamInterviewsRaw);
+
+        // Return the DTO with both lists
+        return new TeamleadInterviewsDTO(selfInterviews, teamInterviews);
+    }
+
+
+    private List<GetInterviewResponseDto> parseInterviewCandidates(List<CandidateDetails> candidates) {
+        List<GetInterviewResponseDto> response = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        for (CandidateDetails interview : candidates) {
+            if (interview.getInterviewDateTime() == null) continue;
+
+            String interviewStatusJson = interview.getInterviewStatus();
+            String latestInterviewStatus = null;
+
+            try {
+                if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
+                    if (interviewStatusJson.trim().startsWith("[") && interviewStatusJson.trim().endsWith("]")) {
+                        List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
+
+                        Optional<Map<String, Object>> latestStatus = statusHistory.stream()
+                                .max(Comparator.comparing(entry -> OffsetDateTime.parse((String) entry.get("timestamp"))));
+
+                        if (latestStatus.isPresent()) {
+                            latestInterviewStatus = (String) latestStatus.get().get("status");
+                        }
+                    } else {
+                        latestInterviewStatus = interviewStatusJson.trim();
+                    }
+                }
+            } catch (Exception e) {
+                latestInterviewStatus = "Error Parsing Status";
+                e.printStackTrace();
+            }
+
+            response.add(new GetInterviewResponseDto(
+                    interview.getJobId(),
+                    interview.getCandidateId(),
+                    interview.getFullName(),
+                    interview.getContactNumber(),
+                    interview.getCandidateEmailId(),
+                    interview.getUserEmail(),
+                    interview.getUserId(),
+                    interview.getInterviewDateTime(),
+                    interview.getDuration(),
+                    interview.getZoomLink(),
+                    interview.getTimestamp(),
+                    interview.getClientEmail(),
+                    interview.getClientName(),
+                    interview.getInterviewLevel(),
+                    latestInterviewStatus
+            ));
+        }
+
+        return response;
+    }
 
     // Method to schedule an interview for a candidate
 
