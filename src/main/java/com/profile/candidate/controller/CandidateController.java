@@ -749,14 +749,6 @@ public class CandidateController {
         try {
             // Call the service to get the submissions
             TeamleadSubmissionsDTO submissionsDTO = candidateService.getSubmissionsForTeamlead(userId);
-
-            // Logging number of submissions fetched
-            int selfSubmissionsCount = submissionsDTO.getSelfSubmissions() != null ? submissionsDTO.getSelfSubmissions().size() : 0;
-            int teamSubmissionsCount = submissionsDTO.getTeamSubmissions() != null ? submissionsDTO.getTeamSubmissions().size() : 0;
-
-            logger.info("Fetched {} self submissions for userId: {}", selfSubmissionsCount, userId);
-            logger.info("Fetched {} team submissions for userId: {}", teamSubmissionsCount, userId);
-
             // Return the response with status 200 OK
             return ResponseEntity.ok(submissionsDTO);
 
@@ -775,14 +767,6 @@ public class CandidateController {
         try {
             // Call the service to get the teamlead interviews
             TeamleadInterviewsDTO teamleadInterviewsDTO = candidateService.getTeamleadScheduledInterviews(userId);
-
-            // Logging the number of self and team interviews fetched
-            int selfInterviewsCount = teamleadInterviewsDTO.getSelfInterviews() != null ? teamleadInterviewsDTO.getSelfInterviews().size() : 0;
-            int teamInterviewsCount = teamleadInterviewsDTO.getTeamInterviews() != null ? teamleadInterviewsDTO.getTeamInterviews().size() : 0;
-
-            logger.info("Fetched {} self interviews for teamlead with userId: {}", selfInterviewsCount, userId);
-            logger.info("Fetched {} team interviews for teamlead with userId: {}", teamInterviewsCount, userId);
-
             // Return the response with status 200 OK
             return ResponseEntity.ok(teamleadInterviewsDTO);
 
@@ -795,4 +779,65 @@ public class CandidateController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+        @GetMapping("/interviews/teamlead/{userId}/filterByDate")
+        public ResponseEntity<?> getTeamleadScheduledInterviewsByDateRange(
+                @PathVariable String userId,
+                @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+            try {
+                // Validate date range
+                if (endDate.isBefore(startDate)) {
+                    logger.warn("End date {} is before start date {}", endDate, startDate);
+                    return ResponseEntity.badRequest()
+                            .body(Collections.singletonMap("message", "End date cannot be before start date"));
+                }
+
+                // Call service to get scheduled interviews by team lead and date range
+                TeamleadInterviewsDTO interviews = candidateService.getTeamleadScheduledInterviewsByDateRange(userId, startDate, endDate);
+
+                if (interviews == null || (interviews.getSelfInterviews().isEmpty() && interviews.getTeamInterviews().isEmpty())) {
+                    logger.warn("No scheduled interviews found for userId: {} between {} and {}", userId, startDate, endDate);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Collections.singletonMap("message", "No interviews found for team lead: " + userId + " between " + startDate + " and " + endDate));
+                }
+
+                return ResponseEntity.ok(interviews);
+            } catch (Exception e) {
+                logger.error("Error while fetching scheduled interviews for userId: {} between {} and {}", userId, startDate, endDate, e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Collections.singletonMap("message", "An error occurred while fetching interviews"));
+            }
+        }
+    @GetMapping("/submissions/teamlead/{userId}/filterByDate")
+    public ResponseEntity<?> getSubmissionsForTeamleadByDateRange(
+            @PathVariable String userId,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        try {
+            // Validate date range
+            if (endDate.isBefore(startDate)) {
+                logger.warn("End date {} is before start date {}", endDate, startDate);
+                return ResponseEntity.badRequest()
+                        .body(Collections.singletonMap("message", "End date cannot be before start date"));
+            }
+
+            // Call service to get submissions for team lead and date range
+            TeamleadSubmissionsDTO submissions = candidateService.getSubmissionsForTeamleadByDateRange(userId, startDate, endDate);
+
+            if (submissions == null || (submissions.getSelfSubmissions().isEmpty() && submissions.getTeamSubmissions().isEmpty())) {
+                logger.warn("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Collections.singletonMap("message", "No submissions found for team lead: " + userId + " between " + startDate + " and " + endDate));
+            }
+
+            return ResponseEntity.ok(submissions);
+        } catch (Exception e) {
+            logger.error("Error while fetching submissions for userId: {} between {} and {}", userId, startDate, endDate, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("message", "An error occurred while fetching submissions"));
+        }
+    }
+
 }
