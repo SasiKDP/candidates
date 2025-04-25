@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 @Repository
 public interface PlacementRepository extends JpaRepository<PlacementDetails, String> {
+    // Checks if a record exists with the given contact number
+    boolean existsByContactNumber(String contactNumber);
 
-    boolean existsByPhone(String phone);
+    // Checks if a record exists with the given consultant email
     boolean existsByConsultantEmail(String consultantEmail);
+
     @Query(value = "SELECT " +
             "(SELECT COUNT(*) FROM requirements_model) AS requirementsCount, " +
             "(SELECT COUNT(*) FROM candidates) AS candidatesCount, " +

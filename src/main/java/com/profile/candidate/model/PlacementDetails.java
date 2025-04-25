@@ -35,16 +35,16 @@ public class PlacementDetails {
     @Column(name = "consultant_email")
     private String consultantEmail;
 
-    @Pattern(regexp = "^\\d{10}$", message = "Phone number must be 10 digits")
-    @NotBlank(message = "Phone number is required")
-    @Column(name = "phone")
-    private String phone;
+    @Pattern(regexp = "^\\d{10}$", message = "contactNumber must be 10 digits")
+    @NotBlank(message = "contact number is required")
+    @Column(name = "contact_number")
+    private String contactNumber;
 
     @Column(name = "technology")
     private String technology;
 
-    @Column(name = "client")
-    private String client;
+    @Column(name = "client_name")
+    private String clientName;
 
     @Column(name = "vendor_name")
     private String vendorName;
@@ -54,6 +54,13 @@ public class PlacementDetails {
 
     @Column(name = "end_date")
     private LocalDate endDate;
+
+    // New fields added in PlacementDto
+    @Column(name = "candidate_email_id")
+    private String candidateEmailId;
+
+    @Column(name = "candidate_id")
+    private String candidateId;
 
     @Column(name = "recruiter")
     private String recruiter;
@@ -113,13 +120,14 @@ public class PlacementDetails {
         this.consultantEmail = consultantEmail;
     }
 
-    public String getPhone() {
-        return phone;
+    public String getContactNumber() {
+        return contactNumber;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
     }
+
 
     public String getTechnology() {
         return technology;
@@ -129,12 +137,29 @@ public class PlacementDetails {
         this.technology = technology;
     }
 
-    public String getClient() {
-        return client;
+
+    public String getClientName() {
+        return clientName;
     }
 
-    public void setClient(String client) {
-        this.client = client;
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
+    }
+
+    public String getCandidateId() {
+        return candidateId;
+    }
+
+    public void setCandidateId(String candidateId) {
+        this.candidateId = candidateId;
     }
 
     public String getVendorName() {

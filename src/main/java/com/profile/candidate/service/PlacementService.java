@@ -46,11 +46,11 @@ public class PlacementService {
     public PlacementResponseDto savePlacement(PlacementDto placementDto) {
         PlacementDetails placementDetails = convertToEntity(placementDto);
 
-        if (placementRepository.existsByPhone(placementDetails.getPhone())) {
-            throw new IllegalArgumentException("Phone number already exists: " + placementDetails.getPhone());
+        if (placementRepository.existsByContactNumber(placementDetails.getContactNumber())) {
+            throw new IllegalArgumentException("Phone number already exists: " + placementDetails.getContactNumber());
         }
 
-        if (placementRepository.existsByConsultantEmail(placementDetails.getConsultantEmail())) {
+        if (placementDetails.getConsultantEmail() != null && placementRepository.existsByConsultantEmail(placementDetails.getConsultantEmail())) {
             throw new IllegalArgumentException("Email already exists: " + placementDetails.getConsultantEmail());
         }
 
@@ -91,16 +91,16 @@ public class PlacementService {
             existing.setConsultantEmail(dto.getConsultantEmail());
         }
 
-        if (dto.getPhone() != null && !dto.getPhone().equals(existing.getPhone())) {
-            if (placementRepository.existsByPhone(dto.getPhone())) {
-                throw new IllegalArgumentException("Phone number already exists: " + dto.getPhone());
+        if (dto.getContactNumber()!= null && !dto.getContactNumber().equals(existing.getContactNumber())) {
+            if (placementRepository.existsByContactNumber(dto.getContactNumber())) {
+                throw new IllegalArgumentException("Phone number already exists: " + dto.getContactNumber());
             }
-            existing.setPhone(dto.getPhone());
+            existing.setContactNumber(dto.getContactNumber());
         }
 
         Optional.ofNullable(dto.getConsultantName()).ifPresent(existing::setConsultantName);
         Optional.ofNullable(dto.getTechnology()).ifPresent(existing::setTechnology);
-        Optional.ofNullable(dto.getClient()).ifPresent(existing::setClient);
+        Optional.ofNullable(dto.getClientName()).ifPresent(existing::setClientName);
         Optional.ofNullable(dto.getVendorName()).ifPresent(existing::setVendorName);
         Optional.ofNullable(dto.getStartDate()).ifPresent(start ->
                 existing.setStartDate(LocalDate.parse(start, formatter)));
@@ -161,11 +161,11 @@ public class PlacementService {
             placement.setId(generateCustomId());
             placement.setConsultantName(interviewDto.getFullName());
             placement.setConsultantEmail(interviewDto.getUserEmail());
-            placement.setPhone(interviewDto.getContactNumber());
+            placement.setContactNumber(interviewDto.getContactNumber());
             placement.setTechnology("N/A");
             placement.setStartDate(LocalDate.now());
             placement.setRecruiter(interviewDto.getUserId());
-            placement.setClient(interviewDto.getClientName());
+            placement.setClientName(interviewDto.getClientName());
             placement.setEmploymentType("C2C");
             placement.setStatus("Running");
 
@@ -177,10 +177,10 @@ public class PlacementService {
         PlacementDto dto = new PlacementDto();
         dto.setId(saved.getId());
         dto.setConsultantName(saved.getConsultantName());
-        dto.setPhone(saved.getPhone());
+        dto.setContactNumber(saved.getContactNumber());
         dto.setConsultantEmail(saved.getConsultantEmail());
         dto.setTechnology(saved.getTechnology());
-        dto.setClient(saved.getClient());
+        dto.setClientName(saved.getClientName());
         dto.setVendorName(saved.getVendorName());
         dto.setStartDate(saved.getStartDate() != null ? saved.getStartDate().toString() : null);
         dto.setEndDate(saved.getEndDate() != null ? saved.getEndDate().toString() : null);
@@ -201,7 +201,7 @@ public class PlacementService {
         return new PlacementResponseDto(
                 saved.getId(),
                 saved.getConsultantName(),
-                saved.getPhone(),
+                saved.getContactNumber(),
                 saved.getConsultantEmail()
         );
     }
@@ -209,10 +209,10 @@ public class PlacementService {
     private PlacementDetails convertToEntity(PlacementDto dto) {
         PlacementDetails entity = new PlacementDetails();
         entity.setConsultantName(dto.getConsultantName());
-        entity.setPhone(dto.getPhone());
+        entity.setContactNumber(dto.getContactNumber());
         entity.setConsultantEmail(dto.getConsultantEmail());
         entity.setTechnology(dto.getTechnology());
-        entity.setClient(dto.getClient());
+        entity.setClientName(dto.getClientName());
         entity.setVendorName(dto.getVendorName());
         entity.setStartDate(dto.getStartDate() != null ? LocalDate.parse(dto.getStartDate(), formatter) : null);
         entity.setEndDate(dto.getEndDate() != null ? LocalDate.parse(dto.getEndDate(), formatter) : null);

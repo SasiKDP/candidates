@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -12,11 +13,11 @@ import java.math.BigDecimal;
 
 public class PlacementDto {
     private String id;
+    private String fullName;
+    private String contactNumber;
     private String consultantName;
-    private String phone;
     private String consultantEmail;
     private String technology;
-    private String client;
     private String vendorName;
     private String startDate;
     private String endDate;
@@ -31,6 +32,21 @@ public class PlacementDto {
     private BigDecimal grossProfit;
     private String status;
     private String statusMessage;
+    //new fields are added
+    private String candidateEmailId;
+    private String candidateId;
+    private String clientName;
+    private List<String> clientEmail;
+    private Integer duration;
+    private String interviewId;
+    private String interviewStatus;
+    private String interviewLevel;
+    private String interviewDateTime;
+    private String scheduledTimeStamp;
+    private String zoomLink;
+    private String jobId;
+    private String userEmail;
+    private String userId;
 
     public void setStatus(String status) {
         this.status = status;
@@ -56,13 +72,6 @@ public class PlacementDto {
         this.consultantName = consultantName;
     }
 
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
 
     public String getConsultantEmail() {
         return consultantEmail;
@@ -80,12 +89,135 @@ public class PlacementDto {
         this.technology = technology;
     }
 
-    public String getClient() {
-        return client;
+    public String getFullName() {
+        return fullName;
     }
 
-    public void setClient(String client) {
-        this.client = client;
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
+
+    public List<String> getClientEmail() {
+        return clientEmail;
+    }
+
+    public void setClientEmail(List<String> clientEmail) {
+        this.clientEmail = clientEmail;
+    }
+
+    public String getScheduledTimeStamp() {
+        return scheduledTimeStamp;
+    }
+
+    public void setScheduledTimeStamp(String scheduledTimeStamp) {
+        this.scheduledTimeStamp = scheduledTimeStamp;
+    }
+
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
+    }
+
+    public String getCandidateId() {
+        return candidateId;
+    }
+
+    public void setCandidateId(String candidateId) {
+        this.candidateId = candidateId;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+
+    public Integer getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Integer duration) {
+        this.duration = duration;
+    }
+
+    public String getInterviewId() {
+        return interviewId;
+    }
+
+    public void setInterviewId(String interviewId) {
+        this.interviewId = interviewId;
+    }
+
+    public String getInterviewStatus() {
+        return interviewStatus;
+    }
+
+    public void setInterviewStatus(String interviewStatus) {
+        this.interviewStatus = interviewStatus;
+    }
+
+    public String getInterviewLevel() {
+        return interviewLevel;
+    }
+
+    public void setInterviewLevel(String interviewLevel) {
+        this.interviewLevel = interviewLevel;
+    }
+
+    public String getInterviewDateTime() {
+        return interviewDateTime;
+    }
+
+    public void setInterviewDateTime(String interviewDateTime) {
+        this.interviewDateTime = interviewDateTime;
+    }
+
+
+
+    public String getZoomLink() {
+        return zoomLink;
+    }
+
+    public void setZoomLink(String zoomLink) {
+        this.zoomLink = zoomLink;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public String getVendorName() {

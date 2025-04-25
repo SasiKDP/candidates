@@ -4,16 +4,16 @@ package com.profile.candidate.dto;
 public class PlacementResponseDto {
     private String id;
     private String consultantName;
-    private String phone;
+    private String candidateContactNo;
     private String consultantEmail;
 
     // Constructors
     public PlacementResponseDto() {}
 
-    public PlacementResponseDto(String id, String consultantName, String phone, String consultantEmail) {
+    public PlacementResponseDto(String id, String consultantName, String candidateContactNo, String consultantEmail) {
         this.id = id;
         this.consultantName = consultantName;
-        this.phone = phone;
+        this.candidateContactNo = candidateContactNo;
         this.consultantEmail = consultantEmail;
     }
 
@@ -35,12 +35,12 @@ public class PlacementResponseDto {
         this.consultantName = consultantName;
     }
 
-    public String getPhone() {
-        return phone;
+    public String getCandidateContactNo() {
+        return candidateContactNo;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setCandidateContactNo(String candidateContactNo) {
+        this.candidateContactNo = candidateContactNo;
     }
 
     public String getConsultantEmail() {
