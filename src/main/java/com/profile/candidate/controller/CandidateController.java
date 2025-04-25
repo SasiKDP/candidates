@@ -274,9 +274,6 @@ public class CandidateController {
             // Fetch all submissions from the service
             List<CandidateGetResponseDto> submissions = candidateService.getAllSubmissions();
 
-            // Log success
-            logger.info("Fetched {} submissions successfully.", submissions.size());
-
             // Return response with HTTP 200 OK
             return ResponseEntity.ok(submissions);
         } catch (CandidateNotFoundException ex) {

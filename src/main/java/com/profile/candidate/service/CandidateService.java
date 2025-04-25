@@ -25,11 +25,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -343,14 +341,21 @@ public class CandidateService {
         LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
         LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
 
+        // Log the fetching process with the date range
+        logger.info("Fetching submissions between {} and {}", startOfMonth, endOfMonth);
+
         // Fetch candidates whose profileReceivedDate falls within current month
         List<CandidateDetails> candidates =
                 candidateRepository.findByProfileReceivedDateBetween(startOfMonth, endOfMonth);
 
         // Check if there are no submissions
         if (candidates.isEmpty()) {
+            logger.warn("No candidate submissions found between {} and {}", startOfMonth, endOfMonth);
             throw new CandidateNotFoundException("No candidate submissions found for the current month.");
         }
+
+        // Log the number of submissions fetched
+        logger.info("Fetched {} candidate submissions between {} and {}", candidates.size(), startOfMonth, endOfMonth);
 
         // Map CandidateDetails to CandidateGetResponseDto
         return candidates.stream()
@@ -498,13 +503,7 @@ public class CandidateService {
 
         return true; // Candidate is valid for the user
     }
-    public boolean isInterviewScheduled(String candidateId, OffsetDateTime interviewDateTime) {
-        // Query the repository to check if there's already an interview scheduled at that time
-        Optional<CandidateDetails> existingInterview = candidateRepository.findByCandidateIdAndInterviewDateTime(candidateId, interviewDateTime);
 
-        // Return true if an interview already exists, otherwise false
-        return existingInterview.isPresent();
-    }
     public TeamleadSubmissionsDTO getSubmissionsForTeamlead(String userId) {
         // Fetch self submissions (submitted by the user themselves)
         List<Tuple> selfSubs = candidateRepository.findSelfSubmissionsByTeamlead(userId);
