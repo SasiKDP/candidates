@@ -29,6 +29,7 @@ import java.security.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -506,15 +507,32 @@ public class CandidateService {
         return existingInterview.isPresent();
     }
     public TeamleadSubmissionsDTO getSubmissionsForTeamlead(String userId) {
-        // Fetch self submissions (submitted by the user themselves)
-        List<Tuple> selfSubs = candidateRepository.findSelfSubmissionsByTeamlead(userId);
+        // Get the current date
+        LocalDate currentDate = LocalDate.now();
 
-        // Fetch team submissions (submitted by team members, not the user themselves)
-        List<Tuple> teamSubs = candidateRepository.findTeamSubmissionsByTeamlead(userId);
+        // Calculate the start and end date for the current month
+        LocalDate startOfMonth = currentDate.withDayOfMonth(1);  // First day of the current month
+        LocalDate endOfMonth = currentDate.withDayOfMonth(currentDate.lengthOfMonth());  // Last day of the current month
+
+        // Convert LocalDate to LocalDateTime for query compatibility (starting at the beginning and end of the day)
+        LocalDateTime startDateTime = startOfMonth.atStartOfDay();
+        LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
+
+        // Log the date range being fetched
+        logger.info("Fetching current month submissions for teamlead with userId: {} between {} and {}", userId, startDateTime, endDateTime);
+
+        // Fetch self submissions for the current month
+        List<Tuple> selfSubs = candidateRepository.findSelfSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+
+        // Fetch team submissions for the current month
+        List<Tuple> teamSubs = candidateRepository.findTeamSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        logger.info("Fetched {} self submissions for teamlead with userId: {} between {} and {}", selfSubs.size(), userId, startDateTime, endDateTime);
+        logger.info("Fetched {} team submissions for teamlead with userId: {} between {} and {}", teamSubs.size(), userId, startDateTime, endDateTime);
 
         // Convert Tuple data to DTO for both self and team submissions
         List<CandidateGetResponseDto> selfSubDtos = mapTuplesToResponseDto(selfSubs);
         List<CandidateGetResponseDto> teamSubDtos = mapTuplesToResponseDto(teamSubs);
+
 
         // Return the DTO containing both self and team submissions
         return new TeamleadSubmissionsDTO(selfSubDtos, teamSubDtos);
@@ -585,11 +603,28 @@ public class CandidateService {
         return "Not Scheduled"; // Default fallback status if parsing fails
     }
     public TeamleadInterviewsDTO getTeamleadScheduledInterviews(String userId) {
-        // Fetch self and team interviews using native queries
-        List<CandidateDetails> selfInterviewsRaw = candidateRepository.findSelfScheduledInterviewsByTeamlead(userId);
-        List<CandidateDetails> teamInterviewsRaw = candidateRepository.findTeamScheduledInterviewsByTeamlead(userId);
+        // Get the current date
+        LocalDate currentDate = LocalDate.now();
 
-        // Parse the raw data into response DTOs using the updated GetInterviewResponseDto
+        // Calculate the start and end date for the current month
+        LocalDate startOfMonth = currentDate.withDayOfMonth(1);  // First day of the current month
+        LocalDate endOfMonth = currentDate.withDayOfMonth(currentDate.lengthOfMonth());  // Last day of the current month
+
+        // Convert LocalDate to LocalDateTime for query compatibility (starting at the beginning and end of the day)
+        LocalDateTime startDateTime = startOfMonth.atStartOfDay();
+        LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
+
+        // Fetch self and team interviews for the current month using the updated queries
+        List<CandidateDetails> selfInterviewsRaw = candidateRepository.findSelfScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        List<CandidateDetails> teamInterviewsRaw = candidateRepository.findTeamScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+
+        // Log the fetched data for monitoring purposes
+        logger.info("Fetched {} self interviews for teamlead with userId: {} between {} and {}",
+                selfInterviewsRaw.size(), userId, startDateTime, endDateTime);
+        logger.info("Fetched {} team interviews for teamlead with userId: {} between {} and {}",
+                teamInterviewsRaw.size(), userId, startDateTime, endDateTime);
+
+        // Parse the raw data into response DTOs
         List<GetInterviewResponseDto> selfInterviews = parseInterviewCandidates(selfInterviewsRaw);
         List<GetInterviewResponseDto> teamInterviews = parseInterviewCandidates(teamInterviewsRaw);
 
@@ -1990,6 +2025,76 @@ public class CandidateService {
 
         return latestInterviewStatus;
     }
+    public TeamleadInterviewsDTO getTeamleadScheduledInterviewsByDateRange(String userId, LocalDate startDate, LocalDate endDate) {
+        // 1. Validate the date range
+        if (startDate == null || endDate == null) {
+            throw new DateRangeValidationException("Start date and End date must not be null.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date cannot be before start date.");
+        }
+
+        // 2. Log the date range
+        logger.info("Fetching interviews for teamlead with userId: {} between {} and {}", userId, startDate, endDate);
+
+        // 3. Prepare date range (convert LocalDate to LocalDateTime for query accuracy)
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        // 4. Fetch self and team interviews within the date range
+        List<CandidateDetails> selfInterviewsRaw = candidateRepository.findSelfScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        List<CandidateDetails> teamInterviewsRaw = candidateRepository.findTeamScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+
+        // 5. Log the number of self and team interviews
+        logger.info("Fetched {} self interviews for teamlead with userId: {} between {} and {}",
+                selfInterviewsRaw.size(), userId, startDate, endDate);
+        logger.info("Fetched {} team interviews for teamlead with userId: {} between {} and {}",
+                teamInterviewsRaw.size(), userId, startDate, endDate);
+
+        // 6. Handle empty result
+        if (selfInterviewsRaw.isEmpty() && teamInterviewsRaw.isEmpty()) {
+            throw new CandidateNotFoundException("No scheduled interviews found between " + startDate + " and " + endDate);
+        }
+
+        // 7. Parse the raw data into response DTOs using the updated GetInterviewResponseDto
+        List<GetInterviewResponseDto> selfInterviews = parseInterviewCandidates(selfInterviewsRaw);
+        List<GetInterviewResponseDto> teamInterviews = parseInterviewCandidates(teamInterviewsRaw);
+
+        // 8. Return the DTO with both lists
+        return new TeamleadInterviewsDTO(selfInterviews, teamInterviews);
+    }
+    public TeamleadSubmissionsDTO getSubmissionsForTeamleadByDateRange(String userId, LocalDate startDate, LocalDate endDate) {
+        // 1. Validate the date range
+        if (startDate == null || endDate == null) {
+            throw new DateRangeValidationException("Start date and End date must not be null.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date cannot be before start date.");
+        }
+
+        // 2. Convert LocalDate to LocalDateTime for query compatibility (starting at the beginning and end of the day)
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        // 3. Fetch self and team submissions within the date range
+        List<Tuple> selfSubs = candidateRepository.findSelfSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        List<Tuple> teamSubs = candidateRepository.findTeamSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+
+        // 4. Log the date range and the number of results
+        logger.info("Fetched {} self submissions for teamlead with userId: {} between {} and {}",
+                selfSubs.size(), userId, startDateTime, endDateTime);
+        logger.info("Fetched {} team submissions for teamlead with userId: {} between {} and {}",
+                teamSubs.size(), userId, startDateTime, endDateTime);
+
+        // 5. Convert the raw submission data (Tuples) into DTOs
+        List<CandidateGetResponseDto> selfSubDtos = mapTuplesToResponseDto(selfSubs);
+        List<CandidateGetResponseDto> teamSubDtos = mapTuplesToResponseDto(teamSubs);
+
+        // 6. Return the DTO containing both self and team submissions
+        return new TeamleadSubmissionsDTO(selfSubDtos, teamSubDtos);
+    }
+
+
 
 }
 

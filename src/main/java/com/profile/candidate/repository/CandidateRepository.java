@@ -231,4 +231,94 @@ WHERE
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
     );
+    @Query(value = """
+                SELECT c.* 
+                FROM candidates_prod c
+                JOIN requirements_model_prod r ON c.job_id = r.job_id
+                WHERE c.user_id = :userId
+                  AND c.interview_date_time IS NOT NULL
+                  AND c.client_name = r.client_name  -- Ensures client_name matches between candidates and requirements
+                  AND DATE(c.timestamp) BETWEEN :startDate AND :endDate
+            """, nativeQuery = true)
+    List<CandidateDetails> findSelfScheduledInterviewsByTeamleadAndDateRange(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    @Query(value = """
+                SELECT c.* 
+                FROM user_details_prod u
+                JOIN requirements_model_prod r ON r.assigned_by = u.user_name
+                JOIN candidates_prod c ON c.job_id = r.job_id
+                WHERE u.user_id = :userId
+                  AND c.user_id != u.user_id
+                  AND c.interview_date_time IS NOT NULL
+                  AND c.job_id IN (
+                      SELECT r2.job_id 
+                      FROM requirements_model_prod r2
+                      WHERE r2.client_name = r.client_name 
+                        AND r2.assigned_by = u.user_name
+                  )  -- Ensures client_name matches between candidates and requirements
+                  AND DATE(c.timestamp) BETWEEN :startDate AND :endDate  -- Date only filter using timestamp
+            """, nativeQuery = true)
+    List<CandidateDetails> findTeamScheduledInterviewsByTeamleadAndDateRange(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    @Query(value = """
+                SELECT 
+                    c.candidate_id AS candidate_id,
+                    c.full_name AS full_name,
+                    c.skills AS skills,
+                    c.job_id AS job_id,
+                    c.user_id AS user_id,
+                    c.user_email AS user_email,
+                    c.preferred_location AS preferred_location,
+                    DATE_FORMAT(c.profile_received_date, '%Y-%m-%d') AS profile_received_date,
+                    r.job_title AS job_title,
+                    r.client_name AS client_name,
+                    c.interview_status AS interview_status
+                FROM candidates_prod c
+                JOIN requirements_model_prod r ON c.job_id = r.job_id
+                WHERE c.user_id = :userId
+                  AND c.profile_received_date BETWEEN :startDate AND :endDate
+            """, nativeQuery = true)
+    List<Tuple> findSelfSubmissionsByTeamleadAndDateRange(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    @Query(value = """
+                SELECT 
+                    c.candidate_id AS candidate_id,
+                    c.full_name AS full_name,
+                    c.skills AS skills,
+                    c.job_id AS job_id,
+                    c.user_id AS user_id,
+                    c.user_email AS user_email,
+                    c.preferred_location AS preferred_location,
+                    DATE_FORMAT(c.profile_received_date, '%Y-%m-%d') AS profile_received_date,
+                    r.job_title AS job_title,
+                    r.client_name AS client_name,
+                    c.interview_status AS interview_status
+                FROM user_details_prod u
+                JOIN requirements_model_prod r ON r.assigned_by = u.user_name
+                JOIN candidates_prod c ON c.job_id = r.job_id
+                WHERE u.user_id = :userId
+                  AND c.user_id != u.user_id
+                  AND c.profile_received_date BETWEEN :startDate AND :endDate
+                  AND c.job_id IN (
+                      SELECT r2.job_id 
+                      FROM requirements_model_prod r2
+                      WHERE r2.assigned_by = u.user_name
+                  )
+            """, nativeQuery = true)
+    List<Tuple> findTeamSubmissionsByTeamleadAndDateRange(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+
+
 }
