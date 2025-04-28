@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/candidate")
@@ -37,34 +38,34 @@ public class SubmissionController {
     private static final Logger logger = LoggerFactory.getLogger(SubmissionController.class);
 
     @GetMapping("/submissions")
-    public ResponseEntity<List<SubmissionsGetResponse>> getAllSubmissions(){
+    public ResponseEntity<SubmissionsGetResponse> getAllSubmissions(){
 
         return new  ResponseEntity<>(submissionService.getAllSubmissions(),HttpStatus.OK);
     }
     @GetMapping("/submissions/{candidateId}")
-    public ResponseEntity<List<SubmissionsGetResponse>> getSubmissions(@PathVariable String candidateId){
+    public ResponseEntity<SubmissionsGetResponse> getSubmissions(@PathVariable String candidateId){
 
         return new ResponseEntity<>(submissionService.getSubmissions(candidateId),HttpStatus.OK);
     }
     @GetMapping("/submissionsById/{submissionId}")
     public ResponseEntity<SubmissionsGetResponse> getSubmissionById(@PathVariable String submissionId){
-
+        logger.info("Getting Submissions for submission Id {}",submissionId);
         return new ResponseEntity<>(submissionService.getSubmissionById(submissionId),HttpStatus.OK);
     }
     @GetMapping("/submissionsByUserId/{userId}")
-    public ResponseEntity<List<SubmissionsGetResponse>> getSubmissionsByUserId(@PathVariable String userId){
-
+    public ResponseEntity<SubmissionsGetResponse> getSubmissionsByUserId(@PathVariable String userId){
+        logger.info("Getting Submissions for user Id {}",userId);
         return new ResponseEntity<>(submissionService.getSubmissionsByUserId(userId),HttpStatus.OK);
     }
     @GetMapping("/download-resume/{candidateId}/{jobId}")
     public ResponseEntity<Object> downloadResume(@PathVariable String candidateId,@PathVariable String jobId) {
         try {
             logger.info("Downloading resume for candidate ID: {}", candidateId);
-            // Fetch candidate details from the database
             Submissions submissions = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
-            if (submissions==null) throw new CandidateNotFoundException("Candidate not found with ID: "+candidateId+" and JobId: "+jobId);
-
-            // Fetch the resume BLOB field from the candidate entity
+            if (submissions==null) {
+                logger.error("Submission Not Found with Candidate ID : {} for Job Id :{}",candidateId,jobId);
+                throw new CandidateNotFoundException("Submissions not found with Candidate ID: "+candidateId+" and JobId: "+jobId);
+            }
             byte[] resumeBytes = submissions.getResume(); // Assuming `getResume()` returns the BLOB data
 
             if (resumeBytes == null || resumeBytes.length == 0) {
@@ -75,26 +76,24 @@ public class SubmissionController {
             }
             // Assuming you want to set the filename based on candidate's name or other criteria
             String filename = submissions.getCandidate().getFullName()+ "-Resume.pdf"; // Adjust filename logic as needed
-
             // Convert the byte array to a ByteArrayResource
             ByteArrayResource resource = new ByteArrayResource(resumeBytes);
-
             // Set content type (you can change this to match the actual file type)
             String contentType = "application/pdf"; // You can dynamically determine the content type if needed
-
             // Return the file as a response for download
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .body(resource);
 
-        } catch (CandidateNotFoundException e) {
+        }
+        catch (CandidateNotFoundException e) {
             logger.error("Candidate not found: {}", e.getMessage());
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponseDto(false, e.getMessage()));
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             logger.error("Unexpected error while downloading resume for candidate ID {}: {}", candidateId, e.getMessage());
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -106,62 +105,47 @@ public class SubmissionController {
     public ResponseEntity<DeleteSubmissionResponseDto> deleteSubmission(@PathVariable("submissionId") String submissionId) {
             // Call the service method to delete the candidate by ID and get the response DTO
             DeleteSubmissionResponseDto response = submissionService.deleteSubmissionById(submissionId);
-            // Return the response entity with status 200 OK
             return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    @PutMapping("/editSubmission/{candidateId}")
+    @PutMapping("/editSubmission/{submissionId}")
     public ResponseEntity<CandidateResponseDto> editSubmission(
-            @PathVariable("candidateId") String candidateId,
-            @RequestParam(value = "jobId", required = false) String jobId,
-            @RequestParam(value = "userId", required = false) String userId,
-            @RequestParam(value = "fullName", required = false) String fullName,
-            @RequestParam(value = "candidateEmailId", required = false) String candidateEmailId,
-            @RequestParam(value = "contactNumber", required = false) String contactNumber,
-            @RequestParam(value = "qualification", required = false) String qualification,
-            @RequestParam(value = "totalExperience", required = false) Float totalExperience,
-            @RequestParam(value = "currentCTC", required = false) String currentCTC,
-            @RequestParam(value = "expectedCTC", required = false) String expectedCTC,
-            @RequestParam(value = "noticePeriod", required = false) String noticePeriod,
-            @RequestParam(value = "currentLocation", required = false) String currentLocation,
-            @RequestParam(value = "preferredLocation", required = false) String preferredLocation,
-            @RequestParam(value = "skills", required = false) String skills,
-            @RequestParam(value = "communicationSkills", required = false) String communicationSkills,
-            @RequestParam(value = "requiredTechnologiesRating", required = false) Double requiredTechnologiesRating,
-            @RequestParam(value = "overallFeedback", required = false) String overallFeedback,
-            @RequestParam(value = "relevantExperience", required = false) Float relevantExperience,
-            @RequestParam(value = "currentOrganization", required = false) String currentOrganization,
-            @RequestParam(value = "userEmail", required = false) String userEmail,
+            @PathVariable("submissionId") String submissionId,
+            @RequestParam Map<String, String> allParams,
             @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile) {
 
-        Submissions updateSubmission=new Submissions();
+        Submissions updateSubmission = new Submissions();
         CandidateDetails updatedCandidateDetails = new CandidateDetails();
-        updateSubmission.setJobId(jobId);
-        updatedCandidateDetails .setUserId(userId);
-        updatedCandidateDetails .setFullName(fullName);
-        updatedCandidateDetails .setCandidateEmailId(candidateEmailId);
-        updatedCandidateDetails .setContactNumber(contactNumber);
-        updatedCandidateDetails .setQualification(qualification);
-        updatedCandidateDetails .setTotalExperience(totalExperience);
-        updatedCandidateDetails .setCurrentCTC(currentCTC);
-        updatedCandidateDetails .setExpectedCTC(expectedCTC);
-        updatedCandidateDetails .setNoticePeriod(noticePeriod);
-        updatedCandidateDetails .setCurrentLocation(currentLocation);
-        updatedCandidateDetails .setRelevantExperience(relevantExperience);
-        updatedCandidateDetails .setCurrentOrganization(currentOrganization);
-        updatedCandidateDetails .setUserEmail(userEmail);
+
+        updateSubmission.setJobId(allParams.get("jobId"));
+        updatedCandidateDetails.setUserId(allParams.get("userId"));
+        updatedCandidateDetails.setFullName(allParams.get("fullName"));
+        updatedCandidateDetails.setCandidateEmailId(allParams.get("candidateEmailId"));
+        updatedCandidateDetails.setContactNumber(allParams.get("contactNumber"));
+        updatedCandidateDetails.setQualification(allParams.get("qualification"));
+        if (allParams.get("totalExperience") != null) {
+            updatedCandidateDetails.setTotalExperience(Float.parseFloat(allParams.get("totalExperience")));
+        }
+        updatedCandidateDetails.setCurrentCTC(allParams.get("currentCTC"));
+        updatedCandidateDetails.setExpectedCTC(allParams.get("expectedCTC"));
+        updatedCandidateDetails.setNoticePeriod(allParams.get("noticePeriod"));
+        updatedCandidateDetails.setCurrentLocation(allParams.get("currentLocation"));
+        if (allParams.get("relevantExperience") != null) {
+            updatedCandidateDetails.setRelevantExperience(Float.parseFloat(allParams.get("relevantExperience")));
+        }
+        updatedCandidateDetails.setCurrentOrganization(allParams.get("currentOrganization"));
+        updatedCandidateDetails.setUserEmail(allParams.get("userEmail"));
+
         updateSubmission.setCandidate(updatedCandidateDetails);
-        updateSubmission.setPreferredLocation(preferredLocation);
-        updateSubmission.setSkills(skills);
-        updateSubmission.setCommunicationSkills(communicationSkills);
-        updateSubmission.setRequiredTechnologiesRating(requiredTechnologiesRating);
-        updateSubmission.setOverallFeedback(overallFeedback);
+        updateSubmission.setPreferredLocation(allParams.get("preferredLocation"));
+        updateSubmission.setSkills(allParams.get("skills"));
+        updateSubmission.setCommunicationSkills(allParams.get("communicationSkills"));
+        if (allParams.get("requiredTechnologiesRating") != null) {
+            updateSubmission.setRequiredTechnologiesRating(Double.parseDouble(allParams.get("requiredTechnologiesRating")));
+        }
+        updateSubmission.setOverallFeedback(allParams.get("overallFeedback"));
 
-        // Call the service method to resubmit the candidate
-        CandidateResponseDto response = submissionService.editSubmission(candidateId, updatedCandidateDetails,updateSubmission, resumeFile);
-
-        // Return the response entity with status 200 OK
+        CandidateResponseDto response = submissionService.editSubmission(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.OK);
-
     }
 
 }

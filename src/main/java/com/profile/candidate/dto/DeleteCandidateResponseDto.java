@@ -3,19 +3,19 @@ package com.profile.candidate.dto;
 public class DeleteCandidateResponseDto {
     private String status;
     private String message;
-    private Payload payload;
+    private DeleteCandidateResponseDto.CandidateData data;
     private String error;
 
-
     // Constructor
-    public DeleteCandidateResponseDto(String status, String message, Payload payload, String error) {
+
+    public DeleteCandidateResponseDto() {
+    }
+    public DeleteCandidateResponseDto(String status, String message, CandidateData data, String error) {
         this.status = status;
         this.message = message;
-        this.payload = payload;
+        this.data = data;
         this.error = error;
-
     }
-
     // Getters and Setters
     public String getStatus() {
         return status;
@@ -33,6 +33,14 @@ public class DeleteCandidateResponseDto {
         this.message = message;
     }
 
+    public CandidateData getData() {
+        return data;
+    }
+
+    public void setData(CandidateData data) {
+        this.data = data;
+    }
+
     public String getError() {
         return error;
     }
@@ -41,26 +49,19 @@ public class DeleteCandidateResponseDto {
         this.error = error;
     }
 
-    public Payload getPayload() {
-        return payload;
-    }
-
-    public void setPayload(Payload payload) {
-        this.payload = payload;
-    }
-
     // Nested class for Payload
-    public static class Payload {
+    public static class CandidateData {
         private String candidateId;
         private String candidateName;
 
-        // Constructor
-        public Payload(String candidateId, String candidateName) {
+        public CandidateData(String candidateId, String candidateName) {
             this.candidateId = candidateId;
             this.candidateName = candidateName;
         }
 
-        // Getters and Setters
+        public CandidateData() {
+        }
+
         public String getCandidateId() {
             return candidateId;
         }

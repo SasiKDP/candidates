@@ -301,7 +301,6 @@ public class BenchController {
         }
     }
 
-
     @GetMapping("/bench/download/{id}")
     public ResponseEntity<byte[]> downloadResume(@PathVariable String id) {
         try {
@@ -317,14 +316,12 @@ public class BenchController {
             if (resumeFile == null || resumeFile.length == 0) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
-
             // **Use actual filename stored in the database (or default name)**
             String fileName = benchDetails.getFullName(); // Assuming you have this field in your entity
 
             if (fileName == null || fileName.isBlank()) {
                 fileName = "Resume_" + id + ".pdf"; // Fallback name
             }
-
             // **Return the file with correct Content-Disposition**
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)

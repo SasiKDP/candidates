@@ -4,15 +4,14 @@ public class DeleteSubmissionResponseDto {
 
     private boolean status;
     private String message;
-    private Payload payload;
+    private SubmissionData data;
     private String error;
 
-
     // Constructor
-    public DeleteSubmissionResponseDto(boolean status, String message, Payload payload, String error) {
+    public DeleteSubmissionResponseDto(boolean status, String message, SubmissionData data, String error) {
         this.status = status;
         this.message = message;
-        this.payload = payload;
+        this.data = data;
         this.error = error;
 
     }
@@ -42,21 +41,21 @@ public class DeleteSubmissionResponseDto {
         this.error = error;
     }
 
-    public Payload getPayload() {
-        return payload;
+    public SubmissionData getPayload() {
+        return data;
     }
 
-    public void setPayload(Payload payload) {
-        this.payload = payload;
+    public void setPayload(SubmissionData data) {
+        this.data = data;
     }
 
     // Nested class for Payload
-    public static class Payload {
+    public static class SubmissionData {
         private String candidateId;
         private String jobId;
 
         // Constructor
-        public Payload(String candidateId, String jobId) {
+        public SubmissionData(String candidateId, String jobId) {
             this.candidateId = candidateId;
             this.jobId = jobId;
         }

@@ -6,14 +6,14 @@ public class InterviewResponseDto {
 
     private boolean success;
     private String message;
-    private InterviewPayload payload;
+    private InterviewData data;
     private Object errors;  // Assuming you will have error details if any
 
     // Constructor
-    public InterviewResponseDto(boolean success, String message, InterviewPayload payload, Object errors) {
+    public InterviewResponseDto(boolean success, String message, InterviewData data, Object errors) {
         this.success = success;
         this.message = message;
-        this.payload = payload;
+        this.data = data;
         this.errors = errors;
     }
 
@@ -34,12 +34,12 @@ public class InterviewResponseDto {
         this.message = message;
     }
 
-    public InterviewPayload getPayload() {
-        return payload;
+    public InterviewData getData() {
+        return data;
     }
 
-    public void setPayload(InterviewPayload payload) {
-        this.payload = payload;
+    public void setData(InterviewData data) {
+        this.data = data;
     }
 
     public Object getErrors() {
@@ -50,14 +50,14 @@ public class InterviewResponseDto {
         this.errors = errors;
     }
     // Static inner class to represent the payload
-    public static class InterviewPayload {
+    public static class InterviewData {
         private String candidateId;
         private String userEmail;
         private String emailId;
         private List<String> clientEmail;
 
         // Constructor
-        public InterviewPayload(String candidateId, String userEmail, String emailId, List<String> clientEmail) {
+        public InterviewData(String candidateId, String userEmail, String emailId, List<String> clientEmail) {
             this.candidateId = candidateId;
             this.userEmail = userEmail;
             this.emailId = emailId;

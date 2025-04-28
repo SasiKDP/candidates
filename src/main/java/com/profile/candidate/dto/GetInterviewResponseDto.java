@@ -20,13 +20,14 @@ public class GetInterviewResponseDto {
     private List<String> clientEmail;             // Client Email
     private String clientName;              // Client Name
     private String interviewLevel;          // Interview Level (e.g., 1st, 2nd round)
-    private String interviewStatus;  // New field for status
+    private String interviewStatus;
+    private boolean isPlaced;// New field for status
 
 
     // Constructor
 
 
-    public GetInterviewResponseDto(String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String interviewStatus) {
+    public GetInterviewResponseDto(String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String interviewStatus, boolean isPlaced) {
         this.jobId = jobId;
         this.candidateId = candidateId;
         this.candidateFullName = candidateFullName;
@@ -42,9 +43,19 @@ public class GetInterviewResponseDto {
         this.clientName = clientName;
         this.interviewLevel = interviewLevel;
         this.interviewStatus = interviewStatus;
+        this.isPlaced = isPlaced;
     }
 
     // Getters and Setters
+
+    public boolean isPlaced() {
+        return isPlaced;
+    }
+
+    public void setPlaced(boolean placed) {
+        isPlaced = placed;
+    }
+
     public String getJobId() {
         return jobId;
     }
