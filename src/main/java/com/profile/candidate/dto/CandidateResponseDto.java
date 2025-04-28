@@ -4,17 +4,21 @@ public class CandidateResponseDto {
 
     private String status;  // Success or Error
     private String message;  // Message to describe the status
-    private Payload payload;  // Contains candidateId, employeeId, and jobId
+    private CandidateResponseDto.CandidateData data;  // Contains candidateId, employeeId, and jobId
     private String errorMessage;  // Error message in case of failure
 
     // Constructor
-    public CandidateResponseDto(String status, String message, Payload payload, String errorMessage) {
+
+    public CandidateResponseDto() {
+    }
+
+    public CandidateResponseDto(String status, String message, CandidateData data, String errorMessage) {
         this.status = status;
         this.message = message;
-        this.payload = payload;
+        this.data = data;
         this.errorMessage = errorMessage;
     }
-    // Getters and Setters
+
     public String getStatus() {
         return status;
     }
@@ -31,12 +35,12 @@ public class CandidateResponseDto {
         this.message = message;
     }
 
-    public Payload getPayload() {
-        return payload;
+    public CandidateData getData() {
+        return data;
     }
 
-    public void setPayload(Payload payload) {
-        this.payload = payload;
+    public void setData(CandidateData data) {
+        this.data = data;
     }
 
     public String getErrorMessage() {
@@ -48,18 +52,21 @@ public class CandidateResponseDto {
     }
 
     // Inner Payload class to represent candidateId, employeeId, and jobId
-    public static class Payload {
+    public static class CandidateData {
         private String candidateId;
         private String employeeId;
         private String submissionId;
         // Constructor
-        public Payload(String candidateId, String employeeId,String submissionId) {
-            this.candidateId = candidateId;
-            this.employeeId = employeeId;
-            this.submissionId=submissionId;
+
+        public CandidateData() {
         }
 
-        // Getters and Setters
+        public CandidateData(String candidateId, String employeeId, String submissionId) {
+            this.candidateId = candidateId;
+            this.employeeId = employeeId;
+            this.submissionId = submissionId;
+        }
+
         public String getCandidateId() {
             return candidateId;
         }
@@ -79,6 +86,7 @@ public class CandidateResponseDto {
         public String getSubmissionId() {
             return submissionId;
         }
+
         public void setSubmissionId(String submissionId) {
             this.submissionId = submissionId;
         }

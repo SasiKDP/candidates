@@ -1,10 +1,7 @@
 package com.profile.candidate.controller;
 
 import com.profile.candidate.dto.*;
-import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
-import com.profile.candidate.exceptions.CandidateNotFoundException;
-import com.profile.candidate.exceptions.DateRangeValidationException;
-import com.profile.candidate.exceptions.InterviewNotScheduledException;
+import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.CandidateRepository;
@@ -43,8 +40,6 @@ import java.util.Map;
         "http://localhost/","http://192.168.0.135",
         "http://182.18.177.16"})
 
-
-
 @RestController
 @RequestMapping("/candidate")
 public class CandidateController {
@@ -60,132 +55,73 @@ public class CandidateController {
 
     private static final Logger logger = LoggerFactory.getLogger(CandidateController.class);
 
-    // Endpoint to submit candidate profile (Create new candidate)
-    // Endpoint to submit candidate profile (Create new candidate)
     @PostMapping("/candidatesubmissions")
     public ResponseEntity<CandidateResponseDto> submitCandidate(
-            @RequestParam("jobId") String jobId,
-            @RequestParam("userId") String userId,
-            @RequestParam("fullName") String fullName,
-            @RequestParam("candidateEmailId") String candidateEmailId,
-            @RequestParam("contactNumber") String contactNumber,
-            @RequestParam("qualification") String qualification,
-            @RequestParam("totalExperience") float totalExperience,
-            @RequestParam("currentCTC") String currentCTC,
-            @RequestParam("expectedCTC") String expectedCTC,
-            @RequestParam("noticePeriod") String noticePeriod,
-            @RequestParam("currentLocation") String currentLocation,
-            @RequestParam("preferredLocation") String preferredLocation,
-            @RequestParam("skills") String skills,
-            @RequestParam(value = "communicationSkills", required = false) String communicationSkills,
-            @RequestParam(value = "requiredTechnologiesRating", required = false) Double requiredTechnologiesRating,
-            @RequestParam(value = "overallFeedback", required = false) String overallFeedback,
-            @RequestParam(value = "relevantExperience", required = false) float relevantExperience,
-            @RequestParam(value = "currentOrganization", required = false) String currentOrganization,
-            @RequestParam(value = "userEmail", required = false) String userEmail,
-            @RequestParam("resumeFile") MultipartFile resumeFile,
-            @RequestParam String clientName) {
-
+            @RequestParam Map<String, String> formData,
+            @RequestParam("resumeFile") MultipartFile resumeFile) {
         try {
             // Validate file size (10 MB max)
             validateFileSize(resumeFile);
             // Check if the resume file is valid (PDF or DOCX)
             if (!isValidFileType(resumeFile)) {
                 // Log the invalid file type error
-                logger.error("Invalid file type uploaded for candidate {}. Only PDF, DOC and DOCX are allowed.", fullName);
-                // Return the error response in the correct format
-                return new ResponseEntity<>(new CandidateResponseDto(
-                        "Error",
-                        "Invalid file type. Only PDF, DOC and DOCX are allowed.",
-                        new CandidateResponseDto.Payload(null, null,null),
-                        null
-                ), HttpStatus.BAD_REQUEST); // Return HTTP 400 for invalid file type
+                logger.error("Invalid file type uploaded for candidate {}. Only PDF, DOC and DOCX are allowed.", formData.get("fullName"));
+                throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC and DOCX are allowed.");
+
             }
-            // Construct CandidateDetails object from request parameters
-            Submissions submission=new Submissions();
             CandidateDetails candidateDetails = new CandidateDetails();
-            submission.setJobId(jobId);
-            candidateDetails.setUserId(userId);
-            candidateDetails.setFullName(fullName);
-            candidateDetails.setCandidateEmailId(candidateEmailId);
-            candidateDetails.setContactNumber(contactNumber);
-            candidateDetails.setQualification(qualification);
-            candidateDetails.setTotalExperience(totalExperience);
-            candidateDetails.setCurrentCTC(currentCTC);
-            candidateDetails.setExpectedCTC(expectedCTC);
-            candidateDetails.setNoticePeriod(noticePeriod);
-            candidateDetails.setCurrentLocation(currentLocation);
-            candidateDetails.setRelevantExperience(relevantExperience);
-            candidateDetails.setCurrentOrganization(currentOrganization);
-            candidateDetails.setUserEmail(userEmail);
+            candidateDetails.setUserId(formData.get("userId"));
+            candidateDetails.setFullName(formData.get("fullName"));
+            candidateDetails.setCandidateEmailId(formData.get("candidateEmailId"));
+            candidateDetails.setContactNumber(formData.get("contactNumber"));
+            candidateDetails.setQualification(formData.get("qualification"));
+            candidateDetails.setTotalExperience(Float.parseFloat(formData.get("totalExperience")));
+            candidateDetails.setCurrentCTC(formData.get("currentCTC"));
+            candidateDetails.setExpectedCTC(formData.get("expectedCTC"));
+            candidateDetails.setNoticePeriod(formData.get("noticePeriod"));
+            candidateDetails.setCurrentLocation(formData.get("currentLocation"));
+            candidateDetails.setRelevantExperience(Float.parseFloat(formData.getOrDefault("relevantExperience", "0")));
+            candidateDetails.setCurrentOrganization(formData.get("currentOrganization"));
+            candidateDetails.setUserEmail(formData.get("userEmail"));
+            // Build Submissions
+            Submissions submission = new Submissions();
+            submission.setJobId(formData.get("jobId"));
             submission.setCandidate(candidateDetails);
-            submission.setPreferredLocation(preferredLocation);
-            submission.setSkills(skills);
-            submission.setCommunicationSkills(communicationSkills);
-            submission.setRequiredTechnologiesRating(requiredTechnologiesRating);
-            submission.setOverallFeedback(overallFeedback);
-            submission.setClientName(clientName);
+            submission.setPreferredLocation(formData.get("preferredLocation"));
+            submission.setSkills(formData.get("skills"));
+            submission.setCommunicationSkills(formData.get("communicationSkills"));
+            if (formData.get("requiredTechnologiesRating") != null) {
+                submission.setRequiredTechnologiesRating(Double.parseDouble(formData.get("requiredTechnologiesRating")));
+            }
+            submission.setOverallFeedback(formData.get("overallFeedback"));
+            submission.setClientName(formData.get("clientName"));
 
             // Call service method to submit the candidate and handle file upload
             CandidateResponseDto response = candidateService.submitCandidate(candidateDetails,submission, resumeFile);
 
-            // Log the success of candidate submission
-            logger.info("Candidate successfully submitted: {}", fullName);
+            logger.info("Candidate successfully submitted: {}", formData.get("fullName"));
 
-            // Return success response
             return new ResponseEntity<>(response, HttpStatus.OK);
 
-        }  catch (MaxUploadSizeExceededException ex) {
+        } catch (MaxUploadSizeExceededException ex) {
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
                     "File size exceeds the maximum allowed size of 20 MB.", // Custom error message
-                    new CandidateResponseDto.Payload(null, null, null),
+                    new CandidateResponseDto.CandidateData(null, null, null),
                     null
             );
             return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);  // Return 413 Payload Too Large
-        } catch (CandidateAlreadyExistsException ex) {
-            // Handle specific CandidateAlreadyExistsException
-            logger.error("Candidate already exists: {}", ex.getMessage());
-            CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "Error",
-                    ex.getMessage(),
-                    new CandidateResponseDto.Payload(null, null, null),
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT); // 409 Conflict
-
-        } catch (CandidateNotFoundException ex) {
-            // Handle specific CandidateNotFoundException
-            logger.error("Candidate not found: {}", ex.getMessage());
-            CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "Error",
-                    "Candidate not found",
-                    new CandidateResponseDto.Payload(null, null, null),
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND); // 404 Not Found
-
-        } catch (IOException ex) {
+        }
+        catch (IOException ex) {
             // Handle file I/O exceptions (e.g., file save errors)
-            logger.error("Error processing resume file for candidate {}. Error: {}", fullName, ex.getMessage());
+            logger.error("Error processing resume file for candidate {}. Error: {}", formData.get("fullName"), ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
                     "Error processing resume file.",
-                    new CandidateResponseDto.Payload(null, null, null),
+                    new CandidateResponseDto.CandidateData(null, null, null),
                     null
             );
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR); // 500 Internal Server Error
-
-        } catch (Exception ex) {
-            // General error handler for any issues during candidate submission
-            logger.error("An error occurred while submitting the candidate {}. Error: {}", fullName, ex.getMessage());
-            CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "Error",
-                    "An error occurred while submitting the candidate",
-                    new CandidateResponseDto.Payload(null, null, null),
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR); // 500 Internal Server Error
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     private void validateFileSize(MultipartFile file) {
@@ -210,7 +146,6 @@ public class CandidateController {
         }
         return "";
     }
-
     @DeleteMapping("/deletecandidate/{candidateId}")
     public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
         try {
@@ -231,6 +166,5 @@ public class CandidateController {
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 }

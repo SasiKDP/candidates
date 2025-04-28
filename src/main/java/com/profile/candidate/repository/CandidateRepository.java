@@ -18,8 +18,6 @@ import java.util.Optional;
 public interface CandidateRepository extends JpaRepository<CandidateDetails, String> {
     // Additional custom queries if needed
     // Find candidate by email
-
-
     Optional<CandidateDetails> findByCandidateEmailId(String candidateEmailId);
     List<CandidateDetails> findByUserId(String userId);
 
@@ -37,5 +35,6 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
 
     @Query(value = "SELECT u.user_name FROM user_details u WHERE u.email = :email", nativeQuery = true)
     String findUserNameByEmail(@Param("email") String email);
+
 
 }

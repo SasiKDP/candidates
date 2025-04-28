@@ -1,16 +1,11 @@
 package com.profile.candidate.model;
 
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import java.util.ArrayList;
@@ -20,13 +15,9 @@ public class InterviewDetails {
 
     @Id
     private String interviewId;
-
     private String clientId;
-
     private String userId;
-
     private String jobId;
-
     private String candidateId;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
@@ -34,25 +25,21 @@ public class InterviewDetails {
 
     private Integer duration;
     private String zoomLink;
-
     private String clientName;
     private String fullName;
-
     private String externalInterviewDetails;
     private String contactNumber;
     private String userEmail;
     private String interviewLevel;
-
     @Lob
     @Column(name = "interview_status", columnDefinition = "TEXT")
     private String interviewStatus; // Store JSON as String
     @Lob
     @Column(name = "client_email", columnDefinition = "TEXT")
     private String clientEmail;
-
     private String candidateEmailId;
-
     private LocalDateTime timestamp;
+    private boolean isPlaced;
 
     @Transient
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -102,6 +89,12 @@ public class InterviewDetails {
 //        }
 //    }
 
+    public boolean isPlaced() {
+        return isPlaced;
+    }
+    public void setPlaced(boolean placed) {
+        isPlaced = placed;
+    }
     public String getInterviewId() {
         return interviewId;
     }
@@ -189,7 +182,6 @@ public class InterviewDetails {
     public void setExternalInterviewDetails(String externalInterviewDetails) {
         this.externalInterviewDetails = externalInterviewDetails;
     }
-
     public String getContactNumber() {
         return contactNumber;
     }

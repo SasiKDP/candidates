@@ -50,7 +50,7 @@ public class CandidateDetails {
     @Min(value = 0, message = "Total experience cannot be negative")
     private float totalExperience;
 
-    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL)
     //@JsonIgnore
     private java.util.List<Submissions> submissions;
 

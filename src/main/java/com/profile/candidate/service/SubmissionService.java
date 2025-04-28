@@ -25,10 +25,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,23 +40,26 @@ public class SubmissionService {
 
     private static final Logger logger = LoggerFactory.getLogger(SubmissionService.class);
 
-    public List<SubmissionsGetResponse> getAllSubmissions() {
+    public SubmissionsGetResponse getAllSubmissions() {
         List<Submissions> submissions = submissionRepository.findAll();
-        return submissions.stream()
+        List<SubmissionsGetResponse.GetSubmissionData> data =submissions.stream()
                 .map(this::convertToSubmissionsGetResponse)
                 .collect(Collectors.toList());
+        SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions found",data,null);
+        return response;
     }
 
-    public List<SubmissionsGetResponse> getSubmissions(String candidateId) {
+    public SubmissionsGetResponse getSubmissions(String candidateId) {
         Optional<CandidateDetails> candidateDetails = candidateRepository.findById(candidateId);
         if (candidateDetails.isEmpty()) {
             throw new CandidateNotFoundException("Invalid CandidateId " + candidateId);
         }
-
         List<Submissions> submissions = submissionRepository.findByCandidate_CandidateId(candidateId);
-        return submissions.stream()
+       List<SubmissionsGetResponse.GetSubmissionData> data=submissions.stream()
                 .map(this::convertToSubmissionsGetResponse)
                 .collect(Collectors.toList());
+       SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions Found",data,null);
+      return response;
     }
     public SubmissionsGetResponse getSubmissionById(String submissionId) {
         Optional<Submissions> submissions = submissionRepository.findById(submissionId);
@@ -67,45 +67,48 @@ public class SubmissionService {
         if (submissions.isEmpty()) {
             throw new SubmissionNotFoundException("Invalid SubmissionId " + submissionId);
         }
-        return convertToSubmissionsGetResponse(submissions.get());
+        List<SubmissionsGetResponse.GetSubmissionData> data= Collections.singletonList(convertToSubmissionsGetResponse(submissions.get()));
+        SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions Found",data,null);
+      return  response;
     }
 
-    private SubmissionsGetResponse convertToSubmissionsGetResponse(Submissions sub) {
-        SubmissionsGetResponse dto = new SubmissionsGetResponse();
+    private SubmissionsGetResponse.GetSubmissionData convertToSubmissionsGetResponse(Submissions sub) {
 
-        dto.setSubmissionId(sub.getSubmissionId());
-        dto.setCandidateId(sub.getCandidate().getCandidateId());
-        dto.setJobId(sub.getJobId());
-        dto.setSubmittedAt(sub.getSubmittedAt());
-        dto.setCommunicationSkills(sub.getCommunicationSkills());
-        dto.setSkills(sub.getSkills());
-        dto.setOverallFeedback(sub.getOverallFeedback());
-        dto.setPreferredLocation(sub.getPreferredLocation());
-        dto.setProfileReceivedDate(sub.getProfileReceivedDate());
-        dto.setRequiredTechnologiesRating(sub.getRequiredTechnologiesRating());
-        dto.setClientName(sub.getClientName());
+        SubmissionsGetResponse.GetSubmissionData data = new SubmissionsGetResponse.GetSubmissionData();
+
+        data.setSubmissionId(sub.getSubmissionId());
+        data.setCandidateId(sub.getCandidate().getCandidateId());
+        data.setJobId(sub.getJobId());
+        data.setSubmittedAt(sub.getSubmittedAt());
+        data.setCommunicationSkills(sub.getCommunicationSkills());
+        data.setSkills(sub.getSkills());
+        data.setOverallFeedback(sub.getOverallFeedback());
+        data.setPreferredLocation(sub.getPreferredLocation());
+        data.setProfileReceivedDate(sub.getProfileReceivedDate());
+        data.setRequiredTechnologiesRating(sub.getRequiredTechnologiesRating());
+        data.setClientName(sub.getClientName());
         CandidateDetails candidate = sub.getCandidate();
         //CandidateDto candidateDto = new CandidateDto();
-        dto.setUserId(candidate.getUserId());
-        dto.setFullName(candidate.getFullName());
-        dto.setCandidateEmailId(candidate.getCandidateEmailId());
-        dto.setContactNumber(candidate.getContactNumber());
-        dto.setCurrentOrganization(candidate.getCurrentOrganization());
-        dto.setQualification(candidate.getQualification());
-        dto.setTotalExperience(candidate.getTotalExperience());
-        dto.setRelevantExperience(candidate.getRelevantExperience());
-        dto.setCurrentCTC(candidate.getCurrentCTC());
-        dto.setExpectedCTC(candidate.getExpectedCTC());
-        dto.setNoticePeriod(candidate.getNoticePeriod());
-        dto.setCurrentLocation(candidate.getCurrentLocation());
+        data.setUserId(candidate.getUserId());
+        data.setFullName(candidate.getFullName());
+        data.setCandidateEmailId(candidate.getCandidateEmailId());
+        data.setContactNumber(candidate.getContactNumber());
+        data.setCurrentOrganization(candidate.getCurrentOrganization());
+        data.setQualification(candidate.getQualification());
+        data.setTotalExperience(candidate.getTotalExperience());
+        data.setRelevantExperience(candidate.getRelevantExperience());
+        data.setCurrentCTC(candidate.getCurrentCTC());
+        data.setExpectedCTC(candidate.getExpectedCTC());
+        data.setNoticePeriod(candidate.getNoticePeriod());
+        data.setCurrentLocation(candidate.getCurrentLocation());
 
-        return dto;
+        return data;
     }
-    public List<SubmissionsGetResponse> getSubmissionsByUserId(String userId) {
+    public SubmissionsGetResponse getSubmissionsByUserId(String userId) {
+
 
         List<CandidateDetails> candidates = candidateRepository.findByUserId(userId);
-        if (candidates.isEmpty()) throw new CandidateNotFoundException("No Candidate Found for UserId: "+userId);
-        List<SubmissionsGetResponse> submissionsResponses = new ArrayList<>();
+        List<SubmissionsGetResponse.GetSubmissionData> submissionsResponses = new ArrayList<>();
 
         for (CandidateDetails candidate : candidates) {
             List<Submissions> submissions =  submissionRepository.findByCandidate(candidate);
@@ -114,7 +117,8 @@ public class SubmissionService {
                 submissionsResponses.add(convertToSubmissionsGetResponse(submission));
             }
         }
-        return submissionsResponses;
+        SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions Found",submissionsResponses,null);
+    return response;
     }
     @Transactional
     public DeleteSubmissionResponseDto deleteSubmissionById(String submissionId) {
@@ -123,53 +127,61 @@ public class SubmissionService {
         Submissions submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> {
                     logger.error("Submission with ID {} not found", submissionId);
-                    return new SubmissionNotFoundException("Submission not found with id: " + submissionId);
+                    return new SubmissionNotFoundException("Submission not found with id: " + submissionId+" to Delete Submission");
                 });
-        logger.info("Candidate found: {}, Proceeding with deletion", submission.getSubmissionId());
+        logger.info("Submission found: {}, Proceeding with deletion", submission.getSubmissionId());
         // Store the candidate details before deletion
+        String recruiterEmail =submission.getCandidate().getUserEmail();
+        String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+        String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submission.getJobId());
+        String teamLeadName=candidateRepository.findUserNameByEmail(teamLeadEmail);
         String submissionIdBeforeDelete = submission.getSubmissionId();
         String jobIdBeforeDelete = submission.getJobId();
-
         // Delete the candidate from the repository
         submissionRepository.delete(submission);
-        logger.info("Candidate with ID {} deleted successfully", submissionId);
-
+         logger.info("Candidate with ID {} deleted successfully", submissionId);
+         logger.info("recruiterName {} and  recruiterEmail {} and teamLeadEmail {} and teamLeadName {} ",recruiterName,recruiterEmail,teamLeadEmail,teamLeadName);
+        emailService.sendCandidateNotification(submission, recruiterName, recruiterEmail, teamLeadName,teamLeadEmail, "deletion");
         // Prepare the response with candidate details
-        DeleteSubmissionResponseDto.Payload payload = new DeleteSubmissionResponseDto.Payload(submissionIdBeforeDelete, jobIdBeforeDelete);
+        DeleteSubmissionResponseDto.SubmissionData data = new DeleteSubmissionResponseDto.SubmissionData(submissionIdBeforeDelete, jobIdBeforeDelete);
 
         return new DeleteSubmissionResponseDto(true,
                 "Submission deleted successfully",
-                payload,
+                data,
                 null);
     }
+    public CandidateResponseDto editSubmission(String submissionId, CandidateDetails updatedCandidateDetails, Submissions updatedSubmissionsDetails, MultipartFile resumeFile) {
 
-    public CandidateResponseDto editSubmission(String candidateId, CandidateDetails updatedCandidateDetails, Submissions updatedSubmissionsDetails, MultipartFile resumeFile) {
+        Optional<Submissions> submissions=submissionRepository.findById(submissionId);
+        if(submissions.isEmpty()) throw new SubmissionNotFoundException("No Submissions Found with Submission Id :"+submissionId);
         try {
-            // Fetch the existing candidate from the database
+            logger.info("Edit Submission started for SubmissionId: {}", submissionId);
+            String candidateId=submissionRepository.findCandidateIdBySubmissionId(submissionId);
+            logger.info("Candidate Id fetched with submissionId :"+candidateId);
+            if (candidateId==null)  throw new CandidateNotFoundException("No Candidate Found with SubmissionId :"+submissionId);
             Optional<CandidateDetails> existingCandidateOpt = candidateRepository.findById(candidateId);
-            if (!existingCandidateOpt.isPresent())
-                throw new CandidateNotFoundException("Candidate Not Exists with candidateId "+candidateId);
-
+            if (!existingCandidateOpt.isPresent()) {
+                logger.error("No Candidate found with Id {}" + candidateId);
+                throw new CandidateNotFoundException("Candidate Not Exists with candidateId " + candidateId);
+            }
             Optional<CandidateDetails> optionalCandidate=candidateRepository.findByCandidateIdAndUserId(candidateId,updatedCandidateDetails.getUserId());
-
-            if(optionalCandidate.isEmpty())
-                throw new CandidateNotFoundException("Candidate Id: "+candidateId+" Not related to UserId: "+updatedCandidateDetails.getUserId());
-
+            if(optionalCandidate.isEmpty()) {
+                logger.error("Candidate Id {} Not Related to User Id {}", candidateId, updatedCandidateDetails.getUserId());
+                throw new CandidateNotFoundException("Candidate Id: " + candidateId + " Not related to UserId: " + updatedCandidateDetails.getUserId());
+            }
             Submissions existedSubmission=submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, updatedSubmissionsDetails.getJobId());
-            if(existedSubmission==null)
-                throw new CandidateAlreadyExistsException("Candidate Not Submitted for JobId "+updatedSubmissionsDetails.getJobId());
-
+            if(existedSubmission==null) {
+                logger.error("Candidate Not Submitted For JobId {} ",updatedSubmissionsDetails.getJobId());
+                throw new SubmissionNotFoundException("Candidate Not Submitted for JobId " + updatedSubmissionsDetails.getJobId());
+            }
             CandidateDetails existingCandidate = existingCandidateOpt.get();
             updateCandidateFields(existingCandidate, updatedCandidateDetails);
-
             if (resumeFile!=null && !resumeFile.isEmpty())   {
                 existedSubmission.setResumeFilePath(updatedSubmissionsDetails.getResumeFilePath());
             }
-            String submissionId=candidateId+"_"+updatedSubmissionsDetails.getJobId();
-            existedSubmission.setSubmissionId(submissionId);
             existedSubmission.setCandidate(existingCandidate);
             existedSubmission.setJobId(updatedSubmissionsDetails.getJobId());
-             existedSubmission.setSkills(updatedSubmissionsDetails.getSkills());
+            existedSubmission.setSkills(updatedSubmissionsDetails.getSkills());
             existedSubmission.setPreferredLocation(updatedSubmissionsDetails.getPreferredLocation());
             existedSubmission.setProfileReceivedDate(LocalDate.now());
             existedSubmission.setCommunicationSkills(updatedSubmissionsDetails.getCommunicationSkills());
@@ -198,11 +210,11 @@ public class SubmissionService {
             String recruiterEmail = existingCandidate.getUserEmail();
             String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
             String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(existedSubmission.getJobId());
-
+            String teamLeadName=candidateRepository.findUserNameByEmail(teamLeadEmail);
             if (recruiterEmail != null && teamLeadEmail != null) {
                 try {
                     logger.info("Sending candidate resubmission email notification...");
-                    emailService.sendCandidateNotification(existedSubmission, recruiterName, recruiterEmail, teamLeadEmail, "submission");
+                    emailService.sendCandidateNotification(existedSubmission, recruiterName, recruiterEmail,teamLeadName, teamLeadEmail, "submission");
                 } catch (Exception e) {
                     logger.error("Error sending resubmission email: {}", e.getMessage(), e);
                 }
@@ -211,9 +223,8 @@ public class SubmissionService {
                         recruiterEmail, teamLeadEmail);
             }
 // --------------------------------------------------------------------------
-
             // Return a success response with the updated candidate details
-            CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
+            CandidateResponseDto.CandidateData data = new CandidateResponseDto.CandidateData(
                     existingCandidate.getCandidateId(),
                     existingCandidate.getUserId(),
                     existedSubmission.getSubmissionId()
@@ -221,9 +232,8 @@ public class SubmissionService {
             return new CandidateResponseDto(
                     "Success",
                     "Candidate successfully updated",
-                    payload,
-                    null // No error message since no error occurred
-            );
+                    data,
+                    null);
         }
         catch (InvalidFileTypeException ex) {
             // Custom handling for InvalidFileTypeException
@@ -234,19 +244,16 @@ public class SubmissionService {
             logger.error("Failed to save resume file: {}", ex.getMessage());
             throw new RuntimeException("An error occurred while saving the resume file", ex);
         }
-
     }
-
     public boolean isCandidateValidForUser(String userId, String candidateId) {
         // Fetch the candidate by candidateId
         CandidateDetails candidateDetails = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
-
         // Check if the userId associated with the candidate matches the provided userId
         if (!candidateDetails.getUserId().equals(userId)) {
-            return false; // Candidate does not belong to the provided userId
+            return false;
         }
-        return true; // Candidate is valid for the user
+        return true;
     }
     // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
@@ -273,7 +280,6 @@ public class SubmissionService {
 
         existingCandidate.setTimestamp(LocalDateTime.now());
     }
-
     private void saveFile(Submissions submissions, MultipartFile file) throws IOException {
         // Define the path where files will be stored
         Path uploadsDirectory = Paths.get("uploads");
@@ -303,7 +309,7 @@ public class SubmissionService {
     // Set default values for userEmail and clientEmail if not provided
     private String saveResumeToFileSystem(MultipartFile resumeFile) throws IOException {
         // Set the directory where resumes will be stored
-        String resumeDirectory = "C:\\Users\\jaiva\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
+        String resumeDirectory = "C:\\Users\\User\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
 
         // Generate a unique file name using UUID to avoid conflicts
         String fileName = UUID.randomUUID().toString() + "-" + resumeFile.getOriginalFilename();

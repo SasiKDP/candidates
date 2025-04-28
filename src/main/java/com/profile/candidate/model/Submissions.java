@@ -17,10 +17,6 @@ public class Submissions {
     @JoinColumn(name = "candidate_id", nullable = false)
     private CandidateDetails candidate;
 
-//    @OneToOne(mappedBy = "submission", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-//    private InterviewDetails interviewDetails;
-
-
     @Column(nullable = false)
     private String jobId;
 
@@ -46,22 +42,6 @@ public class Submissions {
     private LocalDate profileReceivedDate;
 
     private LocalDateTime submittedAt;
-
-    @PrePersist
-    public void prePersist() {
-        this.submittedAt = LocalDateTime.now();
-
-//        if (this.submissionId == null) {
-//            generateSubmissionId();
-//        }
-    }
-//    public void generateSubmissionId() {
-//        if (candidate != null && candidate.getCandidateId() != null && jobId != null) {
-//            this.submissionId = "SUBM-" + candidate.getCandidateId() + "-" + jobId;
-//        } else {
-//            throw new IllegalStateException("Candidate ID and Job ID must not be null to generate submission ID");
-//        }
-//    }
 
     public LocalDate getProfileReceivedDate() {
         return profileReceivedDate;
