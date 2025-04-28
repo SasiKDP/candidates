@@ -88,7 +88,7 @@ public class PlacementDetails {
     private String remarks;
 
     @Column(name = "status")
-    private String status;
+    private String status = "";
 
     @Column(name = "status_message")
     private String statusMessage;

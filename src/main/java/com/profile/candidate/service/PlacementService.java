@@ -1,13 +1,16 @@
 package com.profile.candidate.service;
 
-import com.profile.candidate.dto.InterviewDto;
 import com.profile.candidate.dto.PlacementDto;
 import com.profile.candidate.dto.PlacementResponseDto;
 import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
 import com.profile.candidate.exceptions.InvalidRateException;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
+import com.profile.candidate.model.InterviewDetails;
 import com.profile.candidate.model.PlacementDetails;
+import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.repository.PlacementRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +27,8 @@ import java.util.stream.Collectors;
 @Service
 public class PlacementService {
 
+    private static final Logger logger = LoggerFactory.getLogger(InterviewService.class);
+
 
     private final PlacementRepository placementRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -32,6 +37,9 @@ public class PlacementService {
     public PlacementService(PlacementRepository placementRepository) {
         this.placementRepository = placementRepository;
     }
+
+    @Autowired
+    private  InterviewRepository interviewRepository;
 
     private String generateCustomId() {
         List<Integer> existingNumbers = placementRepository.findAll().stream()
@@ -63,6 +71,7 @@ public class PlacementService {
         }
 
         placementDetails.setId(generateCustomId());
+        logger.info("generated id is :" + generateCustomId());
 
         if (placementDetails.getBillRateUSD() != null) {
             BigDecimal billRateINR = placementDetails.getBillRateUSD()
@@ -77,9 +86,28 @@ public class PlacementService {
                     .setScale(2, RoundingMode.HALF_UP);
             placementDetails.setGrossProfit(grossProfit);
         }
+        Optional<InterviewDetails> interview_details = interviewRepository.findById(placementDto.getInterviewId());
+
+        logger.info("interview details are :" + interview_details);
+        InterviewDetails i_details=interview_details.get();
+        i_details.setIsPlaced(true);
+        interviewRepository.save(i_details);
+        placementDetails.setStatus("Active");
+
 
         PlacementDetails saved = placementRepository.save(placementDetails);
-        return convertToResponseDto(saved);
+        // Assuming the isPlaced flag logic (e.g., a placement is considered placed once saved)
+        boolean isPlaced = saved.getStatus().equalsIgnoreCase("Active");
+// Assuming "Placed" status means placed
+
+        // Return the updated PlacementResponseDto with the isPlaced flag
+        return new PlacementResponseDto(
+                saved.getId(),
+                saved.getCandidateFullName(),
+                saved.getCandidateContactNo(),
+                saved.getClientEmail(),
+                isPlaced
+        );
     }
 
     public PlacementResponseDto updatePlacement(String id, PlacementDto dto) {
@@ -157,41 +185,9 @@ public class PlacementService {
         return convertToResponseDto(placement);
     }
 
-    public void autoAddPlacementFromInterview(InterviewDto interviewDto) {
-        if ("Placed".equalsIgnoreCase(interviewDto.getInterviewStatus())) {
-            PlacementDetails placement = new PlacementDetails();
-            placement.setId(generateCustomId());
-            placement.setCandidateFullName(interviewDto.getFullName());
-            placement.setCandidateContactNo(interviewDto.getContactNumber());
-
-            // ✅ Safely get the first email if available
-            if (interviewDto.getClientEmail() != null && !interviewDto.getClientEmail().isEmpty()) {
-                String firstEmail = interviewDto.getClientEmail().get(0);
-                placement.setCandidateEmailId(firstEmail);
-                placement.setClientEmail(firstEmail);
-            } else {
-                placement.setCandidateEmailId(null); // or "" if you prefer empty
-                placement.setClientEmail(null);
-            }
-
-            placement.setRecruiter(interviewDto.getCandidateId());
-            placement.setClientName(interviewDto.getClientName());
-            placement.setTechnology("N/A");
-            placement.setStartDate(LocalDate.now());
-            placement.setEmploymentType("C2C");
-            placement.setStatus("Running");
-            placement.setStatusMessage(interviewDto.getInterviewStatus());
-
-            placementRepository.save(placement);
-        }
-    }
-
-
-
 
     private PlacementDto convertToDto(PlacementDetails saved) {
         PlacementDto dto = new PlacementDto();
-        dto.setId(saved.getId());
         dto.setCandidateFullName(saved.getCandidateFullName());
         dto.setCandidateContactNo(saved.getCandidateContactNo());
         dto.setCandidateEmailId(saved.getCandidateEmailId()); // FIXED

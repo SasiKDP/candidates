@@ -1,20 +1,24 @@
 package com.profile.candidate.dto;
 
-
 public class PlacementResponseDto {
     private String id;
     private String candidateFullName;
     private String candidateContactNo;
     private String clientEmail;
+    private boolean isPlaced;  // Add isPlaced field
 
     // Constructors
     public PlacementResponseDto() {}
 
-    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo, String clientEmail) {
+    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo, String clientEmail, boolean isPlaced) {
         this.id = id;
         this.candidateFullName = candidateFullName;
         this.candidateContactNo = candidateContactNo;
         this.clientEmail = clientEmail;
+        this.isPlaced = isPlaced;  // Set the value of isPlaced in the constructor
+    }
+
+    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo, String clientEmail) {
     }
 
     // Getters and Setters
@@ -26,7 +30,6 @@ public class PlacementResponseDto {
     public void setId(String id) {
         this.id = id;
     }
-
 
     public String getCandidateFullName() {
         return candidateFullName;
@@ -52,7 +55,11 @@ public class PlacementResponseDto {
         this.candidateContactNo = candidateContactNo;
     }
 
+    public boolean isPlaced() {
+        return isPlaced;  // Getter for isPlaced
+    }
 
-    // (Generate using IDE or Lombok if you're using it)
+    public void setPlaced(boolean isPlaced) {
+        this.isPlaced = isPlaced;  // Setter for isPlaced
+    }
 }
-

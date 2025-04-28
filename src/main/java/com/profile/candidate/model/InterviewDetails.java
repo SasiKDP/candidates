@@ -41,6 +41,14 @@ public class InterviewDetails {
     private LocalDateTime timestamp;
     private boolean isPlaced;
 
+
+    public Boolean getIsPlaced() {
+        return isPlaced;
+    }
+
+    public void setIsPlaced(Boolean isPlaced) {
+        this.isPlaced = isPlaced;
+    }
     @Transient
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -114,6 +122,7 @@ public class InterviewDetails {
     public String getUserId() {
         return userId;
     }
+
 
     public void setUserId(String userId) {
         this.userId = userId;
