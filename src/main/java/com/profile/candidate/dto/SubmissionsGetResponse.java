@@ -2,237 +2,289 @@ package com.profile.candidate.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SubmissionsGetResponse {
 
-    private String submissionId;
+    private boolean status;
+    private String message;
+    private List<GetSubmissionData> data;
+    private String errors;
 
-    private String candidateId;
+    public static class GetSubmissionData{
 
-    private String userId;
+        private String submissionId;
 
-    private String fullName;
+        private String candidateId;
 
-    private String candidateEmailId;
+        private String userId;
 
-    private String contactNumber;
+        private String fullName;
 
-    private String currentOrganization;
+        private String candidateEmailId;
 
-    private String qualification;
+        private String contactNumber;
 
-    private float totalExperience;
+        private String currentOrganization;
 
-    private float relevantExperience;
+        private String qualification;
 
-    private String currentCTC;
+        private float totalExperience;
 
-    private String expectedCTC;
+        private float relevantExperience;
 
-    private String noticePeriod;
+        private String currentCTC;
 
-    private String currentLocation;
+        private String expectedCTC;
 
-    private String jobId;
+        private String noticePeriod;
 
-    private String clientName;
+        private String currentLocation;
 
-    private LocalDate profileReceivedDate;
+        private String jobId;
 
-    private String preferredLocation;
+        private String clientName;
 
-    // Change the skills field from List<String> to String
-    private String skills;  // Now it's just a single string
+        private LocalDate profileReceivedDate;
 
-    private String communicationSkills;
+        private String preferredLocation;
 
-    private Double requiredTechnologiesRating;
+        // Change the skills field from List<String> to String
+        private String skills;  // Now it's just a single string
 
-    private String overallFeedback;
+        private String communicationSkills;
 
-    private LocalDateTime submittedAt;
+        private Double requiredTechnologiesRating;
 
+        private String overallFeedback;
 
-    public String getSubmissionId() {
-        return submissionId;
+        private LocalDateTime submittedAt;
+
+        public String getSubmissionId() {
+            return submissionId;
+        }
+
+        public void setSubmissionId(String submissionId) {
+            this.submissionId = submissionId;
+        }
+
+        public String getCandidateId() {
+            return candidateId;
+        }
+
+        public void setCandidateId(String candidateId) {
+            this.candidateId = candidateId;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+
+        public String getFullName() {
+            return fullName;
+        }
+
+        public void setFullName(String fullName) {
+            this.fullName = fullName;
+        }
+
+        public String getCandidateEmailId() {
+            return candidateEmailId;
+        }
+
+        public void setCandidateEmailId(String candidateEmailId) {
+            this.candidateEmailId = candidateEmailId;
+        }
+
+        public String getContactNumber() {
+            return contactNumber;
+        }
+
+        public void setContactNumber(String contactNumber) {
+            this.contactNumber = contactNumber;
+        }
+
+        public String getCurrentOrganization() {
+            return currentOrganization;
+        }
+
+        public void setCurrentOrganization(String currentOrganization) {
+            this.currentOrganization = currentOrganization;
+        }
+
+        public String getQualification() {
+            return qualification;
+        }
+
+        public void setQualification(String qualification) {
+            this.qualification = qualification;
+        }
+
+        public float getTotalExperience() {
+            return totalExperience;
+        }
+
+        public void setTotalExperience(float totalExperience) {
+            this.totalExperience = totalExperience;
+        }
+
+        public float getRelevantExperience() {
+            return relevantExperience;
+        }
+
+        public void setRelevantExperience(float relevantExperience) {
+            this.relevantExperience = relevantExperience;
+        }
+
+        public String getCurrentCTC() {
+            return currentCTC;
+        }
+
+        public void setCurrentCTC(String currentCTC) {
+            this.currentCTC = currentCTC;
+        }
+
+        public String getExpectedCTC() {
+            return expectedCTC;
+        }
+
+        public void setExpectedCTC(String expectedCTC) {
+            this.expectedCTC = expectedCTC;
+        }
+
+        public String getNoticePeriod() {
+            return noticePeriod;
+        }
+
+        public void setNoticePeriod(String noticePeriod) {
+            this.noticePeriod = noticePeriod;
+        }
+
+        public String getCurrentLocation() {
+            return currentLocation;
+        }
+
+        public void setCurrentLocation(String currentLocation) {
+            this.currentLocation = currentLocation;
+        }
+
+        public String getJobId() {
+            return jobId;
+        }
+
+        public void setJobId(String jobId) {
+            this.jobId = jobId;
+        }
+
+        public String getClientName() {
+            return clientName;
+        }
+
+        public void setClientName(String clientName) {
+            this.clientName = clientName;
+        }
+
+        public LocalDate getProfileReceivedDate() {
+            return profileReceivedDate;
+        }
+
+        public void setProfileReceivedDate(LocalDate profileReceivedDate) {
+            this.profileReceivedDate = profileReceivedDate;
+        }
+
+        public String getPreferredLocation() {
+            return preferredLocation;
+        }
+
+        public void setPreferredLocation(String preferredLocation) {
+            this.preferredLocation = preferredLocation;
+        }
+
+        public String getSkills() {
+            return skills;
+        }
+
+        public void setSkills(String skills) {
+            this.skills = skills;
+        }
+
+        public String getCommunicationSkills() {
+            return communicationSkills;
+        }
+
+        public void setCommunicationSkills(String communicationSkills) {
+            this.communicationSkills = communicationSkills;
+        }
+
+        public Double getRequiredTechnologiesRating() {
+            return requiredTechnologiesRating;
+        }
+
+        public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
+            this.requiredTechnologiesRating = requiredTechnologiesRating;
+        }
+
+        public String getOverallFeedback() {
+            return overallFeedback;
+        }
+
+        public void setOverallFeedback(String overallFeedback) {
+            this.overallFeedback = overallFeedback;
+        }
+
+        public LocalDateTime getSubmittedAt() {
+            return submittedAt;
+        }
+
+        public void setSubmittedAt(LocalDateTime submittedAt) {
+            this.submittedAt = submittedAt;
+        }
+
     }
 
-    public void setSubmissionId(String submissionId) {
-        this.submissionId = submissionId;
-    }
-    public String getJobId() {
-        return jobId;
-    }
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
+    public SubmissionsGetResponse(boolean status, String message, List<GetSubmissionData> data, String errors) {
+        this.status = status;
+        this.message = message;
+        this.data = data;
+        this.errors = errors;
     }
 
-    public LocalDate getProfileReceivedDate() {
-        return profileReceivedDate;
+    public SubmissionsGetResponse() {
     }
 
-    public void setProfileReceivedDate(LocalDate profileReceivedDate) {
-        this.profileReceivedDate = profileReceivedDate;
+    public boolean isStatus() {
+        return status;
     }
 
-
-
-    public String getPreferredLocation() {
-        return preferredLocation;
+    public void setStatus(boolean status) {
+        this.status = status;
     }
 
-    public void setPreferredLocation(String preferredLocation) {
-        this.preferredLocation = preferredLocation;
+    public String getMessage() {
+        return message;
     }
 
-    public String getSkills() {
-        return skills;
+    public void setMessage(String message) {
+        this.message = message;
     }
 
-    public void setSkills(String skills) {
-        this.skills = skills;
+    public List<GetSubmissionData> getData() {
+        return data;
     }
 
-    public String getCommunicationSkills() {
-        return communicationSkills;
+    public void setData(List<GetSubmissionData> data) {
+        this.data = data;
     }
 
-    public void setCommunicationSkills(String communicationSkills) {
-        this.communicationSkills = communicationSkills;
+    public String getErrors() {
+        return errors;
     }
 
-    public Double getRequiredTechnologiesRating() {
-        return requiredTechnologiesRating;
-    }
-
-    public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
-        this.requiredTechnologiesRating = requiredTechnologiesRating;
-    }
-
-    public String getOverallFeedback() {
-        return overallFeedback;
-    }
-
-    public void setOverallFeedback(String overallFeedback) {
-        this.overallFeedback = overallFeedback;
-    }
-
-    public LocalDateTime getSubmittedAt() {
-        return submittedAt;
-    }
-
-    public void setSubmittedAt(LocalDateTime submittedAt) {
-        this.submittedAt = submittedAt;
-    }
-
-    public String getCandidateId() {
-        return candidateId;
-    }
-
-    public void setCandidateId(String candidateId) {
-        this.candidateId = candidateId;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getCandidateEmailId() {
-        return candidateEmailId;
-    }
-
-    public void setCandidateEmailId(String candidateEmailId) {
-        this.candidateEmailId = candidateEmailId;
-    }
-
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
-    }
-
-    public String getCurrentOrganization() {
-        return currentOrganization;
-    }
-
-    public void setCurrentOrganization(String currentOrganization) {
-        this.currentOrganization = currentOrganization;
-    }
-
-    public String getQualification() {
-        return qualification;
-    }
-
-    public void setQualification(String qualification) {
-        this.qualification = qualification;
-    }
-
-    public float getTotalExperience() {
-        return totalExperience;
-    }
-
-    public void setTotalExperience(float totalExperience) {
-        this.totalExperience = totalExperience;
-    }
-
-    public float getRelevantExperience() {
-        return relevantExperience;
-    }
-
-    public void setRelevantExperience(float relevantExperience) {
-        this.relevantExperience = relevantExperience;
-    }
-
-    public String getCurrentCTC() {
-        return currentCTC;
-    }
-
-    public void setCurrentCTC(String currentCTC) {
-        this.currentCTC = currentCTC;
-    }
-
-    public String getExpectedCTC() {
-        return expectedCTC;
-    }
-
-    public void setExpectedCTC(String expectedCTC) {
-        this.expectedCTC = expectedCTC;
-    }
-
-    public String getNoticePeriod() {
-        return noticePeriod;
-    }
-
-    public void setNoticePeriod(String noticePeriod) {
-        this.noticePeriod = noticePeriod;
-    }
-
-    public String getCurrentLocation() {
-        return currentLocation;
-    }
-
-    public void setCurrentLocation(String currentLocation) {
-        this.currentLocation = currentLocation;
-    }
-
-    public String getClientName() {
-        return clientName;
-    }
-    public void setClientName(String clientName) {
-        this.clientName = clientName;
+    public void setErrors(String errors) {
+        this.errors = errors;
     }
 }

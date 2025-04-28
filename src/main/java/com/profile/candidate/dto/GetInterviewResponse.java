@@ -8,7 +8,7 @@ public class GetInterviewResponse {
 
     private boolean success;
     private String message;
-    private List<InterviewPayload> payload;
+    private List<InterviewData> data;
     private Object errors;
 
     public boolean isSuccess() {
@@ -26,32 +26,32 @@ public class GetInterviewResponse {
         this.message = message;
     }
 
-    public List<InterviewPayload> getPayload() {
-        return payload;
+    public List<InterviewData> getData() {
+        return data;
     }
 
-    public void setPayload(List<InterviewPayload> payload) {
-        this.payload = payload;
+    public void setData(List<InterviewData> data) {
+        this.data = data;
     }
+
     public Object getErrors() {
         return errors;
     }
+
     public void setErrors(Object errors) {
         this.errors = errors;
     }
     // Constructors
-    public GetInterviewResponse(boolean success, String message, List<InterviewPayload> payload, Object errors) {
+    public GetInterviewResponse(boolean success, String message, List<InterviewData> payload, Object errors) {
         this.success = success;
         this.message = message;
-        this.payload = payload;
+        this.data = payload;
         this.errors = errors;
     }
-
     public GetInterviewResponse() {
     }
-
     // Inner class remains unchanged
-    public static class InterviewPayload {
+    public static class InterviewData {
         private String interviewId;
         private String jobId;                   // Job ID
         private String candidateId;             // Candidate ID
@@ -68,11 +68,40 @@ public class GetInterviewResponse {
         private String clientName;              // Client Name
         private String interviewLevel;          // Interview Level (e.g., 1st, 2nd round)
         private String latestInterviewStatus;
+        private boolean isPlaced;
         //private String emailId;
+
+        public InterviewData(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus, boolean isPlaced) {
+            this.interviewId = interviewId;
+            this.jobId = jobId;
+            this.candidateId = candidateId;
+            this.candidateFullName = candidateFullName;
+            this.candidateContactNo = candidateContactNo;
+            this.candidateEmailId = candidateEmailId;
+            this.userEmail = userEmail;
+            this.userId = userId;
+            this.interviewDateTime = interviewDateTime;
+            this.duration = duration;
+            this.zoomLink = zoomLink;
+            this.interviewScheduledTimestamp = interviewScheduledTimestamp;
+            this.clientEmail = clientEmail;
+            this.clientName = clientName;
+            this.interviewLevel = interviewLevel;
+            this.latestInterviewStatus = latestInterviewStatus;
+            this.isPlaced = isPlaced;
+        }
 
 
         // Getters and Setters
 
+
+        public boolean isPlaced() {
+            return isPlaced;
+        }
+
+        public void setPlaced(boolean placed) {
+            isPlaced = placed;
+        }
 
         public String getInterviewId() {
             return interviewId;
@@ -202,7 +231,21 @@ public class GetInterviewResponse {
             this.latestInterviewStatus = latestInterviewStatus;
         }
 
-        public InterviewPayload(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus) {
+        public InterviewData(String interviewId,
+                             String jobId,
+                             String candidateId,
+                             String candidateFullName,
+                             String candidateContactNo,
+                             String candidateEmailId,
+                             String userEmail,
+                             String userId,
+                             OffsetDateTime interviewDateTime,
+                             Integer duration, String zoomLink,
+                             LocalDateTime interviewScheduledTimestamp,
+                             List<String> clientEmail,
+                             String clientName,
+                             String interviewLevel,
+                             String latestInterviewStatus) {
             this.interviewId = interviewId;
             this.jobId = jobId;
             this.candidateId = candidateId;
@@ -221,9 +264,8 @@ public class GetInterviewResponse {
             this.latestInterviewStatus = latestInterviewStatus;
         }
 
-        public InterviewPayload() {
+        public InterviewData() {
         }
-
     }
 }
 

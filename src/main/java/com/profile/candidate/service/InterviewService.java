@@ -2,12 +2,15 @@ package com.profile.candidate.service;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.profile.candidate.dto.GetInterviewResponse;
+import com.profile.candidate.dto.GetInterviewResponseDto;
 import com.profile.candidate.dto.InterviewResponseDto;
+import com.profile.candidate.dto.TeamleadInterviewsDTO;
 import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.InterviewDetails;
@@ -16,6 +19,7 @@ import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.repository.SubmissionRepository;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
+import jakarta.persistence.Tuple;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,15 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,13 +53,16 @@ public class InterviewService {
                                                   String contactNumber, String candidateEmailId, boolean skipNotification) throws JsonProcessingException {
 
         System.out.println("Starting to schedule interview for userId: " + userId + " and candidateId: " + candidateId);
-        if (candidateId == null) {
+        if (candidateId == null)
             throw new CandidateNotFoundException("Candidate ID cannot be null for userId: " + userId);
+        Optional<CandidateDetails> candidate = candidateRepository.findById(candidateId);
+        if (candidate.isEmpty()) {
+            logger.error("No Candidate Found with Id {}", candidateId);
+            throw new CandidateNotFoundException("Invalid Candidate Id " + candidateId);
         }
         if (submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, jobId) == null) {
             throw new JobNotFoundException("Candidate Not Applied for Job " + jobId);
         }
-        // Retrieve candidate details
         Optional<CandidateDetails> candidateDetails = candidateRepository.findByCandidateIdAndUserId(candidateId, userId);
 
         InterviewDetails inti = interviewRepository.findByCandidateIdAndUserIdAndClientNameAndJobId(candidateId, userId, clientName, jobId);
@@ -77,7 +78,6 @@ public class InterviewService {
         interviewDetails.setUserEmail(userEmail);
         interviewDetails.setClientEmailList(clientEmails);
         setDefaultEmailsIfMissing(interviewDetails);
-
         // Determine Interview Type if not provided
         if (interviewLevel == null || interviewLevel.isEmpty()) {
             interviewLevel = determineInterviewType(clientEmails, zoomLink);
@@ -109,6 +109,7 @@ public class InterviewService {
         interviewDetails.setContactNumber(contactNumber);
         interviewDetails.setCandidateEmailId(candidateEmailId);
         interviewDetails.setTimestamp(LocalDateTime.now());
+        interviewDetails.setPlaced(false);
 
         String clientId = interviewRepository.findClientIdByClientName(clientName);
         if (clientId == null) throw new InvalidClientException("No Client With Name :" + clientName);
@@ -130,7 +131,7 @@ public class InterviewService {
         // Save candidate details to the database
         try {
             interviewRepository.save(interviewDetails);
-            System.out.println("Candidate saved successfully.");
+            logger.info("Interview Scheduled Successfully");
         } catch (Exception e) {
             throw new RuntimeException("Error while saving candidate data.", e);
         }
@@ -155,7 +156,7 @@ public class InterviewService {
                     formattedDate, formattedTime, duration, zoomLink, jobTitle, clientName));
         }
         // Prepare the response with interview details
-        InterviewResponseDto.InterviewPayload payload = new InterviewResponseDto.InterviewPayload(
+        InterviewResponseDto.InterviewData data = new InterviewResponseDto.InterviewData(
                 interviewDetails.getCandidateId(),
                 interviewDetails.getUserEmail(),
                 interviewDetails.getCandidateEmailId(),
@@ -163,7 +164,7 @@ public class InterviewService {
         );
         return new InterviewResponseDto(true,
                 skipNotification ? "Interview updated successfully." : "Interview updated successfully and notifications sent.",
-                payload,
+                data,
                 null);
     }
 
@@ -204,17 +205,6 @@ public class InterviewService {
         Optional<InterviewDetails> existingInterview = interviewRepository.findByCandidateIdAndJobIdAndInterviewDateTime(candidateId, jobId, interviewDateTime);
         // Return true if an interview already exists, otherwise false
         return existingInterview.isPresent();
-    }
-
-    public boolean isCandidateValidForUser(String userId, String candidateId) {
-        // Fetch the candidate by candidateId
-        CandidateDetails candidateDetails = candidateRepository.findById(candidateId)
-                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
-        // Check if the userId associated with the candidate matches the provided userId
-        if (!candidateDetails.getUserId().equals(userId)) {
-            return false; // Candidate does not belong to the provided userId
-        }
-        return true; // Candidate is valid for the user
     }
 
     public InterviewResponseDto updateScheduledInterview(
@@ -323,9 +313,13 @@ public class InterviewService {
         // Update timestamp
         interviewDetails.setTimestamp(LocalDateTime.now());
         // Save updated candidate details
+        // updating isPlaced field if status is Placed.
+        if (interviewStatus.equals("PLACED")) {
+            logger.info("Interview Status Is Updating");
+            interviewDetails.setPlaced(true);
+        }
         interviewRepository.save(interviewDetails);
         logger.info("Interview details updated successfully for candidateId: {}", candidateId);
-
         // Prepare email content
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
@@ -344,7 +338,6 @@ public class InterviewService {
                 "<p>Hello %s,</p><p>We regret to inform you that your interview has been cancelled.</p>"
                         + "<p>If you have any questions, please contact support.</p><p>Best regards,<br>Interview Team</p>",
                 interviewDetails.getFullName());
-
         // Validate userEmail before sending the email
         String userEmailId = interviewDetails.getUserEmail();
         if (userEmailId == null || userEmailId.isEmpty()) {
@@ -385,7 +378,7 @@ public class InterviewService {
         return new InterviewResponseDto(
                 true,
                 skipNotification ? "Interview updated successfully." : "Interview updated successfully and notifications sent.",
-                new InterviewResponseDto.InterviewPayload(
+                new InterviewResponseDto.InterviewData(
                         interviewDetails.getCandidateId(),
                         interviewDetails.getUserEmail(),
                         interviewDetails.getCandidateEmailId(),
@@ -472,9 +465,7 @@ public class InterviewService {
                 // Debugging Log
                 logger.info("Updated Interview Status JSON for Candidate {}: {}",
                         interviewDetails.getCandidateId(), objectMapper.writeValueAsString(historyArray));
-
                 interviewDetails.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
-
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Error processing interview status JSON", e);
             }
@@ -516,6 +507,11 @@ public class InterviewService {
         String subject = "Interview Update for " + interviewDetails.getFullName();
 
         interviewDetails.setTimestamp(LocalDateTime.now());
+        //updating isPlaced Status
+        if (interviewStatus.equals("PLACED")) {
+            logger.info("Interview Status Placed so Updating isPlaced Status");
+            interviewDetails.setPlaced(true);
+        }
         interviewRepository.save(interviewDetails);
 
         String jobTitle = interviewRepository.findJobTitleByJobId(jobId);
@@ -567,21 +563,21 @@ public class InterviewService {
         return new InterviewResponseDto(
                 true,
                 skipNotification ? "Interview updated successfully." : "Interview updated successfully and notifications sent.",
-                new InterviewResponseDto.InterviewPayload(
+                new InterviewResponseDto.InterviewData(
                         interviewDetails.getCandidateId(),
                         interviewDetails.getUserEmail(),
                         interviewDetails.getCandidateEmailId(),
                         interviewDetails.getClientEmailList()
                 ),
-                null  // No errors
+                null
         );
     }
 
     public GetInterviewResponse getAllInterviews() {
         List<InterviewDetails> interviewDetails = interviewRepository.findAll();
 
-        List<GetInterviewResponse.InterviewPayload> payloadList = interviewDetails.stream()
-                .map(i -> new GetInterviewResponse.InterviewPayload(
+        List<GetInterviewResponse.InterviewData> dataList = interviewDetails.stream()
+                .map(i -> new GetInterviewResponse.InterviewData(
                         i.getInterviewId(),
                         i.getJobId(),
                         i.getCandidateId(),
@@ -597,20 +593,27 @@ public class InterviewService {
                         i.getClientEmailList(),
                         i.getClientName(),
                         i.getInterviewLevel(),
-                        latestInterviewStatusFromJson(i.getInterviewStatus())
+                        latestInterviewStatusFromJson(i.getInterviewStatus()),
+                        i.isPlaced()
                 ))
                 .collect(Collectors.toList());
-        return new GetInterviewResponse(true, "Interviews found", payloadList, null);
+        return new GetInterviewResponse(true, "Interviews found", dataList, null);
     }
 
     public GetInterviewResponse getInterviews(String candidateId) {
 
+        Optional<CandidateDetails> optionalCandidate = candidateRepository.findById(candidateId);
+        if (optionalCandidate.isEmpty()) {
+            logger.error("No Candidate Found with CandidateId: {}", candidateId);
+            throw new CandidateNotFoundException("Candidate Not Found With Id :" + candidateId + " to schedule Interview");
+        }
         List<InterviewDetails> interviewDetails = interviewRepository.findInterviewsByCandidateId(candidateId);
         if (interviewDetails.isEmpty()) {
-            throw new InterviewNotScheduledException("No Interviews Scheduled For CandidateId " + candidateId);
+            logger.error("No Interviews Found For Candidate ID : {}", candidateId);
+            throw new NoInterviewsFoundException("No Interviews Scheduled For CandidateId " + candidateId);
         } else {
-            List<GetInterviewResponse.InterviewPayload> payloadList = interviewDetails.stream()
-                    .map(i -> new GetInterviewResponse.InterviewPayload(
+            List<GetInterviewResponse.InterviewData> dataList = interviewDetails.stream()
+                    .map(i -> new GetInterviewResponse.InterviewData(
                             i.getInterviewId(),
                             i.getJobId(),
                             i.getCandidateId(),
@@ -626,17 +629,22 @@ public class InterviewService {
                             i.getClientEmailList(),
                             i.getClientName(),
                             i.getInterviewLevel(),
-                            latestInterviewStatusFromJson(i.getInterviewStatus())
+                            latestInterviewStatusFromJson(i.getInterviewStatus()),
+                            i.isPlaced()
                     ))
                     .collect(Collectors.toList());
-            return new GetInterviewResponse(true, "Interviews found", payloadList, null);
+            return new GetInterviewResponse(true, "Interviews found", dataList, null);
         }
     }
 
     @Transactional
     public void deleteInterview(String candidateId, String jobId) {
         logger.info("Received request to remove scheduled interview details for candidateId: {}", candidateId);
-
+        Optional<CandidateDetails> candidate = candidateRepository.findById(candidateId);
+        if (candidate.isEmpty()) {
+            logger.error("Invalid Candidate Id :{}", candidateId);
+            throw new CandidateNotFoundException("No Candidate Found with Id :" + candidateId);
+        }
         InterviewDetails interview = interviewRepository.findInterviewsByCandidateIdAndJobId(candidateId, jobId);
         if (interview == null) {
             logger.error("Candidate with ID {} not found in database", candidateId);
@@ -650,10 +658,11 @@ public class InterviewService {
 
         Optional<InterviewDetails> optionalInterviewDetails = interviewRepository.findById(interviewId);
         if (optionalInterviewDetails.isEmpty()) {
+            logger.error("Invalid Interview Id :{}", interviewId);
             throw new NoInterviewsFoundException("Invalid Interview Id " + interviewId);
         }
         InterviewDetails i = optionalInterviewDetails.get();
-        GetInterviewResponse.InterviewPayload payload = new GetInterviewResponse.InterviewPayload(
+        GetInterviewResponse.InterviewData payload = new GetInterviewResponse.InterviewData(
                 i.getInterviewId(),
                 i.getJobId(),
                 i.getCandidateId(),
@@ -669,7 +678,8 @@ public class InterviewService {
                 i.getClientEmailList(),
                 i.getClientName(),
                 i.getInterviewLevel(),
-                latestInterviewStatusFromJson(i.getInterviewStatus())
+                latestInterviewStatusFromJson(i.getInterviewStatus()),
+                i.isPlaced()
         );
         return new GetInterviewResponse(true, "Interview found", List.of(payload), null);
     }
@@ -681,24 +691,27 @@ public class InterviewService {
 
         System.out.println("Starting to schedule interview for userId: " + " and candidateId: " + candidateId);
         if (candidateId == null) {
+            logger.error("Candidate Id Can not be null");
             throw new CandidateNotFoundException("Candidate ID cannot be null");
         }
         if (submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, jobId) == null) {
+            logger.error("Candidate Not Applied For a JobId: {}", jobId);
             throw new JobNotFoundException("Candidate Not Applied for Job " + jobId);
         }
         // Retrieve candidate details
         Optional<CandidateDetails> candidateDetails = candidateRepository.findById(candidateId);
-
+        if (candidateDetails.isEmpty()) {
+            logger.error("No Candidate found for Id {}", candidateId);
+            new CandidateNotFoundException("No Candidate found for candidateId: " + candidateId);
+        }
         InterviewDetails inti = interviewRepository.findByCandidateIdAndClientNameAndJobId(candidateId, clientName, jobId);
-        InterviewDetails interviewDetails = new InterviewDetails();
-
-        if (candidateDetails.isEmpty())
-            new CandidateNotFoundException("Candidate not found for candidateId: " + candidateId);
-
-        // Ensure no interview is already scheduled
         if (inti != null) {
+            logger.error("Interview Already Scheduled For Candidate ID :{} for Client {} and job {}", candidateId, clientName, jobId);
             throw new InterviewAlreadyScheduledException("An interview is already scheduled for candidate ID: " + candidateId);
         }
+        InterviewDetails interviewDetails = new InterviewDetails();
+
+        // Ensure no interview is already scheduled
         // Update candidate details with provided information
         interviewDetails.setClientEmailList(clientEmail);
         setDefaultEmailsIfMissing(interviewDetails);
@@ -745,7 +758,7 @@ public class InterviewService {
         ArrayNode statusArray = objectMapper.createArrayNode();
         ObjectNode statusEntry = objectMapper.createObjectNode();
         statusEntry.put("stage", 1);
-        statusEntry.put("status", "Scheduled");
+        statusEntry.put("status", "SCHEDULED");
         statusEntry.put("interviewLevel", interviewLevel);
         statusEntry.put("timestamp", OffsetDateTime.now().toString());
         statusArray.add(statusEntry);
@@ -772,20 +785,20 @@ public class InterviewService {
                     formattedDate, formattedTime, duration, zoomLink, jobTitle, clientName));
         }
         // Prepare the response with interview details
-        InterviewResponseDto.InterviewPayload payload = new InterviewResponseDto.InterviewPayload(
+        InterviewResponseDto.InterviewData data = new InterviewResponseDto.InterviewData(
                 interviewDetails.getCandidateId(),
                 interviewDetails.getUserEmail(),
                 interviewDetails.getCandidateEmailId(),
                 interviewDetails.getClientEmailList()
         );
-        return new InterviewResponseDto(true, "Interview scheduled successfully and email notifications sent.", payload, null);
+        return new InterviewResponseDto(true, "Interview scheduled successfully and email notifications sent.", data, null);
     }
 
     public GetInterviewResponse getInterviewsByUserId(String userId) {
 
         List<InterviewDetails> interviewDetails = interviewRepository.findByUserId(userId);
-        List<GetInterviewResponse.InterviewPayload> payloadList = interviewDetails.stream()
-                .map(i -> new GetInterviewResponse.InterviewPayload(
+        List<GetInterviewResponse.InterviewData> dataList = interviewDetails.stream()
+                .map(i -> new GetInterviewResponse.InterviewData(
                         i.getInterviewId(),
                         i.getJobId(),
                         i.getCandidateId(),
@@ -801,11 +814,13 @@ public class InterviewService {
                         i.getClientEmailList(),
                         i.getClientName(),
                         i.getInterviewLevel(),
-                        latestInterviewStatusFromJson(i.getInterviewStatus())
+                        latestInterviewStatusFromJson(i.getInterviewStatus()),
+                        i.isPlaced()
                 ))
                 .collect(Collectors.toList());
-        return new GetInterviewResponse(true, "Interviews found", payloadList, null);
+        return new GetInterviewResponse(true, "Interviews found", dataList, null);
     }
+
     public GetInterviewResponse getScheduledInterviewsByUserIdAndDateRange(String userId, LocalDate startDate, LocalDate endDate) {
 
         logger.info("Fetching interviews for userId: {} between {} and {}", userId, startDate, endDate);
@@ -827,8 +842,8 @@ public class InterviewService {
         // Log if interviews found
         logger.info("Fetched {} interviews for userId: {} between {} and {}", interviewDetails.size(), userId, startDate, endDate);
 
-        List<GetInterviewResponse.InterviewPayload> payloadList = interviewDetails.stream()
-                .map(i -> new GetInterviewResponse.InterviewPayload(
+        List<GetInterviewResponse.InterviewData> payloadList = interviewDetails.stream()
+                .map(i -> new GetInterviewResponse.InterviewData(
                         i.getInterviewId(),
                         i.getJobId(),
                         i.getCandidateId(),
@@ -844,7 +859,8 @@ public class InterviewService {
                         i.getClientEmailList(),
                         i.getClientName(),
                         i.getInterviewLevel(),
-                        latestInterviewStatusFromJson(i.getInterviewStatus())
+                        latestInterviewStatusFromJson(i.getInterviewStatus()),
+                        i.isPlaced()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
@@ -890,8 +906,8 @@ public class InterviewService {
     }
 
     private String buildCandidateScheduleEmailBody(String recipientName, String formattedDate, String formattedTime,
-                                          int formattedDuration, String formattedZoomLink, String jobTitle,
-                                          String clientName) {
+                                                   int formattedDuration, String formattedZoomLink, String jobTitle,
+                                                   String clientName) {
         return String.format(
                 "<p>Hello %s,</p>"
                         + "<p>Hope you are doing well!</p>"
@@ -910,6 +926,7 @@ public class InterviewService {
                         + "<p>The Interview Team</p>",
                 recipientName, jobTitle, clientName, formattedDate, formattedTime, formattedDuration);
     }
+
     private String buildClientScheduleEmailBody(String clientName, String formattedDate, String formattedTime,
                                                 int formattedDuration, String formattedZoomLink, String jobTitle,
                                                 String candidateName) {
@@ -931,6 +948,7 @@ public class InterviewService {
                         + "<p>The Coordination Team</p>",
                 clientName, jobTitle, candidateName, formattedDate, formattedTime, formattedDuration);
     }
+
     private String buildUserScheduleEmailBody(String userName, String clientName, String formattedDate,
                                               String formattedTime, int formattedDuration, String formattedZoomLink,
                                               String jobTitle, String candidateName) {
@@ -952,6 +970,7 @@ public class InterviewService {
                         + "<p>The Scheduling System</p>",
                 userName, jobTitle, clientName, candidateName, formattedDate, formattedTime, formattedDuration);
     }
+
     private String buildUpdateCandidateEmailBody(String candidateName, String formattedDate, String formattedTime,
                                                  String formattedDuration, String formattedZoomLink, String jobTitle,
                                                  String clientName) {
@@ -970,6 +989,7 @@ public class InterviewService {
                         + "<p>Best regards,<br>The Interview Team</p>",
                 candidateName, jobTitle, clientName, formattedDate, formattedTime, formattedDuration);
     }
+
     private String buildUpdateClientEmailBody(String clientName, String formattedDate, String formattedTime,
                                               String formattedDuration, String formattedZoomLink, String jobTitle,
                                               String candidateName) {
@@ -989,6 +1009,7 @@ public class InterviewService {
                         + "<p>Best regards,<br>The Coordination Team</p>",
                 clientName, jobTitle, candidateName, formattedDate, formattedTime, formattedDuration);
     }
+
     private String buildUpdateUserEmailBody(String userName, String clientName, String formattedDate,
                                             String formattedTime, String formattedDuration, String formattedZoomLink,
                                             String jobTitle, String candidateName) {
@@ -1020,7 +1041,7 @@ public class InterviewService {
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
         // Log before fetching data
         logger.info("Fetching scheduled interviews for userId: {} between {} and {}", startDateTime, endDateTime);
-        List<InterviewDetails> interviewDetails = interviewRepository.findScheduledInterviewsByDateOnly( startDate, endDate);
+        List<InterviewDetails> interviewDetails = interviewRepository.findScheduledInterviewsByDateOnly(startDate, endDate);
 
         // Log if no candidates found
         if (interviewDetails.isEmpty()) {
@@ -1030,8 +1051,8 @@ public class InterviewService {
         // Log if interviews found
         logger.info("Fetched {} interviews for userId: {} between {} and {}", interviewDetails.size(), startDate, endDate);
 
-        List<GetInterviewResponse.InterviewPayload> payloadList = interviewDetails.stream()
-                .map(i -> new GetInterviewResponse.InterviewPayload(
+        List<GetInterviewResponse.InterviewData> payloadList = interviewDetails.stream()
+                .map(i -> new GetInterviewResponse.InterviewData(
                         i.getInterviewId(),
                         i.getJobId(),
                         i.getCandidateId(),
@@ -1051,6 +1072,267 @@ public class InterviewService {
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
+    }
+
+    public List<GetInterviewResponseDto> getAllScheduledInterviewsByUserId(String userId) throws JsonProcessingException {
+        // Calculate start and end of current month
+        LocalDate today = LocalDate.now();
+        LocalDate startOfMonth = today.withDayOfMonth(1);
+        LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
+
+        // Convert to LocalDateTime for repository calls
+        LocalDateTime startDateTime = startOfMonth.atStartOfDay();
+        LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
+
+        logger.info("Fetching interviews for userId: {} between {} and {}", userId, startOfMonth, endOfMonth);
+
+        // Fetch role
+        String role = interviewRepository.findRoleByUserId(userId);
+        logger.info("User role for userId {}: {}", userId, role);
+
+        List<InterviewDetails> employeeInterviews = new ArrayList<>();
+        List<Tuple> bdmInterviews = new ArrayList<>();
+
+        // Fetch data based on role
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for EMPLOYEE userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            employeeInterviews = interviewRepository.findScheduledInterviewsByUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (employeeInterviews.isEmpty()) {
+                logger.warn("No interviews found for EMPLOYEE userId: {} in the current month",
+                        userId);
+                return new ArrayList<>();
+            }
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for BDM userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            bdmInterviews = interviewRepository.findScheduledInterviewsByBdmUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (bdmInterviews.isEmpty()) {
+                logger.warn("No interviews found for BDM userId: {} in the current month",
+                        userId);
+                return new ArrayList<>();
+            }
+        } else {
+            logger.error("Unsupported role {} for userId {}", role, userId);
+            throw new UnsupportedOperationException("Only EMPLOYEE and BDM roles are supported.");
+        }
+        // Process and return results
+        List<GetInterviewResponseDto> response = new ArrayList<>();
+
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for EMPLOYEE userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            employeeInterviews = interviewRepository.findScheduledInterviewsByUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (employeeInterviews.isEmpty()) {
+                logger.warn("No interviews found for EMPLOYEE userId: {} in the current month",
+                        userId);
+                return new ArrayList<>();
+            }
+        } else if ("BDM".equalsIgnoreCase(role)) {
+            logger.info("Fetching scheduled interviews for BDM userId: {} between {} and {}",
+                    userId, startDateTime, endDateTime);
+            bdmInterviews = interviewRepository.findScheduledInterviewsByBdmUserIdAndDateRange(
+                    userId, startDateTime, endDateTime);
+
+            if (bdmInterviews.isEmpty()) {
+                logger.warn("No interviews found for BDM userId: {} in the current month",
+                        userId);
+                return new ArrayList<>();
+            }
+        } else {
+            logger.error("Unsupported role {} for userId {}", role, userId);
+            throw new UnsupportedOperationException("Only EMPLOYEE and BDM roles are supported.");
+        }
+
+        if ("EMPLOYEE".equalsIgnoreCase(role)) {
+            logger.info("Processing {} interviews for EMPLOYEE userId: {}", employeeInterviews.size(), userId);
+
+            for (InterviewDetails interview : employeeInterviews) {
+                String interviewStatusJson = interview.getInterviewStatus();
+                String latestInterviewStatus = latestInterviewStatusFromJson(interviewStatusJson);
+
+                // Only add if interviewDateTime is not null
+                if (interview.getInterviewDateTime() != null) {
+                    logger.debug("Adding interview for candidateId: {} with jobId: {}",
+                            interview.getCandidateId(), interview.getJobId());
+
+                    response.add(new GetInterviewResponseDto(
+                            interview.getJobId(),
+                            interview.getCandidateId(),
+                            interview.getFullName(),
+                            interview.getContactNumber(),
+                            interview.getCandidateEmailId(),
+                            interview.getUserEmail(),
+                            interview.getUserId(),
+                            interview.getInterviewDateTime(),
+                            interview.getDuration(),
+                            interview.getZoomLink(),
+                            interview.getTimestamp(),
+                            interview.getClientEmailList(),
+                            interview.getClientName(),
+                            interview.getInterviewLevel(),
+                            latestInterviewStatus,
+                            interview.isPlaced()
+                    ));
+                }
+            }
+        }
+         else if ("BDM".equalsIgnoreCase(role)) {
+                logger.info("Processing {} interviews for BDM userId: {}", bdmInterviews.size(), userId);
+
+                for (Tuple tuple : bdmInterviews) {
+                    String candidateId = tuple.get("candidate_id", String.class);
+                    String interviewStatusJson = tuple.get("interview_status", String.class);
+                    String latestInterviewStatus = latestInterviewStatusFromJson(interviewStatusJson);
+
+                    String interviewDateTimeStr = tuple.get("interview_date_time", String.class);
+                    OffsetDateTime interviewDateTime = null;
+
+                    if (interviewDateTimeStr != null) {
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                        LocalDateTime localDateTime = LocalDateTime.parse(interviewDateTimeStr, formatter);
+                        interviewDateTime = localDateTime.atOffset(ZoneOffset.ofHoursMinutes(5, 30)); // IST
+                    }
+                    // Only add if interviewDateTime is not null
+                    if (interviewDateTime != null) {
+                        String timestampStr = tuple.get("timestamp", String.class);
+                        LocalDateTime timestamp = null;
+                        if (timestampStr != null) {
+                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                            timestamp = LocalDateTime.parse(timestampStr, formatter);
+                        }
+                        logger.debug("Adding interview for candidateId: {} with jobId: {}",
+                                candidateId, tuple.get("job_id", String.class));
+
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        List<String> clientEmails = objectMapper.readValue(
+                                tuple.get("client_email", String.class), new TypeReference<List<String>>() {
+                                });
+                        response.add(new GetInterviewResponseDto(
+                                tuple.get("job_id", String.class),
+                                candidateId,
+                                tuple.get("full_name", String.class),
+                                tuple.get("contact_number", String.class),
+                                tuple.get("candidate_email_id", String.class),
+                                tuple.get("user_email", String.class),
+                                tuple.get("user_id", String.class),
+                                interviewDateTime,
+                                tuple.get("duration", Integer.class),
+                                tuple.get("zoom_link", String.class),
+                                timestamp,
+                                clientEmails,
+                                tuple.get("client_name", String.class),
+                                tuple.get("interview_level", String.class),
+                                latestInterviewStatus,
+                                tuple.get("is_placed", Boolean.class)
+                        ));
+                    }
+                }
+            }
+            return response;
+        }
+    public TeamleadInterviewsDTO getTeamleadScheduledInterviewsByDateRange(String userId, LocalDate startDate, LocalDate endDate) {
+        // 1. Validate the date range
+        if (startDate == null || endDate == null) {
+            throw new DateRangeValidationException("Start date and End date must not be null.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date cannot be before start date.");
+        }
+
+        // 2. Log the date range
+        logger.info("Fetching interviews for teamlead with userId: {} between {} and {}", userId, startDate, endDate);
+
+//        // 3. Prepare date range (convert LocalDate to LocalDateTime for query accuracy)
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        // 4. Fetch self and team interviews within the date range
+        List<InterviewDetails> selfInterviewsRaw = interviewRepository.findSelfScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        List<InterviewDetails> teamInterviewsRaw = interviewRepository.findTeamScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+
+        // 5. Log the number of self and team interviews
+        logger.info("Fetched {} self interviews for teamlead with userId: {} between {} and {}",
+                selfInterviewsRaw.size(), userId, startDate, endDate);
+        logger.info("Fetched {} team interviews for teamlead with userId: {} between {} and {}",
+                teamInterviewsRaw.size(), userId, startDate, endDate);
+
+        // 6. Handle empty result
+        if (selfInterviewsRaw.isEmpty() && teamInterviewsRaw.isEmpty()) {
+            throw new CandidateNotFoundException("No scheduled interviews found between " + startDate + " and " + endDate);
+        }
+
+        // 7. Parse the raw data into response DTOs using the updated GetInterviewResponseDto
+        List<GetInterviewResponseDto> selfInterviews = parseInterviewCandidates(selfInterviewsRaw);
+        List<GetInterviewResponseDto> teamInterviews = parseInterviewCandidates(teamInterviewsRaw);
+
+        // 8. Return the DTO with both lists
+        return new TeamleadInterviewsDTO(selfInterviews, teamInterviews);
+    }
+    private List<GetInterviewResponseDto> parseInterviewCandidates(List<InterviewDetails> interviews) {
+        List<GetInterviewResponseDto> response = new ArrayList<>();
+
+        for (InterviewDetails interview : interviews) {
+            if (interview.getInterviewDateTime() == null) continue;
+
+            String latestInterviewStatus = latestInterviewStatusFromJson(interview.getInterviewStatus());
+
+            response.add(new GetInterviewResponseDto(
+                    interview.getJobId(),
+                    interview.getCandidateId(),
+                    interview.getFullName(),
+                    interview.getContactNumber(),
+                    interview.getCandidateEmailId(),
+                    interview.getUserEmail(),
+                    interview.getUserId(),
+                    interview.getInterviewDateTime(),
+                    interview.getDuration(),
+                    interview.getZoomLink(),
+                    interview.getTimestamp(),
+                    interview.getClientEmailList(),
+                    interview.getClientName(),
+                    interview.getInterviewLevel(),
+                    latestInterviewStatus,
+                    interview.isPlaced()
+            ));
+        }
+        return response;
+    }
+    public TeamleadInterviewsDTO getTeamleadScheduledInterviews(String userId) {
+        // Get the current date
+        LocalDate currentDate = LocalDate.now();
+
+        // Calculate the start and end date for the current month
+        LocalDate startOfMonth = currentDate.withDayOfMonth(1);  // First day of the current month
+        LocalDate endOfMonth = currentDate.withDayOfMonth(currentDate.lengthOfMonth());  // Last day of the current month
+
+        // Convert LocalDate to LocalDateTime for query compatibility (starting at the beginning and end of the day)
+        LocalDateTime startDateTime = startOfMonth.atStartOfDay();
+        LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
+
+        // Fetch self and team interviews for the current month using the updated queries
+        List<InterviewDetails> selfInterviewsRaw = interviewRepository.findSelfScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        List<InterviewDetails> teamInterviewsRaw = interviewRepository.findTeamScheduledInterviewsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+
+
+        // Log the fetched data for monitoring purposes
+        logger.info("Fetched {} self interviews for teamlead with userId: {} between {} and {}",
+                selfInterviewsRaw.size(), userId, startDateTime, endDateTime);
+        logger.info("Fetched {} team interviews for teamlead with userId: {} between {} and {}",
+                teamInterviewsRaw.size(), userId, startDateTime, endDateTime);
+
+        // Parse the raw data into response DTOs
+        List<GetInterviewResponseDto> selfInterviews = parseInterviewCandidates(selfInterviewsRaw);
+        List<GetInterviewResponseDto> teamInterviews = parseInterviewCandidates(teamInterviewsRaw);
+
+        // Return the DTO with both lists
+        return new TeamleadInterviewsDTO(selfInterviews, teamInterviews);
     }
 
 }

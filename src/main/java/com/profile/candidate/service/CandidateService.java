@@ -45,6 +45,8 @@ public class CandidateService {
     @Autowired
     private SubmissionRepository submissionRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
+
     private String generateCustomId() {
         List<Integer> existingNumbers = candidateRepository.findAll().stream()
                 .map(CandidateDetails::getCandidateId)
@@ -60,10 +62,26 @@ public class CandidateService {
     public CandidateResponseDto submitCandidate(CandidateDetails candidateDetails, Submissions submissionDetails, MultipartFile resumeFile) throws IOException {
         // Step 1: Validate input fields
         validateCandidateDetails(candidateDetails);
-
         // Step 2: Check for duplicate submissions
-        checkForDuplicates(submissionDetails);
-
+            Submissions existingSubmission =
+                    submissionRepository.findByCandidate_CandidateEmailIdAndJobId(submissionDetails.getCandidate().getCandidateEmailId(),submissionDetails.getJobId());
+            if (existingSubmission!=null) {
+                logger.error("Candidate Already Exists Exception "+existingSubmission.getCandidate());
+                throw new CandidateAlreadyExistsException(
+                        "Candidate with email ID " + existingSubmission.getCandidate().getCandidateEmailId()+
+                                " has already been submitted for job " + existingSubmission.getJobId()
+                );
+            }
+            Submissions existingContactNumber =
+                    submissionRepository.findByCandidate_ContactNumberAndJobId(
+                            submissionDetails.getCandidate().getContactNumber(),
+                            submissionDetails.getJobId());
+            if (existingContactNumber!=null) {
+                throw new InvalidCandidateDataException(
+                        "Candidate with contact number " + existingContactNumber.getCandidate().getContactNumber() +
+                                " has already been submitted for job " + existingContactNumber.getJobId()
+                );
+            }
         // Step 3: Set default emails if not already provided
         setDefaultEmailsIfMissing(candidateDetails);
 
@@ -116,17 +134,17 @@ public class CandidateService {
         String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submissionDetails.getJobId());
         String recruiterEmail = savedCandidate.getUserEmail();
         String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+        String teamLeadName=candidateRepository.findUserNameByEmail(teamLeadEmail);
 
         // Step 9: Send notification if emails are available
         if (recruiterEmail == null || teamLeadEmail == null) {
             logger.warn("Email not sent: recruiterEmail or teamLeadEmail is null.");
         } else {
             String actionType = "submission";
-            emailService.sendCandidateNotification(submissionDetails, recruiterName, recruiterEmail, teamLeadEmail, actionType);
+            emailService.sendCandidateNotification(submissionDetails, recruiterName, recruiterEmail,teamLeadName, teamLeadEmail, actionType);
         }
-
         // Step 10: Prepare response payload
-        CandidateResponseDto.Payload payload = new CandidateResponseDto.Payload(
+        CandidateResponseDto.CandidateData data = new CandidateResponseDto.CandidateData(
                 savedCandidate.getCandidateId(),
                 savedCandidate.getUserId(),
                 submissionId
@@ -135,7 +153,7 @@ public class CandidateService {
         return new CandidateResponseDto(
                 "Success",
                 "Candidate profile submitted successfully.",
-                payload,
+                data,
                 null
         );
     }
@@ -157,36 +175,16 @@ public class CandidateService {
     // Validate required candidate fields
     private void validateCandidateDetails(CandidateDetails candidateDetails) {
         if (candidateDetails.getFullName() == null || candidateDetails.getFullName().trim().isEmpty()) {
-            throw new CandidateAlreadyExistsException("Full Name is required and cannot be empty.");
+            throw new InvalidCandidateDataException("Full Name is required and cannot be empty.");
         }
         if (candidateDetails.getCandidateEmailId() == null || !candidateDetails.getCandidateEmailId().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            throw new CandidateAlreadyExistsException("Invalid email format.");
+            throw new InvalidCandidateDataException("Invalid email format.");
         }
         if (candidateDetails.getContactNumber() == null || !candidateDetails.getContactNumber().matches("\\d{10}")) {
-            throw new CandidateAlreadyExistsException("Contact number must be 10 digits.");
+            throw new InvalidCandidateDataException("Contact number must be 10 digits.");
         }
     }
-    // Check for duplicate candidate based on Email ID, Job ID, and Client Name
-    private void checkForDuplicates(Submissions submissions) {
-        Submissions existingSubmission =
-                submissionRepository.findByCandidate_CandidateEmailIdAndJobId(submissions.getCandidate().getCandidateEmailId(),submissions.getJobId());
-        if (existingSubmission!=null) {
-            throw new CandidateAlreadyExistsException(
-                    "Candidate with email ID " + existingSubmission.getCandidate().getCandidateEmailId()+
-                            " has already been submitted for job " + existingSubmission.getJobId()
-            );
-        }
-        Submissions existingContactNumber =
-                submissionRepository.findByCandidate_ContactNumberAndJobId(
-                        submissions.getCandidate().getContactNumber(),
-                        submissions.getJobId());
-        if (existingContactNumber!=null) {
-            throw new CandidateAlreadyExistsException(
-                    "Candidate with contact number " + existingContactNumber.getCandidate().getContactNumber() +
-                            " has already been submitted for job " + existingContactNumber.getJobId()
-            );
-        }
-    }
+
     // Set default values for userEmail and clientEmail if not provided
     private void setDefaultEmailsIfMissing(CandidateDetails candidateDetails) {
         if (candidateDetails.getUserEmail() == null) {
@@ -196,8 +194,7 @@ public class CandidateService {
     // Set default values for userEmail and clientEmail if not provided
     private String saveResumeToFileSystem(MultipartFile resumeFile) throws IOException {
         // Set the directory where resumes will be stored
-        String resumeDirectory = "C:\\Users\\jaiva\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
-
+        String resumeDirectory = "C:\\Users\\User\\Downloads"; // Ensure the directory path is correct and does not have extra quotes
         // Generate a unique file name using UUID to avoid conflicts
         String fileName = UUID.randomUUID().toString() + "-" + resumeFile.getOriginalFilename();
         Path filePath = Paths.get(resumeDirectory, fileName);
@@ -211,9 +208,6 @@ public class CandidateService {
         // Return the path where the file is saved
         return filePath.toString();
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
-
 
     private void saveFile(Submissions submissions, MultipartFile file) throws IOException {
         // Define the path where files will be stored
@@ -248,25 +242,19 @@ public class CandidateService {
     public DeleteCandidateResponseDto deleteCandidateById(String candidateId) {
         CandidateDetails candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new CandidateNotFoundException("Candidate not found with id: " + candidateId));
-
         // Fetch submission before deleting candidate
         List<Submissions> submissions = submissionRepository.findByCandidate_CandidateId(candidateId);
 
         String recruiterEmail = candidate.getUserEmail();
         String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
-
-        for (Submissions submission : submissions) {
-            String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submission.getJobId()); // customize as needed
-            emailService.sendCandidateNotification(submission, recruiterName, recruiterEmail, teamLeadEmail, "deletion");
-        }
-
+        logger.info("Recruiter Name : {} and Recruiter Email {}",recruiterName,recruiterEmail);
         candidateRepository.delete(candidate);
 
-        DeleteCandidateResponseDto.Payload payload = new DeleteCandidateResponseDto.Payload(
+        DeleteCandidateResponseDto.CandidateData data = new DeleteCandidateResponseDto.CandidateData(
                 candidate.getCandidateId(), candidate.getFullName()
         );
 
-        return new DeleteCandidateResponseDto("Success", "Candidate deleted successfully", payload, null);
+        return new DeleteCandidateResponseDto("Success", "Candidate deleted successfully", data, null);
     }
 
     // Method to update the candidate fields with new values
