@@ -11,9 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @CrossOrigin(origins = {
         "http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000",
@@ -21,11 +19,9 @@ import java.util.Map;
         "http://192.168.0.135:80", "http://localhost/", "http://mymulya.com:443",
         "http://182.18.177.16:443", "http://localhost/"
 })
-
 @RestController
 @RequestMapping("/candidate")
 public class PlacementController {
-
 
     @Autowired
     private PlacementService service;

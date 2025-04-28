@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -13,10 +14,12 @@ import java.util.List;
 
 public class PlacementDto {
     private String id;
-    private String fullName;
-    private String contactNumber;
-    private String consultantName;
-    private String consultantEmail;
+    private String candidateFullName;
+    private String candidateContactNo;
+    private String clientEmail;
+    private String candidateId;
+    private String candidateEmailId;
+    private String clientName;
     private String technology;
     private String vendorName;
     private String startDate;
@@ -25,18 +28,12 @@ public class PlacementDto {
     private String sales;
     private String employmentType;
     private String remarks;
-
     private BigDecimal billRateUSD;
     private BigDecimal billRateINR;
     private BigDecimal payRate;
     private BigDecimal grossProfit;
     private String status;
     private String statusMessage;
-    //new fields are added
-    private String candidateEmailId;
-    private String candidateId;
-    private String clientName;
-    private List<String> clientEmail;
     private Integer duration;
     private String interviewId;
     private String interviewStatus;
@@ -47,6 +44,32 @@ public class PlacementDto {
     private String jobId;
     private String userEmail;
     private String userId;
+    private LocalDate createdAt;
+
+    public String getCandidateFullName() {
+        return candidateFullName;
+    }
+
+    public void setCandidateFullName(String candidateFullName) {
+        this.candidateFullName = candidateFullName;
+    }
+
+    public String getCandidateContactNo() {
+        return candidateContactNo;
+    }
+
+    public void setCandidateContactNo(String candidateContactNo) {
+        this.candidateContactNo = candidateContactNo;
+    }
+
+
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
 
     public void setStatus(String status) {
         this.status = status;
@@ -64,22 +87,6 @@ public class PlacementDto {
         this.id = id;
     }
 
-    public String getConsultantName() {
-        return consultantName;
-    }
-
-    public void setConsultantName(String consultantName) {
-        this.consultantName = consultantName;
-    }
-
-
-    public String getConsultantEmail() {
-        return consultantEmail;
-    }
-
-    public void setConsultantEmail(String consultantEmail) {
-        this.consultantEmail = consultantEmail;
-    }
 
     public String getTechnology() {
         return technology;
@@ -89,29 +96,6 @@ public class PlacementDto {
         this.technology = technology;
     }
 
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
-    }
-
-    public List<String> getClientEmail() {
-        return clientEmail;
-    }
-
-    public void setClientEmail(List<String> clientEmail) {
-        this.clientEmail = clientEmail;
-    }
 
     public String getScheduledTimeStamp() {
         return scheduledTimeStamp;
@@ -314,5 +298,13 @@ public class PlacementDto {
 
     public String getStatusMessage() {
         return statusMessage;
+    }
+
+    public String getClientEmail() {
+        return clientEmail;
+    }
+
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
     }
 }

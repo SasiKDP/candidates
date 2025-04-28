@@ -3,18 +3,18 @@ package com.profile.candidate.dto;
 
 public class PlacementResponseDto {
     private String id;
-    private String consultantName;
+    private String candidateFullName;
     private String candidateContactNo;
-    private String consultantEmail;
+    private String clientEmail;
 
     // Constructors
     public PlacementResponseDto() {}
 
-    public PlacementResponseDto(String id, String consultantName, String candidateContactNo, String consultantEmail) {
+    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo, String clientEmail) {
         this.id = id;
-        this.consultantName = consultantName;
+        this.candidateFullName = candidateFullName;
         this.candidateContactNo = candidateContactNo;
-        this.consultantEmail = consultantEmail;
+        this.clientEmail = clientEmail;
     }
 
     // Getters and Setters
@@ -27,12 +27,21 @@ public class PlacementResponseDto {
         this.id = id;
     }
 
-    public String getConsultantName() {
-        return consultantName;
+
+    public String getCandidateFullName() {
+        return candidateFullName;
     }
 
-    public void setConsultantName(String consultantName) {
-        this.consultantName = consultantName;
+    public void setCandidateFullName(String candidateFullName) {
+        this.candidateFullName = candidateFullName;
+    }
+
+    public String getClientEmail() {
+        return clientEmail;
+    }
+
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
     }
 
     public String getCandidateContactNo() {
@@ -43,13 +52,7 @@ public class PlacementResponseDto {
         this.candidateContactNo = candidateContactNo;
     }
 
-    public String getConsultantEmail() {
-        return consultantEmail;
-    }
 
-    public void setConsultantEmail(String consultantEmail) {
-        this.consultantEmail = consultantEmail;
-    }
     // (Generate using IDE or Lombok if you're using it)
 }
 

@@ -1,9 +1,6 @@
 package com.profile.candidate.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,26 +22,32 @@ public class PlacementDetails {
 
     @Id
     @Column(name = "id", updatable = false, nullable = false)
-    private String id; // e.g. PLACEMENT001
+    private String id;
 
-    @Column(name = "consultant_name")
-    private String consultantName;
+    @Column(name = "candidateFullName")
+    private String candidateFullName;
 
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is mandatory")
-    @Column(name = "consultant_email")
-    private String consultantEmail;
+    @Column(name = "clientEmail")
+    private String clientEmail;
 
     @Pattern(regexp = "^\\d{10}$", message = "contactNumber must be 10 digits")
     @NotBlank(message = "contact number is required")
-    @Column(name = "contact_number")
-    private String contactNumber;
+    @Column(name = "candidateContactNo")
+    private String candidateContactNo;
 
     @Column(name = "technology")
     private String technology;
 
     @Column(name = "client_name")
     private String clientName;
+
+    @Column(name= "candidateId")
+    private String candidateId;
+
+    @Column(name="candidateEmailId")
+    private String candidateEmailId;
 
     @Column(name = "vendor_name")
     private String vendorName;
@@ -55,12 +58,6 @@ public class PlacementDetails {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    // New fields added in PlacementDto
-    @Column(name = "candidate_email_id")
-    private String candidateEmailId;
-
-    @Column(name = "candidate_id")
-    private String candidateId;
 
     @Column(name = "recruiter")
     private String recruiter;
@@ -96,6 +93,24 @@ public class PlacementDetails {
     @Column(name = "status_message")
     private String statusMessage;
 
+    @Column(name = "created_At")
+    private LocalDate createdAt;
+
+// Automatically set the current date
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDate.now();
+        }
+    }
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public String getId() {
         return id;
     }
@@ -104,30 +119,29 @@ public class PlacementDetails {
         this.id = id;
     }
 
-    public String getConsultantName() {
-        return consultantName;
+    public String getCandidateFullName() {
+        return candidateFullName;
     }
 
-    public void setConsultantName(String consultantName) {
-        this.consultantName = consultantName;
+    public void setCandidateFullName(String candidateFullName) {
+        this.candidateFullName = candidateFullName;
     }
 
-    public String getConsultantEmail() {
-        return consultantEmail;
+    public String getClientEmail() {
+        return clientEmail;
     }
 
-    public void setConsultantEmail(String consultantEmail) {
-        this.consultantEmail = consultantEmail;
+    public void setClientEmail() {
+        this.clientEmail = clientEmail;
     }
 
-    public String getContactNumber() {
-        return contactNumber;
+    public String getCandidateContactNo() {
+        return candidateContactNo;
     }
 
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
+    public void setCandidateContactNo(String candidateContactNo) {
+        this.candidateContactNo = candidateContactNo;
     }
-
 
     public String getTechnology() {
         return technology;
@@ -264,6 +278,11 @@ public class PlacementDetails {
 
     public void setStatusMessage(String statusMessage) {
         this.statusMessage = statusMessage;
+    }
+
+    // Updated setter to properly set the clientEmail field
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
     }
 }
 

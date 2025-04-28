@@ -2,15 +2,14 @@ package com.profile.candidate.repository;
 
 import com.profile.candidate.model.PlacementDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
 @Repository
 public interface PlacementRepository extends JpaRepository<PlacementDetails, String> {
-    // Checks if a record exists with the given contact number
-    boolean existsByContactNumber(String contactNumber);
-
-    // Checks if a record exists with the given consultant email
-    boolean existsByConsultantEmail(String consultantEmail);
+    boolean existsByCandidateEmailId(String candidateEmailId);
+    boolean existsByCandidateContactNo(String candidateContactNo);
 
     @Query(value = "SELECT " +
             "(SELECT COUNT(*) FROM requirements_model) AS requirementsCount, " +
@@ -22,4 +21,12 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
             "(SELECT COUNT(*) FROM candidates WHERE interview_date_time IS NOT NULL) AS interviewsCount",
             nativeQuery = true)
     Object getAllCounts();
+
+    // Query to insert candidate into placements if not already placed
+    @Modifying
+    @Query(value = "INSERT INTO placements (candidate_id, candidate_name, placement_date, client_name, technology) " +
+            "SELECT c.id, c.name, CURRENT_DATE, :clientName, :technology " +
+            "FROM candidates c WHERE c.email = :candidateEmailId AND c.placement_status != 'PLACED'",
+            nativeQuery = true)
+    void moveCandidateToPlacement(String candidateEmailId, String clientName, String technology);
 }
