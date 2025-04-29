@@ -14,16 +14,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InterviewRepository extends JpaRepository<InterviewDetails,String> {
-    Optional<InterviewDetails> findByCandidateId(String candidateId);
 
+
+    @Query(value = "SELECT id FROM `dataquad-prod`.bdm_client_prod WHERE client_name = :clientName LIMIT 1", nativeQuery = true)
     String findClientIdByClientName(@Param("clientName") String clientName);
 
     InterviewDetails findByCandidateIdAndUserId(String candidateId, String userId);
 
     @Query("SELECT i FROM InterviewDetails i WHERE i.candidateId = :candidateId")
     List<InterviewDetails> findInterviewsByCandidateId(@Param("candidateId") String candidateId);
-
-
 
     InterviewDetails findByCandidateIdAndUserIdAndClientName(String candidateId, String userId, String clientName);
 

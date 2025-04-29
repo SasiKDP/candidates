@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 
 public class PlacementDto {
+    private String id;
     private String candidateFullName;
     private String candidateContactNo;
     private String clientEmail;
@@ -78,6 +79,13 @@ public class PlacementDto {
         this.statusMessage = statusMessage;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
 
     public String getTechnology() {
