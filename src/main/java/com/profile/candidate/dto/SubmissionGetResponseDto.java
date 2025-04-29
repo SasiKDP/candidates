@@ -20,10 +20,13 @@ public class SubmissionGetResponseDto {
 
         private String fullName;
 
+        private String contactNumber;
+
+        private String candidateEmail;
+
         private float totalExperience;
 
         private float relevantExperience;
-
 
         private String jobId;
 
@@ -145,5 +148,21 @@ public class SubmissionGetResponseDto {
 
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
+
+    public String getCandidateEmail() {
+        return candidateEmail;
+    }
+
+    public void setCandidateEmail(String candidateEmail) {
+        this.candidateEmail = candidateEmail;
     }
 }

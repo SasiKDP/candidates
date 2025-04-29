@@ -42,6 +42,20 @@ public class SubmissionController {
 
         return new  ResponseEntity<>(submissionService.getAllSubmissions(),HttpStatus.OK);
     }
+    @GetMapping("/submissions/filterByDate")
+    public ResponseEntity<List<SubmissionGetResponseDto>> getAllSubmissionsByDateRange(
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        List<SubmissionGetResponseDto> submissions =
+                submissionService.getAllSubmissionsByDateRange(startDate, endDate);
+        if (submissions.isEmpty()) {
+            logger.warn("No submissions found between {} and {}", startDate, endDate);
+            throw new CandidateNotFoundException("No submissions found in the given date range.");
+        }
+        logger.info("Fetched {} submissions between {} and {}", submissions.size(), startDate, endDate);
+        return ResponseEntity.ok(submissions);
+    }
+
     @GetMapping("/submissions/{userId}/filterByDate")
     public ResponseEntity<?> getSubmissionsByUserIdAndDateRange(
             @PathVariable String userId,
@@ -51,13 +65,11 @@ public class SubmissionController {
         try {
             // Fetch submissions by userId within the given date range
             List<SubmissionGetResponseDto> submissions = submissionService.getSubmissionsByUserIdAndDateRange(userId, startDate, endDate);
-
             // Check if submissions are found
             if (submissions.isEmpty()) {
                 logger.warn("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
                 throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
             }
-
             // Log success
             logger.info("Fetched {} submissions successfully for userId: {} between {} and {}", submissions.size(), userId, startDate, endDate);
             // Return all candidate details with status 200 OK
@@ -181,7 +193,6 @@ public class SubmissionController {
         CandidateResponseDto response = submissionService.editSubmission(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
     @GetMapping("/submissions/teamlead/{userId}")
     public ResponseEntity<TeamleadSubmissionsDTO> getSubmissionsForTeamlead(@PathVariable String userId) {
         try {
@@ -200,15 +211,5 @@ public class SubmissionController {
         }
     }
 
-//    @GetMapping("/allscheduledinterviews")
-//    public ResponseEntity<List<GetInterviewResponseDto>> getAllScheduledInterviews() {
-//        try {
-//            List<GetInterviewResponseDto> interviews = submissionService.getAllScheduledInterviews();
-//            return ResponseEntity.ok(interviews);
-//        } catch (Exception ex) {
-//            // Handle exceptions
-//            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
 
 }

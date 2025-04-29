@@ -17,30 +17,25 @@ public class GetInterviewResponse {
     public void setSuccess(boolean success) {
         this.success = success;
     }
-
     public String getMessage() {
         return message;
     }
-
     public void setMessage(String message) {
         this.message = message;
     }
-
     public List<InterviewData> getData() {
         return data;
     }
-
     public void setData(List<InterviewData> data) {
         this.data = data;
     }
-
     public Object getErrors() {
         return errors;
     }
-
     public void setErrors(Object errors) {
         this.errors = errors;
     }
+
     // Constructors
     public GetInterviewResponse(boolean success, String message, List<InterviewData> payload, Object errors) {
         this.success = success;
@@ -99,8 +94,8 @@ public class GetInterviewResponse {
             return isPlaced;
         }
 
-        public void setPlaced(boolean placed) {
-            isPlaced = placed;
+        public void setPlaced(boolean isPlaced) {
+            this.isPlaced = isPlaced;
         }
 
         public String getInterviewId() {

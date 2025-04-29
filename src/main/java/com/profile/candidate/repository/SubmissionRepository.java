@@ -121,5 +121,7 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
             @Param("endDate") LocalDate endDate
     );
 
+    List<Submissions> findByProfileReceivedDateBetween(LocalDate start, LocalDate end);
+
 
 }
