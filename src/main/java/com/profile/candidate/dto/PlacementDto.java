@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 public class PlacementDto {
     private String id;
     private String candidateFullName;
+    private String candidateEmailId;
     private String candidateContactNo;
     private String clientEmail;
     private String technology;
@@ -30,6 +31,14 @@ public class PlacementDto {
     private java.math.BigDecimal grossProfit;
     private String status;
     private String statusMessage;
+
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
+    }
 
     public void setStatus(String status) {
         this.status = status;

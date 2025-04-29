@@ -150,6 +150,7 @@ public class PlacementService {
         PlacementDto dto = new PlacementDto();
         dto.setId(saved.getId());
         dto.setCandidateFullName(saved.getCandidateFullName());
+        dto.setCandidateEmailId(saved.getCandidateEmailId());
         dto.setCandidateContactNo(saved.getCandidateContactNo());
         dto.setClientEmail(saved.getClientEmail());
         dto.setTechnology(saved.getTechnology());

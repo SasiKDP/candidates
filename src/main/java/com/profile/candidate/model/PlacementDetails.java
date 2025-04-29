@@ -86,6 +86,14 @@ public class PlacementDetails {
     @Column(name = "status_message")
     private String statusMessage;
 
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
+    }
+
     public String getId() {
         return id;
     }
