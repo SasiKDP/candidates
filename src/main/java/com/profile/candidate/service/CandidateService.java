@@ -25,12 +25,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.Timestamp;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.format.TextStyle;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -344,20 +341,28 @@ public class CandidateService {
         LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
         LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
 
+        // Log the fetching process with the date range
+        logger.info("Fetching submissions between {} and {}", startOfMonth, endOfMonth);
+
         // Fetch candidates whose profileReceivedDate falls within current month
         List<CandidateDetails> candidates =
                 candidateRepository.findByProfileReceivedDateBetween(startOfMonth, endOfMonth);
 
         // Check if there are no submissions
         if (candidates.isEmpty()) {
+            logger.warn("No candidate submissions found between {} and {}", startOfMonth, endOfMonth);
             throw new CandidateNotFoundException("No candidate submissions found for the current month.");
         }
+
+        // Log the number of submissions fetched
+        logger.info("Fetched {} candidate submissions between {} and {}", candidates.size(), startOfMonth, endOfMonth);
 
         // Map CandidateDetails to CandidateGetResponseDto
         return candidates.stream()
                 .map(CandidateGetResponseDto::new)
                 .collect(Collectors.toList());
     }
+
 
 
 
@@ -499,13 +504,7 @@ public class CandidateService {
 
         return true; // Candidate is valid for the user
     }
-    public boolean isInterviewScheduled(String candidateId, OffsetDateTime interviewDateTime) {
-        // Query the repository to check if there's already an interview scheduled at that time
-        Optional<CandidateDetails> existingInterview = candidateRepository.findByCandidateIdAndInterviewDateTime(candidateId, interviewDateTime);
 
-        // Return true if an interview already exists, otherwise false
-        return existingInterview.isPresent();
-    }
     public TeamleadSubmissionsDTO getSubmissionsForTeamlead(String userId) {
         // Get the current date
         LocalDate currentDate = LocalDate.now();
@@ -777,14 +776,17 @@ public class CandidateService {
     private void sendInterviewNotification(CandidateDetails candidate) {
         String subject = "Interview Scheduled for " + candidate.getFullName();
 
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+
         String body = "<p>Hello " + candidate.getFullName() + ",</p>"
                 + "<p>Hope you are doing well!</p>"
                 + "<p>Thank you for your interest in the position <b>" + candidate.getInterviewLevel() + "</b> for our client <b>" + candidate.getClientName() + "</b>.</p>"
                 + "<p>We're pleased to inform you that your profile has been shortlisted for screening.</p>"
                 + "<p>Interview Details:</p>"
                 + "<ul>"
-                + "<li><b>Date:</b> " + candidate.getInterviewDateTime().format(DateTimeFormatter.BASIC_ISO_DATE) + "</li>"
-                + "<li><b>Time:</b> " + candidate.getInterviewDateTime().format(DateTimeFormatter.ISO_TIME) + "</li>"
+                + "<li><b>Date:</b> " + candidate.getInterviewDateTime().format(dateFormatter) + "</li>"
+                + "<li><b>Time:</b> " + candidate.getInterviewDateTime().format(timeFormatter) + "</li>"
                 + "<li><b>Duration:</b> Approx. " + candidate.getDuration() + " minutes</li>"
                 + (candidate.getZoomLink() != null ? "<li><b>Join Zoom Meeting:</b> <a href='" + candidate.getZoomLink() + "'>Click here</a></li>" : "")
                 + "</ul>"
@@ -988,8 +990,16 @@ public class CandidateService {
             candidate.setTimestamp(LocalDateTime.now());
             candidateRepository.save(candidate);
 
-            String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
-            String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+
+            String formattedDate = (interviewDateTime != null)
+                    ? interviewDateTime.atZoneSameInstant(ZoneId.of("Asia/Kolkata")).format(dateFormatter)
+                    : "N/A";
+
+            String formattedTime = (interviewDateTime != null)
+                    ? interviewDateTime.atZoneSameInstant(ZoneId.of("Asia/Kolkata")).format(timeFormatter)
+                    : "N/A";
             String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
             String formattedZoomLink = (zoomLink != null && !zoomLink.isEmpty()) ? "<a href='" + zoomLink + "'>Click here to join</a>" : "N/A";
 
@@ -1216,8 +1226,17 @@ public class CandidateService {
         candidateRepository.save(candidate);
 
         // 📧 Send email
-        String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.BASIC_ISO_DATE) : "N/A";
-        String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(DateTimeFormatter.ISO_TIME) : "N/A";
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
+
+        String formattedDate = (interviewDateTime != null)
+                ? interviewDateTime.atZoneSameInstant(ZoneId.of("Asia/Kolkata")).format(dateFormatter)
+                : "N/A";
+
+        String formattedTime = (interviewDateTime != null)
+                ? interviewDateTime.atZoneSameInstant(ZoneId.of("Asia/Kolkata")).format(timeFormatter)
+                : "N/A";
+
         String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
         String formattedZoomLink = (candidate.getZoomLink() != null && !candidate.getZoomLink().isEmpty()) ? "<a href='" + candidate.getZoomLink() + "'>Click here to join</a>" : "N/A";
 

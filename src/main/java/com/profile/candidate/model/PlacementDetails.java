@@ -21,8 +21,11 @@ public class PlacementDetails {
     @Column(name = "id", updatable = false, nullable = false)
     private String id; // e.g. PLACEMENT001
 
-    @Column(name = "consultant_name")
-    private String consultantName;
+    @Column(name = "candidate_full_name")
+    private String candidateFullName;
+
+    @Column(name = "candidate_email_id")
+    private String candidateEmailId;
 
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is mandatory")
@@ -37,8 +40,8 @@ public class PlacementDetails {
     @Column(name = "technology")
     private String technology;
 
-    @Column(name = "client")
-    private String client;
+    @Column(name = "client_name")
+    private String clientName;
 
     @Column(name = "vendor_name")
     private String vendorName;
@@ -91,12 +94,12 @@ public class PlacementDetails {
         this.id = id;
     }
 
-    public String getConsultantName() {
-        return consultantName;
+    public String getCandidateFullName() {
+        return candidateFullName;
     }
 
-    public void setConsultantName(String consultantName) {
-        this.consultantName = consultantName;
+    public void setCandidateFullName(String candidateFullName) {
+        this.candidateFullName = candidateFullName;
     }
 
     public String getClientEmail() {
@@ -123,12 +126,12 @@ public class PlacementDetails {
         this.technology = technology;
     }
 
-    public String getClient() {
-        return client;
+    public String getClientName() {
+        return clientName;
     }
 
-    public void setClient(String client) {
-        this.client = client;
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 
     public String getVendorName() {
