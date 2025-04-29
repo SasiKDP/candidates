@@ -84,17 +84,18 @@ public class InterviewService {
         }
         interviewDetails.setInterviewLevel(interviewLevel);
         // Handle external vs internal interview constraints
-        if ("External".equalsIgnoreCase(interviewLevel)) {
+//        if ("External".equalsIgnoreCase(interviewLevel)) {
             interviewDetails.setClientEmailList(clientEmails);
             interviewDetails.setZoomLink(zoomLink);
-        } else {
-            if (clientEmails == null || clientEmails.isEmpty()) {
-                throw new InvalidClientException("Client email is required for Internal interviews.");
-            }
-            if (zoomLink == null || zoomLink.isEmpty()) {
-                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
-            }
-        }
+//        }
+//        else {
+//            if (clientEmails == null || clientEmails.isEmpty()) {
+//                throw new InvalidClientException("Client email is required for Internal interviews.");
+//            }
+//            if (zoomLink == null || zoomLink.isEmpty()) {
+//                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
+//            }
+//        }
         interviewDetails.setCandidateId(candidateId);
         interviewDetails.setUserId(userId);
         interviewDetails.setUserEmail(userEmail);
@@ -163,7 +164,7 @@ public class InterviewService {
                 interviewDetails.getClientEmailList()
         );
         return new InterviewResponseDto(true,
-                skipNotification ? "Interview updated successfully." : "Interview updated successfully and notifications sent.",
+                skipNotification ? "Interview Scheduled successfully." : "Interview Scheduled successfully and notifications sent.",
                 data,
                 null);
     }
@@ -284,7 +285,6 @@ public class InterviewService {
                 // Debugging Log
                 logger.info("Updated Interview Status JSON for Candidate {}: {}",
                         interviewDetails.getCandidateId(), objectMapper.writeValueAsString(historyArray));
-
                 interviewDetails.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Error processing interview status JSON", e);
@@ -314,10 +314,7 @@ public class InterviewService {
         interviewDetails.setTimestamp(LocalDateTime.now());
         // Save updated candidate details
         // updating isPlaced field if status is Placed.
-        if (interviewStatus.equals("PLACED")) {
-            logger.info("Interview Status Is Updating");
-            interviewDetails.setPlaced(true);
-        }
+
         interviewRepository.save(interviewDetails);
         logger.info("Interview details updated successfully for candidateId: {}", candidateId);
         // Prepare email content
@@ -474,22 +471,8 @@ public class InterviewService {
         if (interviewDetails.getInterviewLevel() == null) {
             interviewDetails.setInterviewLevel(determineInterviewType(clientEmails, zoomLink));
         }
-        // Handle internal vs. external interview constraints
-        if ("External".equalsIgnoreCase(interviewDetails.getInterviewLevel())) {
-            // External interview: Only update clientEmail and zoomLink if provided, don't nullify
-            if (clientEmails != null || clientEmails.isEmpty()) interviewDetails.setClientEmailList(clientEmails);
-            if (zoomLink != null) interviewDetails.setZoomLink(zoomLink);
-        } else {
-            // Internal interview: Ensure clientEmail and zoomLink are mandatory
-            if (clientEmails == null || clientEmails.isEmpty()) {
-                throw new IllegalArgumentException("Client email is required for Internal interviews.");
-            }
-            if (zoomLink == null || zoomLink.isEmpty()) {
-                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
-            }
             interviewDetails.setClientEmailList(clientEmails);
             interviewDetails.setZoomLink(zoomLink);
-        }
         // Update timestamp
         interviewDetails.setTimestamp(LocalDateTime.now());
 
@@ -507,11 +490,7 @@ public class InterviewService {
         String subject = "Interview Update for " + interviewDetails.getFullName();
 
         interviewDetails.setTimestamp(LocalDateTime.now());
-        //updating isPlaced Status
-        if (interviewStatus.equals("PLACED")) {
-            logger.info("Interview Status Placed so Updating isPlaced Status");
-            interviewDetails.setPlaced(true);
-        }
+
         interviewRepository.save(interviewDetails);
 
         String jobTitle = interviewRepository.findJobTitleByJobId(jobId);
@@ -559,7 +538,6 @@ public class InterviewService {
                 }
             }
         }
-        // Return updated interview response
         return new InterviewResponseDto(
                 true,
                 skipNotification ? "Interview updated successfully." : "Interview updated successfully and notifications sent.",
@@ -572,7 +550,6 @@ public class InterviewService {
                 null
         );
     }
-
     public GetInterviewResponse getAllInterviews() {
         List<InterviewDetails> interviewDetails = interviewRepository.findAll();
 
@@ -683,7 +660,6 @@ public class InterviewService {
         );
         return new GetInterviewResponse(true, "Interview found", List.of(payload), null);
     }
-
     public InterviewResponseDto scheduleInterviewWithOutUserId(String candidateId, OffsetDateTime interviewDateTime, Integer duration,
                                                                String zoomLink, List<String> clientEmail,
                                                                String clientName, String interviewLevel, String externalInterviewDetails, String jobId, String fullName,
@@ -721,18 +697,11 @@ public class InterviewService {
             interviewLevel = determineInterviewType(clientEmail, zoomLink);
         }
         interviewDetails.setInterviewLevel(interviewLevel);
-        // Handle external vs internal interview constraints
-        if ("External".equalsIgnoreCase(interviewLevel)) {
+
+
             interviewDetails.setClientEmailList(clientEmail);
             interviewDetails.setZoomLink(zoomLink);
-        } else {
-            if (clientEmail == null || clientEmail.isEmpty()) {
-                throw new IllegalArgumentException("Client email is required for Internal interviews.");
-            }
-            if (zoomLink == null || zoomLink.isEmpty()) {
-                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
-            }
-        }
+
         interviewDetails.setCandidateId(candidateId);
         interviewDetails.setInterviewDateTime(interviewDateTime);
         interviewDetails.setDuration(duration);
@@ -820,7 +789,6 @@ public class InterviewService {
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", dataList, null);
     }
-
     public GetInterviewResponse getScheduledInterviewsByUserIdAndDateRange(String userId, LocalDate startDate, LocalDate endDate) {
 
         logger.info("Fetching interviews for userId: {} between {} and {}", userId, startDate, endDate);
@@ -865,7 +833,6 @@ public class InterviewService {
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
     }
-
     public String latestInterviewStatusFromJson(String interviewStatusJson) {
 
         String latestInterviewStatus = null;
@@ -1073,7 +1040,6 @@ public class InterviewService {
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
     }
-
     public List<GetInterviewResponseDto> getAllScheduledInterviewsByUserId(String userId) throws JsonProcessingException {
         // Calculate start and end of current month
         LocalDate today = LocalDate.now();

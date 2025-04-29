@@ -74,7 +74,7 @@ public class InterviewController {
             throw new RuntimeException(e);
         }
     }
-    //@GetMapping("/allInterviews")
+
     @GetMapping(value = "/allInterviews")
     public ResponseEntity<GetInterviewResponse> getAllInterviews(){
 

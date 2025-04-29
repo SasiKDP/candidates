@@ -90,7 +90,6 @@ public class CandidateService {
             if (!isValidFileType(resumeFile)) {
                 throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC, and DOCX files are allowed.");
             }
-
             byte[] resumeData = resumeFile.getBytes();
             String resumeFilePath = saveResumeToFileSystem(resumeFile);
 
@@ -109,7 +108,6 @@ public class CandidateService {
             candidateDetails.setTimestamp(LocalDateTime.now());
             savedCandidate = candidateRepository.save(candidateDetails);
         }
-
         // Step 6: Set submission details
         String submissionId = savedCandidate.getCandidateId() + "_" + submissionDetails.getJobId();
 
@@ -184,7 +182,6 @@ public class CandidateService {
             throw new InvalidCandidateDataException("Contact number must be 10 digits.");
         }
     }
-
     // Set default values for userEmail and clientEmail if not provided
     private void setDefaultEmailsIfMissing(CandidateDetails candidateDetails) {
         if (candidateDetails.getUserEmail() == null) {
