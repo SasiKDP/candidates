@@ -41,34 +41,42 @@ public class PlacementService {
         int nextNumber = existingNumbers.stream().max(Integer::compare).orElse(0) + 1;
         return String.format("PLMNT%04d", nextNumber);
     }
-
     public PlacementResponseDto savePlacement(PlacementDto placementDto) {
         PlacementDetails placementDetails = convertToEntity(placementDto);
 
-        if (placementDetails.getPayRate() != null && placementDetails.getBillRateUSD() != null) {
-            if (placementDetails.getPayRate().compareTo(placementDetails.getBillRateUSD()) > 0) {
-                throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate USD.");
-            }
-        }
+        validateRates(placementDetails);
 
         placementDetails.setId(generateCustomId());
+        calculateBillRateINR(placementDetails);
+        calculateGrossProfit(placementDetails);
 
+        PlacementDetails saved = placementRepository.save(placementDetails);
+        return convertToResponseDto(saved);
+    }
+
+    private void validateRates(PlacementDetails placementDetails) {
+        if (placementDetails.getPayRate() != null && placementDetails.getBillRateUSD() != null &&
+                placementDetails.getPayRate().compareTo(placementDetails.getBillRateUSD()) > 0) {
+            throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate USD.");
+        }
+    }
+
+    private void calculateBillRateINR(PlacementDetails placementDetails) {
         if (placementDetails.getBillRateUSD() != null) {
             BigDecimal billRateINR = placementDetails.getBillRateUSD()
                     .multiply(BigDecimal.valueOf(83))
                     .setScale(2, RoundingMode.HALF_UP);
             placementDetails.setBillRateINR(billRateINR);
         }
+    }
 
+    private void calculateGrossProfit(PlacementDetails placementDetails) {
         if (placementDetails.getBillRateUSD() != null && placementDetails.getPayRate() != null) {
             BigDecimal grossProfit = placementDetails.getBillRateUSD()
                     .subtract(placementDetails.getPayRate())
                     .setScale(2, RoundingMode.HALF_UP);
             placementDetails.setGrossProfit(grossProfit);
         }
-
-        PlacementDetails saved = placementRepository.save(placementDetails);
-        return convertToResponseDto(saved);
     }
 
     public PlacementResponseDto updatePlacement(String id, PlacementDto dto) {
@@ -90,6 +98,7 @@ public class PlacementService {
         }
 
         Optional.ofNullable(dto.getCandidateFullName()).ifPresent(existing::setCandidateFullName);
+        Optional.ofNullable(dto.getCandidateEmailId()).ifPresent(existing::setCandidateEmailId);
         Optional.ofNullable(dto.getTechnology()).ifPresent(existing::setTechnology);
         Optional.ofNullable(dto.getClientName()).ifPresent(existing::setClientName);
         Optional.ofNullable(dto.getVendorName()).ifPresent(existing::setVendorName);
@@ -183,6 +192,7 @@ public class PlacementService {
     private PlacementDetails convertToEntity(PlacementDto dto) {
         PlacementDetails entity = new PlacementDetails();
         entity.setCandidateFullName(dto.getCandidateFullName());
+        entity.setCandidateEmailId(dto.getCandidateEmailId());
         entity.setCandidateContactNo(dto.getCandidateContactNo());
         entity.setClientEmail(dto.getClientEmail());
         entity.setTechnology(dto.getTechnology());
