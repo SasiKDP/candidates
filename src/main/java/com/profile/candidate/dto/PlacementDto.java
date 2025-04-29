@@ -11,11 +11,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class PlacementDto {
     private String id;
-    private String consultantName;
+    private String candidateFullName;
     private String candidateContactNo;
     private String clientEmail;
     private String technology;
-    private String client;
+    private String clientName;
     private String vendorName;
     private String startDate;
     private String endDate;
@@ -47,12 +47,12 @@ public class PlacementDto {
         this.id = id;
     }
 
-    public String getConsultantName() {
-        return consultantName;
+    public String getCandidateFullName() {
+        return candidateFullName;
     }
 
-    public void setConsultantName(String consultantName) {
-        this.consultantName = consultantName;
+    public void setCandidateFullName(String candidateFullName) {
+        this.candidateFullName = candidateFullName;
     }
 
     public String getCandidateContactNo() {
@@ -79,12 +79,12 @@ public class PlacementDto {
         this.technology = technology;
     }
 
-    public String getClient() {
-        return client;
+    public String getClientName() {
+        return clientName;
     }
 
-    public void setClient(String client) {
-        this.client = client;
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
     }
 
     public String getVendorName() {
