@@ -110,7 +110,7 @@ public class InterviewService {
         interviewDetails.setContactNumber(contactNumber);
         interviewDetails.setCandidateEmailId(candidateEmailId);
         interviewDetails.setTimestamp(LocalDateTime.now());
-        interviewDetails.setPlaced(false);
+        interviewDetails.setIsPlaced(false);
 
         String clientId = interviewRepository.findClientIdByClientName(clientName);
         if (clientId == null) throw new InvalidClientException("No Client With Name :" + clientName);
@@ -551,7 +551,13 @@ public class InterviewService {
         );
     }
     public GetInterviewResponse getAllInterviews() {
-        List<InterviewDetails> interviewDetails = interviewRepository.findAll();
+
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+
+        // Use your custom query to fetch scheduled interviews for the current month
+        List<InterviewDetails> interviewDetails = interviewRepository
+                .findScheduledInterviewsByDateOnly(startOfMonth, endOfMonth);
 
         List<GetInterviewResponse.InterviewData> dataList = interviewDetails.stream()
                 .map(i -> new GetInterviewResponse.InterviewData(
@@ -571,7 +577,7 @@ public class InterviewService {
                         i.getClientName(),
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
-                        i.isPlaced()
+                        i.getIsPlaced()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", dataList, null);
@@ -607,13 +613,12 @@ public class InterviewService {
                             i.getClientName(),
                             i.getInterviewLevel(),
                             latestInterviewStatusFromJson(i.getInterviewStatus()),
-                            i.isPlaced()
+                            i.getIsPlaced()
                     ))
                     .collect(Collectors.toList());
             return new GetInterviewResponse(true, "Interviews found", dataList, null);
         }
     }
-
     @Transactional
     public void deleteInterview(String candidateId, String jobId) {
         logger.info("Received request to remove scheduled interview details for candidateId: {}", candidateId);
@@ -656,7 +661,7 @@ public class InterviewService {
                 i.getClientName(),
                 i.getInterviewLevel(),
                 latestInterviewStatusFromJson(i.getInterviewStatus()),
-                i.isPlaced()
+                i.getIsPlaced()
         );
         return new GetInterviewResponse(true, "Interview found", List.of(payload), null);
     }
@@ -762,7 +767,6 @@ public class InterviewService {
         );
         return new InterviewResponseDto(true, "Interview scheduled successfully and email notifications sent.", data, null);
     }
-
     public GetInterviewResponse getInterviewsByUserId(String userId) {
 
         List<InterviewDetails> interviewDetails = interviewRepository.findByUserId(userId);
@@ -784,7 +788,7 @@ public class InterviewService {
                         i.getClientName(),
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
-                        i.isPlaced()
+                        i.getIsPlaced()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", dataList, null);
@@ -828,7 +832,7 @@ public class InterviewService {
                         i.getClientName(),
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
-                        i.isPlaced()
+                        i.getIsPlaced()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
@@ -1129,6 +1133,7 @@ public class InterviewService {
                             interview.getCandidateId(), interview.getJobId());
 
                     response.add(new GetInterviewResponseDto(
+                            interview.getInterviewId(),
                             interview.getJobId(),
                             interview.getCandidateId(),
                             interview.getFullName(),
@@ -1144,7 +1149,7 @@ public class InterviewService {
                             interview.getClientName(),
                             interview.getInterviewLevel(),
                             latestInterviewStatus,
-                            interview.isPlaced()
+                            interview.getIsPlaced()
                     ));
                 }
             }
@@ -1181,6 +1186,7 @@ public class InterviewService {
                                 tuple.get("client_email", String.class), new TypeReference<List<String>>() {
                                 });
                         response.add(new GetInterviewResponseDto(
+                                tuple.get("interview_id",String.class),
                                 tuple.get("job_id", String.class),
                                 candidateId,
                                 tuple.get("full_name", String.class),
@@ -1250,6 +1256,7 @@ public class InterviewService {
             String latestInterviewStatus = latestInterviewStatusFromJson(interview.getInterviewStatus());
 
             response.add(new GetInterviewResponseDto(
+                    interview.getInterviewId(),
                     interview.getJobId(),
                     interview.getCandidateId(),
                     interview.getFullName(),
@@ -1265,7 +1272,7 @@ public class InterviewService {
                     interview.getClientName(),
                     interview.getInterviewLevel(),
                     latestInterviewStatus,
-                    interview.isPlaced()
+                    interview.getIsPlaced()
             ));
         }
         return response;

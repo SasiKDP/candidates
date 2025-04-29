@@ -28,11 +28,11 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
 
     InterviewDetails findByCandidateIdAndUserIdAndClientNameAndJobId(String candidateId, String userId, String clientName, String jobId);
 
-    InterviewDetails findInterviewsByCandidateIdAndJobId(String  candidateId,String jobId);
+    InterviewDetails findInterviewsByCandidateIdAndJobId(String candidateId, String jobId);
 
-   InterviewDetails findByCandidateIdAndUserIdAndJobId(String candidateId, String userId, String jobId);
+    InterviewDetails findByCandidateIdAndUserIdAndJobId(String candidateId, String userId, String jobId);
 
-    Optional<InterviewDetails> findByCandidateIdAndJobIdAndInterviewDateTime(String candidateId,String jobId, OffsetDateTime interviewDateTime);
+    Optional<InterviewDetails> findByCandidateIdAndJobIdAndInterviewDateTime(String candidateId, String jobId, OffsetDateTime interviewDateTime);
 
     List<InterviewDetails> findByUserId(String userId);
 
@@ -64,46 +64,47 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
 
 
     @Query(value = """
-    SELECT r.name
-    FROM user_roles ur
-    JOIN roles r ON ur.role_id = r.id
-    WHERE ur.user_id = :userId
-    LIMIT 1
-""", nativeQuery = true)
+                SELECT r.name
+                FROM user_roles ur
+                JOIN roles r ON ur.role_id = r.id
+                WHERE ur.user_id = :userId
+                LIMIT 1
+            """, nativeQuery = true)
     String findRoleByUserId(@Param("userId") String userId);
+
     @Query(value = """
-SELECT 
-    c.job_id,
-    c.candidate_id,
-    c.full_name,
-    c.contact_number,
-    c.candidate_email_id,
-    c.user_email,
-    c.user_id,
-    DATE_FORMAT(c.interview_date_time, '%Y-%m-%dT%H:%i:%s') AS interview_date_time,
-    c.duration,
-    c.zoom_link,
-    DATE_FORMAT(c.timestamp, '%Y-%m-%dT%H:%i:%s') AS timestamp,
-    c.client_email,
-    c.client_name,
-    c.interview_level,
-    c.interview_status,
-    c.is_placed 
-FROM 
-    interview_details c
-WHERE 
-    c.job_id IN (
-        SELECT r.job_id
-        FROM requirements_model r
-        JOIN bdm_client b 
-            ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
-        JOIN user_details u 
-            ON b.on_boarded_by = u.user_name
-        WHERE u.user_id = :userId
-    )
-    AND c.interview_date_time IS NOT NULL
-    AND c.timestamp BETWEEN :startDateTime AND :endDateTime
-""", nativeQuery = true)
+            SELECT 
+                c.job_id,
+                c.candidate_id,
+                c.full_name,
+                c.contact_number,
+                c.candidate_email_id,
+                c.user_email,
+                c.user_id,
+                DATE_FORMAT(c.interview_date_time, '%Y-%m-%dT%H:%i:%s') AS interview_date_time,
+                c.duration,
+                c.zoom_link,
+                DATE_FORMAT(c.timestamp, '%Y-%m-%dT%H:%i:%s') AS timestamp,
+                c.client_email,
+                c.client_name,
+                c.interview_level,
+                c.interview_status,
+                c.is_placed 
+            FROM 
+                interview_details c
+            WHERE 
+                c.job_id IN (
+                    SELECT r.job_id
+                    FROM requirements_model r
+                    JOIN bdm_client b 
+                        ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
+                    JOIN user_details u 
+                        ON b.on_boarded_by = u.user_name
+                    WHERE u.user_id = :userId
+                )
+                AND c.interview_date_time IS NOT NULL
+                AND c.timestamp BETWEEN :startDateTime AND :endDateTime
+            """, nativeQuery = true)
     List<Tuple> findScheduledInterviewsByBdmUserIdAndDateRange(
             @Param("userId") String userId,
             @Param("startDateTime") LocalDateTime startDateTime,
@@ -146,3 +147,5 @@ WHERE
             @Param("endDate") LocalDateTime endDate);
 
 }
+
+

@@ -6,6 +6,7 @@ import java.util.List;
 
 public class GetInterviewResponseDto {
 
+    private String interviewId;
     private String jobId;                   // Job ID
     private String candidateId;             // Candidate ID
     private String candidateFullName;       // Candidate Full Name
@@ -26,8 +27,18 @@ public class GetInterviewResponseDto {
 
     // Constructor
 
-
-    public GetInterviewResponseDto(String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String interviewStatus, boolean isPlaced) {
+    public GetInterviewResponseDto(String interviewId,
+                                   String jobId,
+                                   String candidateId,
+                                   String candidateFullName,
+                                   String candidateContactNo,
+                                   String candidateEmailId, String userEmail,
+                                   String userId, OffsetDateTime interviewDateTime,
+                                   Integer duration, String zoomLink,
+                                   LocalDateTime interviewScheduledTimestamp, List<String> clientEmail,
+                                   String clientName, String interviewLevel, String interviewStatus,
+                                   boolean isPlaced) {
+        this.interviewId = interviewId;
         this.jobId = jobId;
         this.candidateId = candidateId;
         this.candidateFullName = candidateFullName;
@@ -46,14 +57,16 @@ public class GetInterviewResponseDto {
         this.isPlaced = isPlaced;
     }
 
+
     // Getters and Setters
 
-    public boolean isPlaced() {
+
+    public boolean getIsPlaced() {
         return isPlaced;
     }
 
-    public void setPlaced(boolean placed) {
-        isPlaced = placed;
+    public void setIsPlaced(boolean isPlaced) {
+        this.isPlaced = isPlaced;
     }
 
     public String getJobId() {
@@ -175,6 +188,14 @@ public class GetInterviewResponseDto {
 
     public void setInterviewLevel(String interviewLevel) {
         this.interviewLevel = interviewLevel;
+    }
+
+    public String getInterviewId() {
+        return interviewId;
+    }
+
+    public void setInterviewId(String interviewId) {
+        this.interviewId = interviewId;
     }
 
     @Override

@@ -19,7 +19,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class PlacementDetails {
 
-
     @Id
     @Column(name = "id", updatable = false, nullable = false)
     private String id;

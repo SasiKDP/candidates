@@ -39,7 +39,10 @@ public class SubmissionService {
     private static final Logger logger = LoggerFactory.getLogger(SubmissionService.class);
 
     public SubmissionsGetResponse getAllSubmissions() {
-        List<Submissions> submissions = submissionRepository.findAll();
+
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+        List<Submissions> submissions = submissionRepository.findByProfileReceivedDateBetween(startOfMonth,endOfMonth);
         List<SubmissionsGetResponse.GetSubmissionData> data =submissions.stream()
                 .map(this::convertToSubmissionsGetResponse)
                 .collect(Collectors.toList());
@@ -460,10 +463,28 @@ private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions s
     dto.setProfileReceivedDate(sub.getProfileReceivedDate());
     dto.setPreferredLocation(sub.getPreferredLocation());
     dto.setSkills(sub.getSkills());
+    dto.setContactNumber(sub.getCandidate().getContactNumber());
+    dto.setCandidateEmail(sub.getCandidate().getCandidateEmailId());
 
     return dto;
 }
+    public List<SubmissionGetResponseDto> getAllSubmissionsByDateRange(LocalDate startDate, LocalDate endDate) {
 
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date cannot be before start date.");
+        }
+        // ✅ Only hit DB after validations pass
+        List<Submissions> submissions = submissionRepository.findByProfileReceivedDateBetween(startDate, endDate);
+
+        if (submissions.isEmpty()) {
+            throw new CandidateNotFoundException("No submissions found for Candidates between " + startDate + " and " + endDate);
+        }
+        return submissions.stream().map(submission-> {
+            SubmissionGetResponseDto dto = convertToSubmissionGetResponseDto(submission);
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
 
 }
 
