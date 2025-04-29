@@ -2,13 +2,16 @@ package com.profile.candidate.repository;
 
 import com.profile.candidate.model.PlacementDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
 @Repository
 public interface PlacementRepository extends JpaRepository<PlacementDetails, String> {
+    boolean existsByCandidateEmailId(String candidateEmailId);
+    boolean existsByCandidateContactNo(String candidateContactNo);
+    boolean existsByInterviewId(String interviewId);
 
-    boolean existsByPhone(String phone);
-    boolean existsByConsultantEmail(String consultantEmail);
     @Query(value = "SELECT " +
             "(SELECT COUNT(*) FROM requirements_model) AS requirementsCount, " +
             "(SELECT COUNT(*) FROM candidates) AS candidatesCount, " +
@@ -19,4 +22,5 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
             "(SELECT COUNT(*) FROM candidates WHERE interview_date_time IS NOT NULL) AS interviewsCount",
             nativeQuery = true)
     Object getAllCounts();
+
 }

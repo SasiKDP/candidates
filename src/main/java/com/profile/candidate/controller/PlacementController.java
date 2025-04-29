@@ -3,6 +3,7 @@ package com.profile.candidate.controller;
 import com.profile.candidate.dto.PlacementDto;
 import com.profile.candidate.dto.PlacementResponseDto;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
+import com.profile.candidate.model.PlacementDetails;
 import com.profile.candidate.service.PlacementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @CrossOrigin(origins = {
         "http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000",
@@ -21,11 +20,9 @@ import java.util.Map;
         "http://192.168.0.135:80", "http://localhost/", "http://mymulya.com:443",
         "http://182.18.177.16:443", "http://localhost/"
 })
-
 @RestController
 @RequestMapping("/candidate")
 public class PlacementController {
-
 
     @Autowired
     private PlacementService service;
@@ -86,13 +83,15 @@ public class PlacementController {
 
     @GetMapping("/placement/placements-list")
     public ResponseEntity<?> getAllPlacements() {
-        List<PlacementDto> placements = service.getAllPlacements();
+        // Fetch PlacementDetails entities directly from the service
+        List<PlacementDetails> placements = service.getAllPlacements();
 
+        // Prepare the response structure
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
         response.put("message", "Placements fetched successfully");
         response.put("timestamp", LocalDateTime.now());
-        response.put("data", placements);
+        response.put("data", placements); // Directly return PlacementDetails entities
 
         return ResponseEntity.ok(response);
     }

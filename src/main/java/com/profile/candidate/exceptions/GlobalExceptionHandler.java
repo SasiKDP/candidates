@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -137,5 +141,13 @@ public class GlobalExceptionHandler {
         ErrorResponse response=new ErrorResponse(false,"No Interviews Found",null,error);
         return new ResponseEntity<>(response,HttpStatus.CONFLICT);
 
+    }
+    @ExceptionHandler(DuplicateInterviewPlacementException.class)
+    public ResponseEntity<?> handleDuplicateInterviewPlacementException(DuplicateInterviewPlacementException ex) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", false);
+        response.put("message", ex.getMessage());
+        response.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.badRequest().body(response);
     }
 }

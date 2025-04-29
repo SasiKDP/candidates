@@ -1,23 +1,29 @@
 package com.profile.candidate.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PlacementResponseDto {
     private String id;
-    private String consultantName;
-    private String phone;
-    private String consultantEmail;
+    private String candidateFullName;
+    private String candidateContactNo;
+    @JsonIgnore
+    private boolean isPlaced;  // Add isPlaced field
 
     // Constructors
-    public PlacementResponseDto() {}
 
-    public PlacementResponseDto(String id, String consultantName, String phone, String consultantEmail) {
+    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo, boolean isPlaced) {
         this.id = id;
-        this.consultantName = consultantName;
-        this.phone = phone;
-        this.consultantEmail = consultantEmail;
+        this.candidateFullName = candidateFullName;
+        this.candidateContactNo = candidateContactNo;
+        this.isPlaced = isPlaced;  // Set the value of isPlaced in the constructor
     }
 
-    // Getters and Setters
+    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo) {
+        this.id = id;
+        this.candidateFullName = candidateFullName;
+        this.candidateContactNo = candidateContactNo;
+    }
+// Getters and Setters
 
     public String getId() {
         return id;
@@ -27,29 +33,28 @@ public class PlacementResponseDto {
         this.id = id;
     }
 
-    public String getConsultantName() {
-        return consultantName;
+    public String getCandidateFullName() {
+        return candidateFullName;
     }
 
-    public void setConsultantName(String consultantName) {
-        this.consultantName = consultantName;
+    public void setCandidateFullName(String candidateFullName) {
+        this.candidateFullName = candidateFullName;
     }
 
-    public String getPhone() {
-        return phone;
+    public String getCandidateContactNo() {
+        return candidateContactNo;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setCandidateContactNo(String candidateContactNo) {
+        this.candidateContactNo = candidateContactNo;
     }
 
-    public String getConsultantEmail() {
-        return consultantEmail;
+    @JsonIgnore
+    public boolean isPlaced() {
+        return isPlaced;  // Getter for isPlaced
     }
 
-    public void setConsultantEmail(String consultantEmail) {
-        this.consultantEmail = consultantEmail;
+    public void setPlaced(boolean isPlaced) {
+        this.isPlaced = isPlaced;  // Setter for isPlaced
     }
-    // (Generate using IDE or Lombok if you're using it)
 }
-
