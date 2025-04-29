@@ -1,9 +1,6 @@
 package com.profile.candidate.controller;
 
-import com.profile.candidate.dto.CandidateResponseDto;
-import com.profile.candidate.dto.DeleteSubmissionResponseDto;
-import com.profile.candidate.dto.ErrorResponseDto;
-import com.profile.candidate.dto.SubmissionsGetResponse;
+import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.CandidateNotFoundException;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.Submissions;
@@ -15,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +42,40 @@ public class SubmissionController {
 
         return new  ResponseEntity<>(submissionService.getAllSubmissions(),HttpStatus.OK);
     }
+    @GetMapping("/submissions/{userId}/filterByDate")
+    public ResponseEntity<?> getSubmissionsByUserIdAndDateRange(
+            @PathVariable String userId,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        try {
+            // Fetch submissions by userId within the given date range
+            List<SubmissionGetResponseDto> submissions = submissionService.getSubmissionsByUserIdAndDateRange(userId, startDate, endDate);
+
+            // Check if submissions are found
+            if (submissions.isEmpty()) {
+                logger.warn("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
+                throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
+            }
+
+            // Log success
+            logger.info("Fetched {} submissions successfully for userId: {} between {} and {}", submissions.size(), userId, startDate, endDate);
+            // Return all candidate details with status 200 OK
+            return ResponseEntity.ok(submissions);
+
+        } catch (CandidateNotFoundException ex) {
+            // Return message in JSON body for 404
+            logger.error("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("message", ex.getMessage()));
+
+        } catch (Exception ex) {
+            // Log the error and return HTTP 500 with message
+            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("message", "An internal error occurred while fetching submissions."));
+        }
+    }
     @GetMapping("/submissions/{candidateId}")
     public ResponseEntity<SubmissionsGetResponse> getSubmissions(@PathVariable String candidateId){
 
@@ -53,7 +87,7 @@ public class SubmissionController {
         return new ResponseEntity<>(submissionService.getSubmissionById(submissionId),HttpStatus.OK);
     }
     @GetMapping("/submissionsByUserId/{userId}")
-    public ResponseEntity<SubmissionsGetResponse> getSubmissionsByUserId(@PathVariable String userId){
+    public ResponseEntity<List<SubmissionGetResponseDto>> getSubmissionsByUserId(@PathVariable String userId){
         logger.info("Getting Submissions for user Id {}",userId);
         return new ResponseEntity<>(submissionService.getSubmissionsByUserId(userId),HttpStatus.OK);
     }
@@ -147,5 +181,34 @@ public class SubmissionController {
         CandidateResponseDto response = submissionService.editSubmission(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @GetMapping("/submissions/teamlead/{userId}")
+    public ResponseEntity<TeamleadSubmissionsDTO> getSubmissionsForTeamlead(@PathVariable String userId) {
+        try {
+            // Call the service to get the submissions
+            TeamleadSubmissionsDTO submissionsDTO = submissionService.getSubmissionsForTeamlead(userId);
+            // Return the response with status 200 OK
+            return ResponseEntity.ok(submissionsDTO);
+
+        } catch (CandidateNotFoundException ex) {
+            logger.error("No submissions found for userId: {}", userId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        } catch (Exception ex) {
+            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+//    @GetMapping("/allscheduledinterviews")
+//    public ResponseEntity<List<GetInterviewResponseDto>> getAllScheduledInterviews() {
+//        try {
+//            List<GetInterviewResponseDto> interviews = submissionService.getAllScheduledInterviews();
+//            return ResponseEntity.ok(interviews);
+//        } catch (Exception ex) {
+//            // Handle exceptions
+//            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
 
 }
