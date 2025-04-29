@@ -16,7 +16,7 @@ import java.util.Optional;
 public interface InterviewRepository extends JpaRepository<InterviewDetails,String> {
 
 
-    @Query(value = "SELECT id FROM `dataquad-prod`.bdm_client_prod WHERE client_name = :clientName LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT id FROM `dataquad`.bdm_client WHERE client_name = :clientName LIMIT 1", nativeQuery = true)
     String findClientIdByClientName(@Param("clientName") String clientName);
 
     InterviewDetails findByCandidateIdAndUserId(String candidateId, String userId);
@@ -42,10 +42,10 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
 
     InterviewDetails findByCandidateIdAndClientName(String candidateId, String clientName);
 
-    @Query(value = "SELECT r.job_title FROM `dataquad-prod`.requirements_model_prod r WHERE r.job_id = :jobId", nativeQuery = true)
+    @Query(value = "SELECT r.job_title FROM `dataquad`.requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
     String findJobTitleByJobId(@Param("jobId") String jobId);
 
-    @Query(value = "SELECT user_name FROM `dataquad-prod`.user_details_prod WHERE user_id = :userId", nativeQuery = true)
+    @Query(value = "SELECT user_name FROM `dataquad`.user_details WHERE user_id = :userId", nativeQuery = true)
     String findUsernameByUserId(@Param("userId") String userId);
 
     @Query("SELECT i FROM InterviewDetails i WHERE i.userId = :userId AND i.timestamp BETWEEN :startDateTime AND :endDateTime")
@@ -144,4 +144,5 @@ WHERE
             @Param("userId") String userId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
 }
