@@ -91,6 +91,7 @@ public class PlacementService {
             } else {
                 logger.warn("Interview ID " + placementDto.getInterviewId() + " not found. Proceeding without updating interview details.");
             }
+
         } else {
             logger.info("No interview ID provided. Skipping interview details update.");
         }
