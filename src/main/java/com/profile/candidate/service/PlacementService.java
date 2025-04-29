@@ -85,7 +85,7 @@ public class PlacementService {
             Optional<InterviewDetails> interviewDetailsOpt = interviewRepository.findById(placementDto.getInterviewId());
             if (interviewDetailsOpt.isPresent()) {
                 InterviewDetails interviewDetails = interviewDetailsOpt.get();
-                interviewDetails.setIsPlaced(true);
+                interviewDetails.setPlaced(true);
                 interviewRepository.save(interviewDetails);
                 logger.info("Interview details updated: " + interviewDetails);
             } else {
