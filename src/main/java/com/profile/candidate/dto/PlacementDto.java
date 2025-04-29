@@ -16,7 +16,6 @@ public class PlacementDto {
     private String id;
     private String candidateFullName;
     private String candidateContactNo;
-    private String clientEmail;
     private String candidateId;
     private String candidateEmailId;
     private String clientName;
@@ -28,22 +27,13 @@ public class PlacementDto {
     private String sales;
     private String employmentType;
     private String remarks;
-    private BigDecimal billRateUSD;
-    private BigDecimal billRateINR;
+    private BigDecimal billRate;
     private BigDecimal payRate;
     private BigDecimal grossProfit;
     private String status;
     private String statusMessage;
-    private Integer duration;
     private String interviewId;
-    private String interviewStatus;
-    private String interviewLevel;
-    private String interviewDateTime;
-    private String scheduledTimeStamp;
-    private String zoomLink;
     private String jobId;
-    private String userEmail;
-    private String userId;
     private LocalDate createdAt;
 
     public String getCandidateFullName() {
@@ -63,46 +53,12 @@ public class PlacementDto {
     }
 
 
-    public LocalDate getCreatedAt() {
-        return createdAt;
+    public String getCandidateId() {
+        return candidateId;
     }
 
-    public void setCreatedAt(LocalDate createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public void setStatusMessage(String statusMessage) {
-        this.statusMessage = statusMessage;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-
-    public String getTechnology() {
-        return technology;
-    }
-
-    public void setTechnology(String technology) {
-        this.technology = technology;
-    }
-
-
-    public String getScheduledTimeStamp() {
-        return scheduledTimeStamp;
-    }
-
-    public void setScheduledTimeStamp(String scheduledTimeStamp) {
-        this.scheduledTimeStamp = scheduledTimeStamp;
+    public void setCandidateId(String candidateId) {
+        this.candidateId = candidateId;
     }
 
     public String getCandidateEmailId() {
@@ -113,14 +69,6 @@ public class PlacementDto {
         this.candidateEmailId = candidateEmailId;
     }
 
-    public String getCandidateId() {
-        return candidateId;
-    }
-
-    public void setCandidateId(String candidateId) {
-        this.candidateId = candidateId;
-    }
-
     public String getClientName() {
         return clientName;
     }
@@ -129,79 +77,12 @@ public class PlacementDto {
         this.clientName = clientName;
     }
 
-
-    public Integer getDuration() {
-        return duration;
+    public String getTechnology() {
+        return technology;
     }
 
-    public void setDuration(Integer duration) {
-        this.duration = duration;
-    }
-
-    public String getInterviewId() {
-        return interviewId;
-    }
-
-    public void setInterviewId(String interviewId) {
-        this.interviewId = interviewId;
-    }
-
-    public String getInterviewStatus() {
-        return interviewStatus;
-    }
-
-    public void setInterviewStatus(String interviewStatus) {
-        this.interviewStatus = interviewStatus;
-    }
-
-    public String getInterviewLevel() {
-        return interviewLevel;
-    }
-
-    public void setInterviewLevel(String interviewLevel) {
-        this.interviewLevel = interviewLevel;
-    }
-
-    public String getInterviewDateTime() {
-        return interviewDateTime;
-    }
-
-    public void setInterviewDateTime(String interviewDateTime) {
-        this.interviewDateTime = interviewDateTime;
-    }
-
-
-
-    public String getZoomLink() {
-        return zoomLink;
-    }
-
-    public void setZoomLink(String zoomLink) {
-        this.zoomLink = zoomLink;
-    }
-
-    public String getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
-    }
-
-    public String getUserEmail() {
-        return userEmail;
-    }
-
-    public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setTechnology(String technology) {
+        this.technology = technology;
     }
 
     public String getVendorName() {
@@ -260,20 +141,12 @@ public class PlacementDto {
         this.remarks = remarks;
     }
 
-    public BigDecimal getBillRateUSD() {
-        return billRateUSD;
+    public BigDecimal getBillRate() {
+        return billRate;
     }
 
-    public void setBillRateUSD(BigDecimal billRateUSD) {
-        this.billRateUSD = billRateUSD;
-    }
-
-    public BigDecimal getBillRateINR() {
-        return billRateINR;
-    }
-
-    public void setBillRateINR(BigDecimal billRateINR) {
-        this.billRateINR = billRateINR;
+    public void setBillRate(BigDecimal billRate) {
+        this.billRate = billRate;
     }
 
     public BigDecimal getPayRate() {
@@ -296,15 +169,47 @@ public class PlacementDto {
         return status;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public String getStatusMessage() {
         return statusMessage;
     }
 
-    public String getClientEmail() {
-        return clientEmail;
+    public void setStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
     }
 
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
+    public String getInterviewId() {
+        return interviewId;
+    }
+
+    public void setInterviewId(String interviewId) {
+        this.interviewId = interviewId;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
+
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

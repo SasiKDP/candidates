@@ -27,11 +27,6 @@ public class PlacementDetails {
     @Column(name = "candidateFullName")
     private String candidateFullName;
 
-    @Email(message = "Invalid email format")
-    @NotBlank(message = "Email is mandatory")
-    @Column(name = "clientEmail")
-    private String clientEmail;
-
     @Pattern(regexp = "^\\d{10}$", message = "contactNumber must be 10 digits")
     @NotBlank(message = "contact number is required")
     @Column(name = "candidateContactNo")
@@ -67,11 +62,8 @@ public class PlacementDetails {
 
     @DecimalMin(value = "0.0", inclusive = false, message = "Bill Rate must be a positive number")
     @Digits(integer = 10, fraction = 5, message = "Invalid format for Bill Rate")
-    @Column(name = "bill_rate_usd")
-    private BigDecimal billRateUSD;
-
-    @Column(name = "bill_rate_inr")
-    private BigDecimal billRateINR;
+    @Column(name = "bill_rate")
+    private BigDecimal billRate;
 
     @DecimalMin(value = "0.0", inclusive = false, message = "Pay Rate must be a positive number")
     @Digits(integer = 10, fraction =5, message = "Invalid format for Pay Rate")
@@ -88,15 +80,17 @@ public class PlacementDetails {
     private String remarks;
 
     @Column(name = "status")
-    private String status;
+    private String status = "";
 
     @Column(name = "status_message")
     private String statusMessage;
 
     @Column(name = "created_At")
     private LocalDate createdAt;
+    @Column(name= "interview_id")
+    private String interviewId;
 
-// Automatically set the current date
+    // Automatically set the current date
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
@@ -125,14 +119,6 @@ public class PlacementDetails {
 
     public void setCandidateFullName(String candidateFullName) {
         this.candidateFullName = candidateFullName;
-    }
-
-    public String getClientEmail() {
-        return clientEmail;
-    }
-
-    public void setClientEmail() {
-        this.clientEmail = clientEmail;
     }
 
     public String getCandidateContactNo() {
@@ -216,20 +202,12 @@ public class PlacementDetails {
         this.sales = sales;
     }
 
-    public BigDecimal getBillRateUSD() {
-        return billRateUSD;
+    public BigDecimal getBillRate() {
+        return billRate;
     }
 
-    public void setBillRateUSD(BigDecimal billRateUSD) {
-        this.billRateUSD = billRateUSD;
-    }
-
-    public BigDecimal getBillRateINR() {
-        return billRateINR;
-    }
-
-    public void setBillRateINR(BigDecimal billRateINR) {
-        this.billRateINR = billRateINR;
+    public void setBillRate(BigDecimal billRate) {
+        this.billRate = billRate;
     }
 
     public BigDecimal getPayRate() {
@@ -280,9 +258,13 @@ public class PlacementDetails {
         this.statusMessage = statusMessage;
     }
 
-    // Updated setter to properly set the clientEmail field
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
+
+    public String getInterviewId() {
+        return interviewId;
+    }
+
+    public void setInterviewId(String interviewId) {
+        this.interviewId = interviewId;
     }
 }
 

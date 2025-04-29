@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 public interface PlacementRepository extends JpaRepository<PlacementDetails, String> {
     boolean existsByCandidateEmailId(String candidateEmailId);
     boolean existsByCandidateContactNo(String candidateContactNo);
+    boolean existsByInterviewId(String interviewId);
 
     @Query(value = "SELECT " +
             "(SELECT COUNT(*) FROM requirements_model) AS requirementsCount, " +
@@ -22,11 +23,4 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
             nativeQuery = true)
     Object getAllCounts();
 
-    // Query to insert candidate into placements if not already placed
-    @Modifying
-    @Query(value = "INSERT INTO placements (candidate_id, candidate_name, placement_date, client_name, technology) " +
-            "SELECT c.id, c.name, CURRENT_DATE, :clientName, :technology " +
-            "FROM candidates c WHERE c.email = :candidateEmailId AND c.placement_status != 'PLACED'",
-            nativeQuery = true)
-    void moveCandidateToPlacement(String candidateEmailId, String clientName, String technology);
 }

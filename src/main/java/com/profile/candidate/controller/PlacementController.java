@@ -3,6 +3,7 @@ package com.profile.candidate.controller;
 import com.profile.candidate.dto.PlacementDto;
 import com.profile.candidate.dto.PlacementResponseDto;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
+import com.profile.candidate.model.PlacementDetails;
 import com.profile.candidate.service.PlacementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -82,13 +83,15 @@ public class PlacementController {
 
     @GetMapping("/placement/placements-list")
     public ResponseEntity<?> getAllPlacements() {
-        List<PlacementDto> placements = service.getAllPlacements();
+        // Fetch PlacementDetails entities directly from the service
+        List<PlacementDetails> placements = service.getAllPlacements();
 
+        // Prepare the response structure
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
         response.put("message", "Placements fetched successfully");
         response.put("timestamp", LocalDateTime.now());
-        response.put("data", placements);
+        response.put("data", placements); // Directly return PlacementDetails entities
 
         return ResponseEntity.ok(response);
     }

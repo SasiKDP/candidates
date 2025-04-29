@@ -1,23 +1,29 @@
 package com.profile.candidate.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class PlacementResponseDto {
     private String id;
     private String candidateFullName;
     private String candidateContactNo;
-    private String clientEmail;
+    @JsonIgnore
+    private boolean isPlaced;  // Add isPlaced field
 
     // Constructors
-    public PlacementResponseDto() {}
 
-    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo, String clientEmail) {
+    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo, boolean isPlaced) {
         this.id = id;
         this.candidateFullName = candidateFullName;
         this.candidateContactNo = candidateContactNo;
-        this.clientEmail = clientEmail;
+        this.isPlaced = isPlaced;  // Set the value of isPlaced in the constructor
     }
 
-    // Getters and Setters
+    public PlacementResponseDto(String id, String candidateFullName, String candidateContactNo) {
+        this.id = id;
+        this.candidateFullName = candidateFullName;
+        this.candidateContactNo = candidateContactNo;
+    }
+// Getters and Setters
 
     public String getId() {
         return id;
@@ -27,21 +33,12 @@ public class PlacementResponseDto {
         this.id = id;
     }
 
-
     public String getCandidateFullName() {
         return candidateFullName;
     }
 
     public void setCandidateFullName(String candidateFullName) {
         this.candidateFullName = candidateFullName;
-    }
-
-    public String getClientEmail() {
-        return clientEmail;
-    }
-
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
     }
 
     public String getCandidateContactNo() {
@@ -52,7 +49,12 @@ public class PlacementResponseDto {
         this.candidateContactNo = candidateContactNo;
     }
 
+    @JsonIgnore
+    public boolean isPlaced() {
+        return isPlaced;  // Getter for isPlaced
+    }
 
-    // (Generate using IDE or Lombok if you're using it)
+    public void setPlaced(boolean isPlaced) {
+        this.isPlaced = isPlaced;  // Setter for isPlaced
+    }
 }
-
