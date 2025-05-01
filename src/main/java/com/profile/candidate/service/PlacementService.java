@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -218,7 +220,36 @@ public class PlacementService {
 
 
     public Map<String, Long> getCounts() {
-        Object[] result = (Object[]) placementRepository.getAllCounts();
+        // Use LocalDate to get the first and last day of the current month
+        LocalDate startOfMonthDate = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonthDate = startOfMonthDate.plusMonths(1).minusDays(1);
+
+        // Convert to LocalDateTime with start and end of the day
+        LocalDateTime startOfMonth = startOfMonthDate.atStartOfDay(); // 00:00:00.000
+        LocalDateTime endOfMonth = endOfMonthDate.atTime(23, 59, 59, 999999999); // 23:59:59.999
+
+        // Call the repository method with the calculated date range
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth);
+
+        // Map the results to meaningful keys
+        Map<String, Long> counts = new HashMap<>();
+        counts.put("requirements", ((Number) result[0]).longValue());
+        counts.put("candidates", ((Number) result[1]).longValue());
+        counts.put("clients", ((Number) result[2]).longValue());
+        counts.put("placements", ((Number) result[3]).longValue());
+        counts.put("bench", ((Number) result[4]).longValue());
+        counts.put("users", ((Number) result[5]).longValue());
+        counts.put("interviews", ((Number) result[6]).longValue());
+
+        return counts;
+    }
+
+
+    public Map<String, Long> getCountsByDateRange(LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime startDateTime = fromDate.atStartOfDay(); // 00:00
+        LocalDateTime endDateTime = toDate.atTime(LocalTime.MAX); // 23:59:59.999999999
+
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startDateTime, endDateTime);
 
         Map<String, Long> counts = new HashMap<>();
         counts.put("requirements", ((Number) result[0]).longValue());
