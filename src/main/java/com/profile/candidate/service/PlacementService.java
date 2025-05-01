@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 public class PlacementService {
 
-    private static final Logger logger = LoggerFactory.getLogger(InterviewService.class);
+    private static final Logger logger = LoggerFactory.getLogger(PlacementService.class);
 
 
     private final PlacementRepository placementRepository;

@@ -16,8 +16,9 @@ public class BenchDetailsDto {
     private String linkedin;
     private String referredBy;
     private LocalDate createdDate;
+    private String technology;
 
-    public BenchDetailsDto(String id, String fullName, String email, BigDecimal relevantExperience, BigDecimal totalExperience, String contactNumber, List<String> skills, String linkedin, String referredBy, LocalDate createdDate) {
+    public BenchDetailsDto(String id, String fullName, String email, BigDecimal relevantExperience, BigDecimal totalExperience, String contactNumber, List<String> skills, String linkedin, String referredBy, LocalDate createdDate,String technology) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -28,6 +29,7 @@ public class BenchDetailsDto {
         this.linkedin = linkedin;
         this.referredBy = referredBy;
         this.createdDate = createdDate;
+        this.technology=technology;
     }
 
 
@@ -114,5 +116,13 @@ public class BenchDetailsDto {
 
     public void setCreatedDate(LocalDate createdDate) {
         this.createdDate = createdDate;
+    }
+
+    public String getTechnology() {
+        return technology;
+    }
+
+    public void setTechnology(String technology) {
+        this.technology = technology;
     }
 }

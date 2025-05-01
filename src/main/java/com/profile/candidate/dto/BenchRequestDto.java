@@ -12,12 +12,23 @@ public class BenchRequestDto {
     private String skills;
     private String relevantExperience;
     private String totalExperience;
+    private String technology;
+
+
 
     // ✅ Default Constructor
     public BenchRequestDto() {}
 
     // ✅ Getters and Setters
 
+
+    public String getTechnology() {
+        return technology;
+    }
+
+    public void setTechnology(String technology) {
+        this.technology = technology;
+    }
 
     public String getId() {
         return id;

@@ -66,7 +66,10 @@ public class BenchController {
             @RequestParam(value = "contactNumber") String contactNumber,
             @RequestParam(value = "skills") String skillsJson, // Expecting JSON string
             @RequestParam(value = "linkedin", required = false) String linkedin,
-            @RequestParam(value = "referredBy", required = false) String referredBy) {
+            @RequestParam(value = "referredBy", required = false) String referredBy,
+            @RequestParam(value = "technology", required = false) String technology)
+
+    {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             List<String> skillsList = objectMapper.readValue(skillsJson, new TypeReference<List<String>>() {});
@@ -80,6 +83,7 @@ public class BenchController {
             benchDetails.setSkills(skillsList);
             benchDetails.setLinkedin(linkedin);
             benchDetails.setReferredBy(referredBy);
+            benchDetails.setTechnology(technology);
 
             // Process resume file
             if (resumeFile != null && !resumeFile.isEmpty()) {
@@ -135,7 +139,8 @@ public class BenchController {
                             bench.getSkills() != null ? bench.getSkills() : Collections.<String>emptyList(),  // ✅ Ensure skills is a List<String>
                             bench.getLinkedin(),
                             bench.getReferredBy(),
-                            bench.getCreatedDate()
+                            bench.getCreatedDate(),
+                            bench.getTechnology()
                     ))
                     .collect(Collectors.toList());
 
@@ -165,7 +170,8 @@ public class BenchController {
                             bench.getSkills() != null ? bench.getSkills() : Collections.emptyList(),
                             bench.getLinkedin(),
                             bench.getReferredBy(),
-                            bench.getCreatedDate()
+                            bench.getCreatedDate(),
+                            bench.getTechnology()
                     ))
                     .collect(Collectors.toList());
 
@@ -207,7 +213,9 @@ public class BenchController {
             @RequestParam(value = "contactNumber", required = false) String contactNumber,
             @RequestPart(value = "skills", required = false) String skillsJson, // Expecting JSON array
             @RequestParam(value = "linkedin", required = false) String linkedin,
-            @RequestParam(value = "referredBy", required = false) String referredBy
+            @RequestParam(value = "referredBy", required = false) String referredBy,
+            @RequestParam(value = "technology", required = false) String technology
+
     ) {
         try {
             // 🔹 Log incoming request data
@@ -237,6 +245,7 @@ public class BenchController {
             benchDetails.setLinkedin(linkedin);
             benchDetails.setReferredBy(referredBy);
             benchDetails.setResume(resumeData);
+            benchDetails.setTechnology(technology);
 
             // ✅ Call service to update details
             BenchDetails updatedBenchDetails = benchService.updateBenchDetails(id, benchDetails);
