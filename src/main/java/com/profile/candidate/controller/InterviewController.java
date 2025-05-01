@@ -19,6 +19,12 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
+@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
+        "http://192.168.0.135:80",
+        "http://mymulya.com:443",
+        "http://182.18.177.16:443",
+        "http://localhost/","http://192.168.0.135",
+        "http://182.18.177.16"})
 @RestController
 @RequestMapping("/candidate")
 public class InterviewController {
