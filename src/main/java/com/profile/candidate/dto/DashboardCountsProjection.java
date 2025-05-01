@@ -9,3 +9,4 @@ public interface DashboardCountsProjection {
     Long getUsersCount();
     Long getInterviewsCount();
 }
+

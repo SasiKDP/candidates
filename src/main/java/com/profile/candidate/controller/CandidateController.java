@@ -1,13 +1,12 @@
 package com.profile.candidate.controller;
 
 import com.profile.candidate.dto.*;
-import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
-import com.profile.candidate.exceptions.CandidateNotFoundException;
-import com.profile.candidate.exceptions.DateRangeValidationException;
-import com.profile.candidate.exceptions.InterviewNotScheduledException;
+import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
+import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.service.CandidateService;
+import com.profile.candidate.service.InterviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -29,15 +28,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
         "http://192.168.0.135:80",
         "http://mymulya.com:443",
         "http://182.18.177.16:443",
-        "http://localhost/"})
-
-
+        "http://localhost/","http://192.168.0.135",
+        "http://182.18.177.16"})
 
 @RestController
 @RequestMapping("/candidate")
@@ -49,136 +50,80 @@ public class CandidateController {
     @Autowired
     private CandidateRepository candidateRepository;
 
+    @Autowired
+    private InterviewService interviewService;
+
     private static final Logger logger = LoggerFactory.getLogger(CandidateController.class);
 
-    // Endpoint to submit candidate profile (Create new candidate)
     @PostMapping("/candidatesubmissions")
     public ResponseEntity<CandidateResponseDto> submitCandidate(
-            @RequestParam("jobId") String jobId,
-            @RequestParam("userId") String userId,
-            @RequestParam("fullName") String fullName,
-            @RequestParam("candidateEmailId") String candidateEmailId,
-            @RequestParam("contactNumber") String contactNumber,
-            @RequestParam("qualification") String qualification,
-            @RequestParam("totalExperience") float totalExperience,
-            @RequestParam("currentCTC") String currentCTC,
-            @RequestParam("expectedCTC") String expectedCTC,
-            @RequestParam("noticePeriod") String noticePeriod,
-            @RequestParam("currentLocation") String currentLocation,
-            @RequestParam("preferredLocation") String preferredLocation,
-            @RequestParam("skills") String skills,
-            @RequestParam(value = "communicationSkills", required = false) String communicationSkills,
-            @RequestParam(value = "requiredTechnologiesRating", required = false) Double requiredTechnologiesRating,
-            @RequestParam(value = "overallFeedback", required = false) String overallFeedback,
-            @RequestParam(value = "relevantExperience", required = false) float relevantExperience,
-            @RequestParam(value = "currentOrganization", required = false) String currentOrganization,
-            @RequestParam(value = "userEmail", required = false) String userEmail,
+            @RequestParam Map<String, String> formData,
             @RequestParam("resumeFile") MultipartFile resumeFile) {
-
         try {
             // Validate file size (10 MB max)
             validateFileSize(resumeFile);
-
             // Check if the resume file is valid (PDF or DOCX)
             if (!isValidFileType(resumeFile)) {
                 // Log the invalid file type error
-                logger.error("Invalid file type uploaded for candidate {}. Only PDF, DOC and DOCX are allowed.", fullName);
+                logger.error("Invalid file type uploaded for candidate {}. Only PDF, DOC and DOCX are allowed.", formData.get("fullName"));
+                throw new InvalidFileTypeException("Invalid file type. Only PDF, DOC and DOCX are allowed.");
 
-                // Return the error response in the correct format
-                return new ResponseEntity<>(new CandidateResponseDto(
-                        "Error",
-                        "Invalid file type. Only PDF, DOC and DOCX are allowed.",
-                        new CandidateResponseDto.Payload(null, null, null),
-                        null
-                ), HttpStatus.BAD_REQUEST); // Return HTTP 400 for invalid file type
             }
-
-            // Construct CandidateDetails object from request parameters
             CandidateDetails candidateDetails = new CandidateDetails();
-            candidateDetails.setJobId(jobId);
-            candidateDetails.setUserId(userId);
-            candidateDetails.setFullName(fullName);
-            candidateDetails.setCandidateEmailId(candidateEmailId);
-            candidateDetails.setContactNumber(contactNumber);
-            candidateDetails.setQualification(qualification);
-            candidateDetails.setTotalExperience(totalExperience);
-            candidateDetails.setCurrentCTC(currentCTC);
-            candidateDetails.setExpectedCTC(expectedCTC);
-            candidateDetails.setNoticePeriod(noticePeriod);
-            candidateDetails.setCurrentLocation(currentLocation);
-            candidateDetails.setPreferredLocation(preferredLocation);
-            candidateDetails.setSkills(skills);
-            candidateDetails.setCommunicationSkills(communicationSkills);
-            candidateDetails.setRequiredTechnologiesRating(requiredTechnologiesRating);
-            candidateDetails.setOverallFeedback(overallFeedback);
-            candidateDetails.setRelevantExperience(relevantExperience);
-            candidateDetails.setCurrentOrganization(currentOrganization);
-            candidateDetails.setUserEmail(userEmail);
+            candidateDetails.setUserId(formData.get("userId"));
+            candidateDetails.setFullName(formData.get("fullName"));
+            candidateDetails.setCandidateEmailId(formData.get("candidateEmailId"));
+            candidateDetails.setContactNumber(formData.get("contactNumber"));
+            candidateDetails.setQualification(formData.get("qualification"));
+            candidateDetails.setTotalExperience(Float.parseFloat(formData.get("totalExperience")));
+            candidateDetails.setCurrentCTC(formData.get("currentCTC"));
+            candidateDetails.setExpectedCTC(formData.get("expectedCTC"));
+            candidateDetails.setNoticePeriod(formData.get("noticePeriod"));
+            candidateDetails.setCurrentLocation(formData.get("currentLocation"));
+            candidateDetails.setRelevantExperience(Float.parseFloat(formData.getOrDefault("relevantExperience", "0")));
+            candidateDetails.setCurrentOrganization(formData.get("currentOrganization"));
+            candidateDetails.setUserEmail(formData.get("userEmail"));
+            // Build Submissions
+            Submissions submission = new Submissions();
+            submission.setJobId(formData.get("jobId"));
+            submission.setCandidate(candidateDetails);
+            submission.setPreferredLocation(formData.get("preferredLocation"));
+            submission.setSkills(formData.get("skills"));
+            submission.setCommunicationSkills(formData.get("communicationSkills"));
+            if (formData.get("requiredTechnologiesRating") != null) {
+                submission.setRequiredTechnologiesRating(Double.parseDouble(formData.get("requiredTechnologiesRating")));
+            }
+            submission.setOverallFeedback(formData.get("overallFeedback"));
+            submission.setClientName(formData.get("clientName"));
 
             // Call service method to submit the candidate and handle file upload
-            CandidateResponseDto response = candidateService.submitCandidate(candidateDetails, resumeFile);
+            CandidateResponseDto response = candidateService.submitCandidate(candidateDetails,submission, resumeFile);
 
-            // Log the success of candidate submission
-            logger.info("Candidate successfully submitted: {}", fullName);
+            logger.info("Candidate successfully submitted: {}", formData.get("fullName"));
 
-            // Return success response
             return new ResponseEntity<>(response, HttpStatus.OK);
 
-        }  catch (MaxUploadSizeExceededException ex) {
+        } catch (MaxUploadSizeExceededException ex) {
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
                     "File size exceeds the maximum allowed size of 20 MB.", // Custom error message
-                    new CandidateResponseDto.Payload(null, null, null),
+                    new CandidateResponseDto.CandidateData(null, null, null),
                     null
             );
             return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);  // Return 413 Payload Too Large
-        } catch (CandidateAlreadyExistsException ex) {
-            // Handle specific CandidateAlreadyExistsException
-            logger.error("Candidate already exists: {}", ex.getMessage());
-            CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "Error",
-                    ex.getMessage(),
-                    new CandidateResponseDto.Payload(null, null, null),
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT); // 409 Conflict
-
-        } catch (CandidateNotFoundException ex) {
-            // Handle specific CandidateNotFoundException
-            logger.error("Candidate not found: {}", ex.getMessage());
-            CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "Error",
-                    "Candidate not found",
-                    new CandidateResponseDto.Payload(null, null, null),
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND); // 404 Not Found
-
-        } catch (IOException ex) {
+        }
+        catch (IOException ex) {
             // Handle file I/O exceptions (e.g., file save errors)
-            logger.error("Error processing resume file for candidate {}. Error: {}", fullName, ex.getMessage());
+            logger.error("Error processing resume file for candidate {}. Error: {}", formData.get("fullName"), ex.getMessage());
             CandidateResponseDto errorResponse = new CandidateResponseDto(
                     "Error",
-                    "Error processing resume file." + ex.getMessage(),
-                    new CandidateResponseDto.Payload(null, null, null),
+                    "Error processing resume file.",
+                    new CandidateResponseDto.CandidateData(null, null, null),
                     null
             );
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR); // 500 Internal Server Error
-
-        } catch (Exception ex) {
-            // General error handler for any issues during candidate submission
-            logger.error("An error occurred while submitting the candidate {}. Error: {}", fullName, ex.getMessage());
-            CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "Error",
-                    "An error occurred while submitting the candidate" + ex.getMessage(),
-                    new CandidateResponseDto.Payload(null, null, null),
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR); // 500 Internal Server Error
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
     private void validateFileSize(MultipartFile file) {
         long maxSize = 10 * 1024 * 1024; // 10 MB
         if (file.getSize() > maxSize) {
@@ -186,8 +131,6 @@ public class CandidateController {
             throw new MaxUploadSizeExceededException(maxSize);
         }
     }
-
-
     private boolean isValidFileType(MultipartFile file) {
         String fileName = file.getOriginalFilename();
         if (fileName != null) {
@@ -196,7 +139,6 @@ public class CandidateController {
         }
         return false;
     }
-
     private String getFileExtension(String fileName) {
         int index = fileName.lastIndexOf(".");
         if (index > 0) {
@@ -204,639 +146,24 @@ public class CandidateController {
         }
         return "";
     }
-
-    @PutMapping("/candidatesubmissions/{candidateId}")
-    public ResponseEntity<CandidateResponseDto> resubmitCandidate(
-            @PathVariable("candidateId") String candidateId,
-            @RequestParam(value = "jobId", required = false) String jobId,
-            @RequestParam(value = "userId", required = false) String userId,
-            @RequestParam(value = "fullName", required = false) String fullName,
-            @RequestParam(value = "candidateEmailId", required = false) String candidateEmailId,
-            @RequestParam(value = "contactNumber", required = false) String contactNumber,
-            @RequestParam(value = "qualification", required = false) String qualification,
-            @RequestParam(value = "totalExperience", required = false) Float totalExperience,
-            @RequestParam(value = "currentCTC", required = false) String currentCTC,
-            @RequestParam(value = "expectedCTC", required = false) String expectedCTC,
-            @RequestParam(value = "noticePeriod", required = false) String noticePeriod,
-            @RequestParam(value = "currentLocation", required = false) String currentLocation,
-            @RequestParam(value = "preferredLocation", required = false) String preferredLocation,
-            @RequestParam(value = "skills", required = false) String skills,
-            @RequestParam(value = "communicationSkills", required = false) String communicationSkills,
-            @RequestParam(value = "requiredTechnologiesRating", required = false) Double requiredTechnologiesRating,
-            @RequestParam(value = "overallFeedback", required = false) String overallFeedback,
-            @RequestParam(value = "relevantExperience", required = false) Float relevantExperience,
-            @RequestParam(value = "currentOrganization", required = false) String currentOrganization,
-            @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile) {
-
-        try {
-            // Create a CandidateDetails object from the request parameters
-            CandidateDetails updatedCandidateDetails = new CandidateDetails();
-
-            updatedCandidateDetails.setJobId(jobId);
-            updatedCandidateDetails.setUserId(userId);
-            updatedCandidateDetails.setFullName(fullName);
-            updatedCandidateDetails.setCandidateEmailId(candidateEmailId);
-            updatedCandidateDetails.setContactNumber(contactNumber);
-            updatedCandidateDetails.setQualification(qualification);
-            updatedCandidateDetails.setTotalExperience(totalExperience != null ? totalExperience : 0);
-            updatedCandidateDetails.setCurrentCTC(currentCTC);
-            updatedCandidateDetails.setExpectedCTC(expectedCTC);
-            updatedCandidateDetails.setNoticePeriod(noticePeriod);
-            updatedCandidateDetails.setCurrentLocation(currentLocation);
-            updatedCandidateDetails.setPreferredLocation(preferredLocation);
-            updatedCandidateDetails.setSkills(skills);
-            updatedCandidateDetails.setCommunicationSkills(communicationSkills);
-            updatedCandidateDetails.setRequiredTechnologiesRating(requiredTechnologiesRating);
-            updatedCandidateDetails.setOverallFeedback(overallFeedback);
-            updatedCandidateDetails.setRelevantExperience(relevantExperience != null ? relevantExperience : 0);
-            updatedCandidateDetails.setCurrentOrganization(currentOrganization);
-
-            // Call the service method to resubmit the candidate
-            CandidateResponseDto response = candidateService.resubmitCandidate(candidateId, updatedCandidateDetails, resumeFile);
-
-            // Return the response entity with status 200 OK
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (Exception ex) {
-            // Handle any exceptions and return an error response
-            logger.error("An error occurred while resubmitting the candidate: {}", ex.getMessage());
-            CandidateResponseDto errorResponse = new CandidateResponseDto(
-                    "An error occurred while resubmitting the candidate" + ex.getMessage(), null, null, null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // Endpoint to fetch all submitted candidates without filtering by userId
-    @GetMapping("/submissions/allsubmittedcandidates")
-    public ResponseEntity<List<CandidateGetResponseDto>> getAllSubmissions() {
-        try {
-            // Fetch all submissions from the service
-            List<CandidateGetResponseDto> submissions = candidateService.getAllSubmissions();
-
-            // Return response with HTTP 200 OK
-            return ResponseEntity.ok(submissions);
-        } catch (CandidateNotFoundException ex) {
-            // Log not found error
-            logger.error("No candidate submissions found: {}", ex.getMessage());
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (Exception ex) {
-            // Log unexpected error
-            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-
-
-    // Endpoint to fetch all submitted candidates
-    @GetMapping("/submissions/{userId}")
-    public ResponseEntity<List<CandidateGetResponseDto>> getAllSubmissions(
-            @PathVariable String userId) {  // Use PathVariable to get the userId from the URL
-        try {
-            // Fetch all submissions based on the userId
-            List<CandidateGetResponseDto> submissions = candidateService.getSubmissionsByUserId(userId);
-
-            // Log success
-            logger.info("Fetched {} submissions successfully for userId: {}", submissions.size(), userId);
-
-            // Return all candidate details with status 200 OK
-            return ResponseEntity.ok(submissions);
-
-        } catch (CandidateNotFoundException ex) {
-            // Handle specific CandidateNotFoundException
-            logger.error("No submissions found for userId: {}", userId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-        } catch (Exception ex) {
-            // Log the error and return HTTP 500
-            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/submissions/{userId}/filterByDate")
-    public ResponseEntity<?> getSubmissionsByUserIdAndDateRange(
-            @PathVariable String userId,
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        try {
-            // Fetch submissions by userId within the given date range
-            List<CandidateGetResponseDto> submissions = candidateService.getSubmissionsByUserIdAndDateRange(userId, startDate, endDate);
-
-            // Check if submissions are found
-            if (submissions.isEmpty()) {
-                logger.warn("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
-                throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
-            }
-
-            // Log success
-            logger.info("Fetched {} submissions successfully for userId: {} between {} and {}", submissions.size(), userId, startDate, endDate);
-
-            // Return all candidate details with status 200 OK
-            return ResponseEntity.ok(submissions);
-
-        } catch (CandidateNotFoundException ex) {
-            // Return message in JSON body for 404
-            logger.error("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Collections.singletonMap("message", ex.getMessage()));
-
-        } catch (Exception ex) {
-            // Log the error and return HTTP 500 with message
-            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An internal error occurred while fetching submissions."));
-        }
-    }
-
-
-    @GetMapping("/submissions/filterByDate")
-    public ResponseEntity<?> getSubmissionsByDateRange(
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        List<CandidateGetResponseDto> submissions =
-                candidateService.getSubmissionsByDateRange(startDate, endDate);
-
-        if (submissions.isEmpty()) {
-            logger.warn("No submissions found between {} and {}", startDate, endDate);
-            throw new CandidateNotFoundException("No submissions found in the given date range.");
-        }
-
-        logger.info("Fetched {} submissions between {} and {}", submissions.size(), startDate, endDate);
-        return ResponseEntity.ok(submissions);
-    }
-
-    @GetMapping("/download-resume/{candidateId}")
-    public ResponseEntity<Object> downloadResume(@PathVariable String candidateId) {
-        try {
-            logger.info("Downloading resume for candidate ID: {}", candidateId);
-
-            // Fetch candidate details from the database
-            CandidateDetails candidate = candidateRepository.findById(candidateId)
-                    .orElseThrow(() -> new CandidateNotFoundException("Candidate not found with ID: " + candidateId));
-
-            // Fetch the resume BLOB field from the candidate entity
-            byte[] resumeBytes = candidate.getResume(); // Assuming `getResume()` returns the BLOB data
-
-            if (resumeBytes == null || resumeBytes.length == 0) {
-                logger.error("Resume is missing for candidate ID: {}", candidateId);
-                return ResponseEntity
-                        .status(HttpStatus.NOT_FOUND)
-                        .body(new ErrorResponseDto(false, "Resume is missing for candidate ID: " + candidateId));
-            }
-
-            // Assuming you want to set the filename based on candidate's name or other criteria
-            String filename = candidate.getFullName() + "-Resume.pdf"; // Adjust filename logic as needed
-
-            // Convert the byte array to a ByteArrayResource
-            ByteArrayResource resource = new ByteArrayResource(resumeBytes);
-
-            // Set content type (you can change this to match the actual file type)
-            String contentType = "application/pdf"; // You can dynamically determine the content type if needed
-
-            // Return the file as a response for download
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .body(resource);
-
-        } catch (CandidateNotFoundException e) {
-            logger.error("Candidate not found: {}", e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponseDto(false, e.getMessage()));
-
-        } catch (Exception e) {
-            logger.error("Unexpected error while downloading resume for candidate ID {}: {}", candidateId, e.getMessage());
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponseDto(false, "Unexpected error: " + e.getMessage()));
-        }
-    }
-
-
-    @PostMapping("/interview-schedule/{userId}")
-    public ResponseEntity<InterviewResponseDto> scheduleInterview(
-            @PathVariable String userId,
-            @RequestBody InterviewDto interviewRequest) {
-        try {
-            // Log the incoming interview request
-            logger.info("Received interview request for userId: {} with candidateId: {}", userId, interviewRequest.getCandidateId());
-
-            // Ensure the candidateId is not null
-            if (interviewRequest.getCandidateId() == null) {
-                return ResponseEntity.badRequest().body(new InterviewResponseDto(
-                        false,
-                        "Candidate ID cannot be null for userId: " + userId,
-                        null,
-                        null
-                ));
-            }
-//            // Check if an interview is already scheduled for the candidate at the specified time
-//            boolean isInterviewScheduled = candidateService.isInterviewScheduled(interviewRequest.getCandidateId(), interviewRequest.getInterviewDateTime());
-//            if (isInterviewScheduled) {
-//                // Return a 400 Bad Request response if an interview is already scheduled
-//                return ResponseEntity.badRequest().body(new InterviewResponseDto(
-//                        false,
-//                        "An interview is already scheduled for this candidate at the specified time.",
-//                        null,
-//                        null
-//                ));
-//            }
-
-            // Check if the candidate belongs to the user
-            boolean isValidCandidate = candidateService.isCandidateValidForUser(userId, interviewRequest.getCandidateId());
-            if (!isValidCandidate) {
-                // If the candidateId does not belong to the userId, return a 403 Forbidden response
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new InterviewResponseDto(
-                        false,
-                        "Candidate ID does not belong to the provided userId.",
-                        null,
-                        null
-                ));
-            }
-
-            // Proceed with scheduling the interview if the validation passes
-            InterviewResponseDto response = candidateService.scheduleInterview(
-                    userId,
-                    interviewRequest.getCandidateId(),
-                    interviewRequest.getInterviewDateTime(),
-                    interviewRequest.getDuration(),
-                    interviewRequest.getZoomLink(),
-                    interviewRequest.getUserEmail(), // Pass userEmail
-                    interviewRequest.getClientEmail(),
-                    interviewRequest.getClientName(),
-                    interviewRequest.getInterviewLevel(),// Pass clientEmail
-                    interviewRequest.getExternalInterviewDetails()
-            );
-
-            return ResponseEntity.ok(response);
-        } catch (CandidateNotFoundException e) {
-            // If the candidate is not found
-            logger.error("Candidate not found for userId: {}", userId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-                    false,
-                    "Candidate not found for the User Id.",
-                    null,
-                    null
-            ));
-        } catch (Exception e) {
-            // Log unexpected errors and return 500
-            logger.error("Error while scheduling interview: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
-                    false,
-                    "An error occurred while scheduling the interview." + e.getMessage(),
-                    null,
-                    null
-            ));
-        }
-    }
-
-    @PutMapping("/interview-update/{userId}/{candidateId}")
-    public ResponseEntity<InterviewResponseDto> updateScheduledInterview(
-            @PathVariable String userId,
-            @PathVariable String candidateId,
-            @RequestBody InterviewDto interviewRequest) {
-        try {
-            logger.info("Received interview update request for userId: {} and candidateId: {}", userId, candidateId);
-
-            if (candidateId == null || userId == null) {
-                return ResponseEntity.badRequest().body(new InterviewResponseDto(
-                        false, "Candidate ID or User ID cannot be null.", null, null
-                ));
-            }
-
-            InterviewResponseDto response = candidateService.updateScheduledInterview(
-                    userId,
-                    candidateId,
-                    interviewRequest.getInterviewDateTime(),
-                    interviewRequest.getDuration(),
-                    interviewRequest.getZoomLink(),
-                    interviewRequest.getUserEmail(),
-                    interviewRequest.getClientEmail(),
-                    interviewRequest.getClientName(),
-                    interviewRequest.getInterviewLevel(),
-                    interviewRequest.getExternalInterviewDetails(),
-                    interviewRequest.getInterviewStatus()); // Added status update
-
-            return ResponseEntity.ok(response);
-        } catch (CandidateNotFoundException e) {
-            logger.error("Candidate not found for userId: {}", userId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-                    false, "Candidate not found for the User Id.", null, null
-            ));
-        } catch (InterviewNotScheduledException e) {
-            logger.error("No interview scheduled for candidateId: {}", candidateId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-                    false, "No scheduled interview found for this candidate.", null, null
-            ));
-        } catch (Exception e) {
-            logger.error("Error while updating interview: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
-                    false, "An error occurred while updating the interview." + e.getMessage(), null, null
-            ));
-        }
-    }
-
-    @PutMapping("/interviews/update/{candidateId}")
-    public ResponseEntity<InterviewResponseDto> updateScheduledInterviewWithoutUserId(
-            @PathVariable String candidateId,
-            @RequestBody InterviewDto interviewRequest) {
-        try {
-            logger.info("Received interview update request for candidateId: {}", candidateId);
-
-            if (candidateId == null) {
-                return ResponseEntity.badRequest().body(new InterviewResponseDto(
-                        false, "Candidate ID cannot be null.", null, null
-                ));
-            }
-
-            InterviewResponseDto response = candidateService.updateScheduledInterviewWithoutUserId(
-                    candidateId,
-                    interviewRequest.getInterviewDateTime(),
-                    interviewRequest.getDuration(),
-                    interviewRequest.getZoomLink(),
-                    interviewRequest.getUserEmail(),
-                    interviewRequest.getClientEmail(),
-                    interviewRequest.getClientName(),
-                    interviewRequest.getInterviewLevel(),
-                    interviewRequest.getExternalInterviewDetails(),
-                    interviewRequest.getInterviewStatus()
-            );
-
-            return ResponseEntity.ok(response);
-        } catch (CandidateNotFoundException e) {
-            logger.error("Candidate not found for candidateId: {}", candidateId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-                    false, "Candidate not found.", null, null
-            ));
-        } catch (InterviewNotScheduledException e) {
-            logger.error("No interview scheduled for candidateId: {}", candidateId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-                    false, "No scheduled interview found for this candidate.", null, null
-            ));
-        } catch (Exception e) {
-            logger.error("Error while updating interview: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
-                    false, "An error occurred while updating the interview." + e.getMessage(), null, null
-            ));
-        }
-    }
-
-
-    @GetMapping("/scheduledCandidates/{candidateId}")
-    public List<Map<String, Object>> getScheduledCandidates(@PathVariable String candidateId) {
-        return candidateService.getScheduledCandidates(candidateId);
-    }
-
-
     @DeleteMapping("/deletecandidate/{candidateId}")
     public ResponseEntity<DeleteCandidateResponseDto> deleteCandidate(@PathVariable("candidateId") String candidateId) {
         try {
             // Call the service method to delete the candidate by ID and get the response DTO
             DeleteCandidateResponseDto response = candidateService.deleteCandidateById(candidateId);
-
             // Return the response entity with status 200 OK
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception ex) {
             // Handle any exceptions and return an error response
             logger.error("An error occurred while deleting the candidate: {}", ex.getMessage());
-
             // Create an error response DTO with error details
             DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
                     "error",
-                    "Error occurred while deleting the candidate." + ex.getMessage(),
+                    "Error occurred while deleting the candidate.",
                     null,
                     ex.getMessage()
             );
-
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/interviews/{userId}")
-    public ResponseEntity<List<GetInterviewResponseDto>> getAllScheduledInterviews(
-            @PathVariable String userId) {
-        try {
-            // Fetch all scheduled interviews for the given userId
-            List<GetInterviewResponseDto> interviewDetails = candidateService.getAllScheduledInterviewsByUserId(userId);
-
-            // Return response with status 200 OK and the interview details
-            return ResponseEntity.ok(interviewDetails);
-
-        } catch (CandidateNotFoundException ex) {
-            // If no interviews are found for the given userId
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-        } catch (Exception ex) {
-            // If any other error occurs
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/interviews/{userId}/filterByDate")
-    public ResponseEntity<?> getInterviewsByUserIdAndDateRange(
-            @PathVariable String userId,
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            List<GetInterviewResponseDto> interviews = candidateService.getScheduledInterviewsByUserIdAndDateRange(userId, startDate, endDate);
-
-            return ResponseEntity.ok(interviews);
-
-        } catch (CandidateNotFoundException ex) {
-            logger.warn("No interviews found for userId: {} between {} and {}", userId, startDate, endDate);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Collections.singletonMap("message", ex.getMessage()));
-
-        } catch (DateRangeValidationException ex) {
-            logger.warn("Invalid date range for userId {}: {}", userId, ex.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(Collections.singletonMap("message", ex.getMessage()));
-
-        } catch (Exception ex) {
-            logger.error("An error occurred while fetching interviews for userId: {}: {}", userId, ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An internal error occurred while fetching interview data."));
-        }
-    }
-
-
-    @GetMapping("/interviews/filterByDate")
-    public ResponseEntity<?> getInterviewsByDateRange(
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        try {
-            List<GetInterviewResponseDto> interviews = candidateService.getScheduledInterviewsByDateOnly(startDate, endDate);
-
-            // 404: No interviews found
-            if (interviews.isEmpty()) {
-                logger.warn("No interviews found between {} and {}", startDate, endDate);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Collections.singletonMap("message", "No interviews found between " + startDate + " and " + endDate));
-            }
-
-            // ✅ Success
-            logger.info("Fetched {} interviews between {} and {}", interviews.size(), startDate, endDate);
-            return ResponseEntity.ok(interviews);
-
-        } catch (DateRangeValidationException e) {
-            // 400: Invalid date range
-            logger.warn("Date range validation failed: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(Collections.singletonMap("message", e.getMessage()));
-
-        } catch (Exception ex) {
-            // 500: Internal server error
-            logger.error("An error occurred while fetching interviews: {}", ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An internal error occurred while fetching interview data."));
-        }
-    }
-
-
-    // Endpoint to fetch all scheduled interviews (no userId filter)
-    @GetMapping("/allscheduledinterviews")
-    public ResponseEntity<List<GetInterviewResponseDto>> getAllScheduledInterviews() {
-        try {
-            List<GetInterviewResponseDto> interviews = candidateService.getAllScheduledInterviews();
-            return ResponseEntity.ok(interviews);
-        } catch (Exception ex) {
-            // Handle exceptions
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @DeleteMapping("/deleteinterview/{candidateId}")
-    public ResponseEntity<DeleteInterviewResponseDto> deleteInterview(@PathVariable String candidateId) {
-        try {
-            logger.info("Received request to Remove Scheduled Interview Details for candidateId: {}", candidateId);
-            candidateService.deleteInterview(candidateId);
-
-            DeleteInterviewResponseDto response = new DeleteInterviewResponseDto(
-                    "success",
-                    "Scheduled Interview is Removed successfully for candidateId: " + candidateId
-            );
-
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (InterviewNotScheduledException e) {
-            logger.error("Scheduled Interview not found for candidateId: {}", candidateId);
-
-            DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
-                    "error",
-                    e.getMessage()
-            );
-
-            return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-        } catch (Exception e) {
-            logger.error("Error Removing Scheduled Interview details for candidateId {}: {}", candidateId, e.getMessage());
-
-            DeleteInterviewResponseDto errorResponse = new DeleteInterviewResponseDto(
-                    "error",
-                    "An error occurred while Removing the Scheduled Interview details." + e.getMessage(
-            ));
-
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-    // Endpoint to get submissions for a teamlead based on userId
-    @GetMapping("/submissions/teamlead/{userId}")
-    public ResponseEntity<TeamleadSubmissionsDTO> getSubmissionsForTeamlead(@PathVariable String userId) {
-        try {
-            // Call the service to get the submissions
-            TeamleadSubmissionsDTO submissionsDTO = candidateService.getSubmissionsForTeamlead(userId);
-            // Return the response with status 200 OK
-            return ResponseEntity.ok(submissionsDTO);
-
-        } catch (CandidateNotFoundException ex) {
-            logger.error("No submissions found for userId: {}", userId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-        } catch (Exception ex) {
-            logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/interviews/teamlead/{userId}")
-    public ResponseEntity<TeamleadInterviewsDTO> getInterviewsForTeamlead(@PathVariable String userId) {
-        try {
-            // Call the service to get the teamlead interviews
-            TeamleadInterviewsDTO teamleadInterviewsDTO = candidateService.getTeamleadScheduledInterviews(userId);
-            // Return the response with status 200 OK
-            return ResponseEntity.ok(teamleadInterviewsDTO);
-
-        } catch (CandidateNotFoundException ex) {
-            logger.error("No interviews found for teamlead with userId: {}", userId);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-        } catch (Exception ex) {
-            logger.error("An error occurred while fetching interviews for teamlead with userId: {}: {}", userId, ex.getMessage(), ex);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-        @GetMapping("/interviews/teamlead/{userId}/filterByDate")
-        public ResponseEntity<?> getTeamleadScheduledInterviewsByDateRange(
-                @PathVariable String userId,
-                @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-                @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-            try {
-                // Validate date range
-                if (endDate.isBefore(startDate)) {
-                    logger.warn("End date {} is before start date {}", endDate, startDate);
-                    return ResponseEntity.badRequest()
-                            .body(Collections.singletonMap("message", "End date cannot be before start date"));
-                }
-
-                // Call service to get scheduled interviews by team lead and date range
-                TeamleadInterviewsDTO interviews = candidateService.getTeamleadScheduledInterviewsByDateRange(userId, startDate, endDate);
-
-                if (interviews == null || (interviews.getSelfInterviews().isEmpty() && interviews.getTeamInterviews().isEmpty())) {
-                    logger.warn("No scheduled interviews found for userId: {} between {} and {}", userId, startDate, endDate);
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                            .body(Collections.singletonMap("message", "No interviews found for team lead: " + userId + " between " + startDate + " and " + endDate));
-                }
-
-                return ResponseEntity.ok(interviews);
-            } catch (Exception e) {
-                logger.error("Error while fetching scheduled interviews for userId: {} between {} and {}", userId, startDate, endDate, e);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Collections.singletonMap("message", "An error occurred while fetching interviews"));
-            }
-        }
-    @GetMapping("/submissions/teamlead/{userId}/filterByDate")
-    public ResponseEntity<?> getSubmissionsForTeamleadByDateRange(
-            @PathVariable String userId,
-            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        try {
-            // Validate date range
-            if (endDate.isBefore(startDate)) {
-                logger.warn("End date {} is before start date {}", endDate, startDate);
-                return ResponseEntity.badRequest()
-                        .body(Collections.singletonMap("message", "End date cannot be before start date"));
-            }
-
-            // Call service to get submissions for team lead and date range
-            TeamleadSubmissionsDTO submissions = candidateService.getSubmissionsForTeamleadByDateRange(userId, startDate, endDate);
-
-            if (submissions == null || (submissions.getSelfSubmissions().isEmpty() && submissions.getTeamSubmissions().isEmpty())) {
-                logger.warn("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Collections.singletonMap("message", "No submissions found for team lead: " + userId + " between " + startDate + " and " + endDate));
-            }
-
-            return ResponseEntity.ok(submissions);
-        } catch (Exception e) {
-            logger.error("Error while fetching submissions for userId: {} between {} and {}", userId, startDate, endDate, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An error occurred while fetching submissions"));
         }
     }
 

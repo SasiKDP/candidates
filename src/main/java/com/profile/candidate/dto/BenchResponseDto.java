@@ -8,7 +8,7 @@ public class BenchResponseDto {
     private String status;
     private String message;
     private List<Payload> payload;
- // ✅ Changed to List<Payload>
+    // ✅ Changed to List<Payload>
     private String errorMessage;
 
     public BenchResponseDto(String status, String message, List<Payload> payload, String errorMessage) {

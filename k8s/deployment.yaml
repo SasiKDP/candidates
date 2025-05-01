@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: candidate-api
-        image: sandycis476/candidates-new-prod:latest
+        image: sandycis476/candidates:latest
         ports:
         - containerPort: 8085
 --- 
@@ -30,3 +30,4 @@ spec:
     port: 8085         # Port exposed to the Ingress
     targetPort: 8085 # Port in the application pod
   type: ClusterIP
+

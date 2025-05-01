@@ -17,7 +17,7 @@ public class BenchDetailsDto {
     private String referredBy;
     private LocalDate createdDate;
 
-    public BenchDetailsDto(String id, String fullName, String email, BigDecimal relevantExperience, BigDecimal totalExperience, String contactNumber, List<String> skills, String linkedin, String referredBy,LocalDate createdDate) {
+    public BenchDetailsDto(String id, String fullName, String email, BigDecimal relevantExperience, BigDecimal totalExperience, String contactNumber, List<String> skills, String linkedin, String referredBy, LocalDate createdDate) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -30,11 +30,10 @@ public class BenchDetailsDto {
         this.createdDate = createdDate;
     }
 
+
     public BenchDetailsDto() {
 
     }
-
-
     // ✅ Getters & Setters
 
     public String getId() {
