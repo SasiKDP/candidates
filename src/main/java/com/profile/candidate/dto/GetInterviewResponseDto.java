@@ -2,9 +2,11 @@ package com.profile.candidate.dto;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public class GetInterviewResponseDto {
 
+    private String interviewId;
     private String jobId;                   // Job ID
     private String candidateId;             // Candidate ID
     private String candidateFullName;       // Candidate Full Name
@@ -16,23 +18,32 @@ public class GetInterviewResponseDto {
     private Integer duration;               // Duration of the interview
     private String zoomLink;                // Zoom Link for the interview
     private LocalDateTime interviewScheduledTimestamp; // Timestamp when interview is scheduled
-    private String clientEmail;             // Client Email
+    private List<String> clientEmail;             // Client Email
     private String clientName;              // Client Name
     private String interviewLevel;          // Interview Level (e.g., 1st, 2nd round)
-    private String interviewStatus;  // New field for status
+    private String interviewStatus;
+    private boolean isPlaced;// New field for status
 
 
     // Constructor
-    public GetInterviewResponseDto(String jobId, String candidateId, String candidateFullName,
-                                   String candidateContactNo, String emailId, String userEmail,
-                                   String userId, OffsetDateTime interviewDateTime, Integer duration,
-                                   String zoomLink, LocalDateTime interviewScheduledTimestamp,
-                                   String clientEmail, String clientName, String interviewLevel,String interviewStatus) {
+
+    public GetInterviewResponseDto(String interviewId,
+                                   String jobId,
+                                   String candidateId,
+                                   String candidateFullName,
+                                   String candidateContactNo,
+                                   String candidateEmailId, String userEmail,
+                                   String userId, OffsetDateTime interviewDateTime,
+                                   Integer duration, String zoomLink,
+                                   LocalDateTime interviewScheduledTimestamp, List<String> clientEmail,
+                                   String clientName, String interviewLevel, String interviewStatus,
+                                   boolean isPlaced) {
+        this.interviewId = interviewId;
         this.jobId = jobId;
         this.candidateId = candidateId;
         this.candidateFullName = candidateFullName;
         this.candidateContactNo = candidateContactNo;
-        this.candidateEmailId = emailId;
+        this.candidateEmailId = candidateEmailId;
         this.userEmail = userEmail;
         this.userId = userId;
         this.interviewDateTime = interviewDateTime;
@@ -43,9 +54,21 @@ public class GetInterviewResponseDto {
         this.clientName = clientName;
         this.interviewLevel = interviewLevel;
         this.interviewStatus = interviewStatus;
+        this.isPlaced = isPlaced;
     }
 
+
     // Getters and Setters
+
+
+    public boolean getIsPlaced() {
+        return isPlaced;
+    }
+
+    public void setIsPlaced(boolean isPlaced) {
+        this.isPlaced = isPlaced;
+    }
+
     public String getJobId() {
         return jobId;
     }
@@ -142,11 +165,12 @@ public class GetInterviewResponseDto {
         this.interviewStatus = interviewStatus;
     }
 
-    public String getClientEmail() {
+
+    public List<String> getClientEmail() {
         return clientEmail;
     }
 
-    public void setClientEmail(String clientEmail) {
+    public void setClientEmail(List<String> clientEmail) {
         this.clientEmail = clientEmail;
     }
 
@@ -164,6 +188,14 @@ public class GetInterviewResponseDto {
 
     public void setInterviewLevel(String interviewLevel) {
         this.interviewLevel = interviewLevel;
+    }
+
+    public String getInterviewId() {
+        return interviewId;
+    }
+
+    public void setInterviewId(String interviewId) {
+        this.interviewId = interviewId;
     }
 
     @Override

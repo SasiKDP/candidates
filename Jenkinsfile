@@ -3,19 +3,19 @@ pipeline {
     environment {
         DOCKER_REGISTRY = "docker.io"
         DOCKERHUB_REPO = "sandycis476"
-        IMAGE_NAME = "candidates-new-prod"
+        IMAGE_NAME = "candidates"
         KUBE_NAMESPACE = "ingress-nginx"
         DOCKER_CREDENTIALS_ID = "docker-hub"
         KUBECONFIG_CREDENTIALS_ID = "k8s-service-account-token"
         GOOGLE_CREDENTIALS = 'gcloud-credentials-id' // Jenkins credentials ID for Google Cloud JSON key
         GCP_PROJECT = 'proud-outpost-447109-m8'
-        GKE_CLUSTER = 'dataquad-prod'
+        GKE_CLUSTER = 'k8s-dataquad-dev'
         GKE_ZONE = 'us-central1-c' // e.g., us-central1-a
     }
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', 
+                git branch: 'master', 
                 url: 'https://github.com/NaveenKumar-dataquad/Dstaquad-Candidate.git'
             }
         }

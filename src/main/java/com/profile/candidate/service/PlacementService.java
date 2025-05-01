@@ -3,16 +3,23 @@ package com.profile.candidate.service;
 import com.profile.candidate.dto.PlacementDto;
 import com.profile.candidate.dto.PlacementResponseDto;
 import com.profile.candidate.exceptions.CandidateAlreadyExistsException;
+import com.profile.candidate.exceptions.DuplicateInterviewPlacementException;
 import com.profile.candidate.exceptions.InvalidRateException;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
+import com.profile.candidate.model.InterviewDetails;
 import com.profile.candidate.model.PlacementDetails;
+import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.repository.PlacementRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +30,9 @@ import java.util.stream.Collectors;
 @Service
 public class PlacementService {
 
+    private static final Logger logger = LoggerFactory.getLogger(InterviewService.class);
+
+
     private final PlacementRepository placementRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -30,6 +40,9 @@ public class PlacementService {
     public PlacementService(PlacementRepository placementRepository) {
         this.placementRepository = placementRepository;
     }
+
+    @Autowired
+    private  InterviewRepository interviewRepository;
 
     private String generateCustomId() {
         List<Integer> existingNumbers = placementRepository.findAll().stream()
@@ -41,64 +54,77 @@ public class PlacementService {
         int nextNumber = existingNumbers.stream().max(Integer::compare).orElse(0) + 1;
         return String.format("PLMNT%04d", nextNumber);
     }
+
     public PlacementResponseDto savePlacement(PlacementDto placementDto) {
         PlacementDetails placementDetails = convertToEntity(placementDto);
 
-        validateRates(placementDetails);
+        // Validate payRate < billRate
+        if (placementDetails.getPayRate() != null && placementDetails.getBillRate() != null) {
+            if (placementDetails.getPayRate().compareTo(placementDetails.getBillRate()) > 0) {
+                throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate.");
+            }
+        }
 
         placementDetails.setId(generateCustomId());
-        calculateBillRateINR(placementDetails);
-        calculateGrossProfit(placementDetails);
+        logger.info("Generated ID is: " + placementDetails.getId());
 
-        PlacementDetails saved = placementRepository.save(placementDetails);
-        return convertToResponseDto(saved);
-    }
-
-    private void validateRates(PlacementDetails placementDetails) {
-        if (placementDetails.getPayRate() != null && placementDetails.getBillRateUSD() != null &&
-                placementDetails.getPayRate().compareTo(placementDetails.getBillRateUSD()) > 0) {
-            throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate USD.");
-        }
-    }
-
-    private void calculateBillRateINR(PlacementDetails placementDetails) {
-        if (placementDetails.getBillRateUSD() != null) {
-            BigDecimal billRateINR = placementDetails.getBillRateUSD()
-                    .multiply(BigDecimal.valueOf(83))
-                    .setScale(2, RoundingMode.HALF_UP);
-            placementDetails.setBillRateINR(billRateINR);
-        }
-    }
-
-    private void calculateGrossProfit(PlacementDetails placementDetails) {
-        if (placementDetails.getBillRateUSD() != null && placementDetails.getPayRate() != null) {
-            BigDecimal grossProfit = placementDetails.getBillRateUSD()
+        // Calculate Gross Profit
+        if (placementDetails.getBillRate() != null && placementDetails.getPayRate() != null) {
+            BigDecimal grossProfit = placementDetails.getBillRate()
                     .subtract(placementDetails.getPayRate())
                     .setScale(2, RoundingMode.HALF_UP);
             placementDetails.setGrossProfit(grossProfit);
         }
+
+        // Check for duplicate interview ID
+        if (placementDto.getInterviewId() != null) {
+            boolean alreadyPlaced = placementRepository.existsByInterviewId(placementDto.getInterviewId());
+            if (alreadyPlaced) {
+                throw new DuplicateInterviewPlacementException("Interview ID " + placementDto.getInterviewId() + " is already used in a placement.");
+            }
+
+            // Update interviewDetails.isPlaced = true
+            Optional<InterviewDetails> interviewDetailsOpt = interviewRepository.findById(placementDto.getInterviewId());
+            if (interviewDetailsOpt.isPresent()) {
+                InterviewDetails interviewDetails = interviewDetailsOpt.get();
+                interviewDetails.setIsPlaced(true);
+                interviewRepository.save(interviewDetails);
+                logger.info("Interview details updated: " + interviewDetails);
+            } else {
+                logger.warn("Interview ID " + placementDto.getInterviewId() + " not found. Proceeding without updating interview details.");
+            }
+
+        } else {
+            logger.info("No interview ID provided. Skipping interview details update.");
+        }
+
+        placementDetails.setStatus("Active");
+        PlacementDetails saved = placementRepository.save(placementDetails);
+        boolean isPlaced = "Active".equalsIgnoreCase(saved.getStatus());
+
+        return new PlacementResponseDto(
+                saved.getId(),
+                saved.getCandidateFullName(),
+                saved.getCandidateContactNo(),
+                isPlaced
+        );
     }
+
+
 
     public PlacementResponseDto updatePlacement(String id, PlacementDto dto) {
         PlacementDetails existing = placementRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Placement not found with ID: " + id));
 
-        if (dto.getClientEmail()!= null && !dto.getClientEmail().equals(existing.getClientEmail())) {
-            if (placementRepository.existsByClientEmail(dto.getClientEmail())) {
-                throw new IllegalArgumentException("Email already exists: " + dto.getClientEmail());
-            }
-            existing.setClientEmail(dto.getClientEmail());
+        if (dto.getCandidateEmailId()!= null && !dto.getCandidateEmailId().equals(existing.getCandidateEmailId())) {
+            existing.setCandidateEmailId(dto.getCandidateEmailId());
         }
 
         if (dto.getCandidateContactNo() != null && !dto.getCandidateContactNo().equals(existing.getCandidateContactNo())) {
-            if (placementRepository.existsByCandidateContactNo(dto.getCandidateContactNo())) {
-                throw new IllegalArgumentException("Phone number already exists: " + dto.getCandidateContactNo());
-            }
             existing.setCandidateContactNo(dto.getCandidateContactNo());
         }
 
         Optional.ofNullable(dto.getCandidateFullName()).ifPresent(existing::setCandidateFullName);
-        Optional.ofNullable(dto.getCandidateEmailId()).ifPresent(existing::setCandidateEmailId);
         Optional.ofNullable(dto.getTechnology()).ifPresent(existing::setTechnology);
         Optional.ofNullable(dto.getClientName()).ifPresent(existing::setClientName);
         Optional.ofNullable(dto.getVendorName()).ifPresent(existing::setVendorName);
@@ -113,26 +139,26 @@ public class PlacementService {
         Optional.ofNullable(dto.getStatus()).ifPresent(existing::setStatus);
         Optional.ofNullable(dto.getStatusMessage()).ifPresent(existing::setStatusMessage);
 
-        if (dto.getBillRateUSD() != null) {
-            existing.setBillRateUSD(dto.getBillRateUSD());
-            BigDecimal billRateINR = dto.getBillRateUSD().multiply(BigDecimal.valueOf(83)).setScale(2, RoundingMode.HALF_UP);
-            existing.setBillRateINR(billRateINR);
-        }
-
         if (dto.getPayRate() != null) {
             existing.setPayRate(dto.getPayRate());
         }
 
-        if (existing.getPayRate() != null && existing.getBillRateUSD() != null) {
-            if (existing.getPayRate().compareTo(existing.getBillRateUSD()) > 0) {
-                throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate USD.");
-            }
-            BigDecimal grossProfit = existing.getBillRateUSD().subtract(existing.getPayRate()).setScale(2, RoundingMode.HALF_UP);
+        // 🔥 Important: update billRate if available
+        if (dto.getBillRate() != null) {
+            existing.setBillRate(dto.getBillRate());
+        }
+
+        // 🔥 Recalculate grossProfit if both payRate and billRateINR are present
+        if (existing.getBillRate() != null && existing.getPayRate() != null) {
+            BigDecimal grossProfit = existing.getBillRate()
+                    .subtract(existing.getPayRate())
+                    .setScale(2, RoundingMode.HALF_UP);
             existing.setGrossProfit(grossProfit);
         }
 
         PlacementDetails updated = placementRepository.save(existing);
         return convertToResponseDto(updated);
+
     }
 
     public void deletePlacement(String id) {
@@ -143,11 +169,14 @@ public class PlacementService {
     }
 
     // ✅ UPDATED: Return full placement details using PlacementDto
-    public List<PlacementDto> getAllPlacements() {
-        return placementRepository.findAll().stream()
-                .map(this::convertToDto) // full DTO with all fields
-                .collect(Collectors.toList());
+    public List<PlacementDetails> getAllPlacements() {
+        LocalDate now = LocalDate.now();
+        LocalDate startDate = now.withDayOfMonth(1);
+        // 1st of current month    LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth()); // last day of current month    return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);// Fetch directly from PlacementDetails table
+        LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth());
+        return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
     }
+
 
     public PlacementResponseDto getPlacementById(String id) {
         PlacementDetails placement = placementRepository.findById(id)
@@ -155,46 +184,24 @@ public class PlacementService {
         return convertToResponseDto(placement);
     }
 
-    private PlacementDto convertToDto(PlacementDetails saved) {
-        PlacementDto dto = new PlacementDto();
-        dto.setId(saved.getId());
-        dto.setCandidateFullName(saved.getCandidateFullName());
-        dto.setCandidateEmailId(saved.getCandidateEmailId());
-        dto.setCandidateContactNo(saved.getCandidateContactNo());
-        dto.setClientEmail(saved.getClientEmail());
-        dto.setTechnology(saved.getTechnology());
-        dto.setClientName(saved.getClientName());
-        dto.setVendorName(saved.getVendorName());
-        dto.setStartDate(saved.getStartDate() != null ? saved.getStartDate().toString() : null);
-        dto.setEndDate(saved.getEndDate() != null ? saved.getEndDate().toString() : null);
-        dto.setRecruiter(saved.getRecruiter());
-        dto.setSales(saved.getSales());
-        dto.setBillRateUSD(saved.getBillRateUSD());
-        dto.setBillRateINR(saved.getBillRateINR());
-        dto.setPayRate(saved.getPayRate());
-        dto.setGrossProfit(saved.getGrossProfit());
-        dto.setEmploymentType(saved.getEmploymentType());
-        dto.setRemarks(saved.getRemarks());
-        dto.setStatus(saved.getStatus());
-        dto.setStatusMessage(saved.getStatusMessage());
-        return dto;
-    }
 
-    private PlacementResponseDto convertToResponseDto(PlacementDetails saved) {
+
+    private PlacementResponseDto convertToResponseDto(PlacementDetails updated) {
         return new PlacementResponseDto(
-                saved.getId(),
-                saved.getCandidateFullName(),
-                saved.getCandidateContactNo(),
-                saved.getClientEmail()
+                updated.getId(),
+                updated.getCandidateFullName(),
+                updated.getCandidateContactNo()
+
         );
     }
 
     private PlacementDetails convertToEntity(PlacementDto dto) {
         PlacementDetails entity = new PlacementDetails();
         entity.setCandidateFullName(dto.getCandidateFullName());
-        entity.setCandidateEmailId(dto.getCandidateEmailId());
         entity.setCandidateContactNo(dto.getCandidateContactNo());
-        entity.setClientEmail(dto.getClientEmail());
+        entity.setCandidateEmailId(dto.getCandidateEmailId());
+        entity.setCandidateId(dto.getCandidateId());
+        entity.setCreatedAt(dto.getCreatedAt());
         entity.setTechnology(dto.getTechnology());
         entity.setClientName(dto.getClientName());
         entity.setVendorName(dto.getVendorName());
@@ -202,17 +209,48 @@ public class PlacementService {
         entity.setEndDate(dto.getEndDate() != null ? LocalDate.parse(dto.getEndDate(), formatter) : null);
         entity.setRecruiter(dto.getRecruiter());
         entity.setSales(dto.getSales());
-        entity.setBillRateUSD(dto.getBillRateUSD());
         entity.setPayRate(dto.getPayRate());
+        entity.setBillRate(dto.getBillRate());
         entity.setEmploymentType(dto.getEmploymentType());
         entity.setRemarks(dto.getRemarks());
         entity.setStatus(dto.getStatus());
         entity.setStatusMessage(dto.getStatusMessage());
+        entity.setInterviewId(dto.getInterviewId());
         return entity;
     }
 
+
     public Map<String, Long> getCounts() {
-        Object[] result = (Object[]) placementRepository.getAllCounts();
+        // Use LocalDate to get the first and last day of the current month
+        LocalDate startOfMonthDate = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonthDate = startOfMonthDate.plusMonths(1).minusDays(1);
+
+        // Convert to LocalDateTime with start and end of the day
+        LocalDateTime startOfMonth = startOfMonthDate.atStartOfDay(); // 00:00:00.000
+        LocalDateTime endOfMonth = endOfMonthDate.atTime(23, 59, 59, 999999999); // 23:59:59.999
+
+        // Call the repository method with the calculated date range
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth);
+
+        // Map the results to meaningful keys
+        Map<String, Long> counts = new HashMap<>();
+        counts.put("requirements", ((Number) result[0]).longValue());
+        counts.put("candidates", ((Number) result[1]).longValue());
+        counts.put("clients", ((Number) result[2]).longValue());
+        counts.put("placements", ((Number) result[3]).longValue());
+        counts.put("bench", ((Number) result[4]).longValue());
+        counts.put("users", ((Number) result[5]).longValue());
+        counts.put("interviews", ((Number) result[6]).longValue());
+
+        return counts;
+    }
+
+
+    public Map<String, Long> getCountsByDateRange(LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime startDateTime = fromDate.atStartOfDay(); // 00:00
+        LocalDateTime endDateTime = toDate.atTime(LocalTime.MAX); // 23:59:59.999999999
+
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startDateTime, endDateTime);
 
         Map<String, Long> counts = new HashMap<>();
         counts.put("requirements", ((Number) result[0]).longValue());
@@ -225,4 +263,5 @@ public class PlacementService {
 
         return counts;
     }
+    public List<PlacementDetails> getPlacementsByDateRange(LocalDate startDate, LocalDate endDate) {    return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);}
 }

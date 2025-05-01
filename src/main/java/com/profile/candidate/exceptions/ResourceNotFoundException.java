@@ -1,4 +1,3 @@
-
 package com.profile.candidate.exceptions;
 
 public class ResourceNotFoundException extends RuntimeException {
@@ -6,3 +5,4 @@ public class ResourceNotFoundException extends RuntimeException {
         super(message);
     }
 }
+

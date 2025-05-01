@@ -5,18 +5,21 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class PlacementDto {
     private String id;
     private String candidateFullName;
-    private String candidateEmailId;
     private String candidateContactNo;
-    private String clientEmail;
-    private String technology;
+    private String candidateId;
+    private String candidateEmailId;
     private String clientName;
+    private String technology;
     private String vendorName;
     private String startDate;
     private String endDate;
@@ -24,37 +27,14 @@ public class PlacementDto {
     private String sales;
     private String employmentType;
     private String remarks;
-
-    private java.math.BigDecimal billRateUSD;
-    private java.math.BigDecimal billRateINR;
-    private java.math.BigDecimal payRate;
-    private java.math.BigDecimal grossProfit;
+    private BigDecimal billRate;
+    private BigDecimal payRate;
+    private BigDecimal grossProfit;
     private String status;
     private String statusMessage;
-
-    public String getCandidateEmailId() {
-        return candidateEmailId;
-    }
-
-    public void setCandidateEmailId(String candidateEmailId) {
-        this.candidateEmailId = candidateEmailId;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public void setStatusMessage(String statusMessage) {
-        this.statusMessage = statusMessage;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
+    private String interviewId;
+    private String jobId;
+    private LocalDate createdAt;
 
     public String getCandidateFullName() {
         return candidateFullName;
@@ -72,20 +52,21 @@ public class PlacementDto {
         this.candidateContactNo = candidateContactNo;
     }
 
-    public String getClientEmail() {
-        return clientEmail;
+
+    public String getCandidateId() {
+        return candidateId;
     }
 
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
+    public void setCandidateId(String candidateId) {
+        this.candidateId = candidateId;
     }
 
-    public String getTechnology() {
-        return technology;
+    public String getCandidateEmailId() {
+        return candidateEmailId;
     }
 
-    public void setTechnology(String technology) {
-        this.technology = technology;
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
     }
 
     public String getClientName() {
@@ -94,6 +75,14 @@ public class PlacementDto {
 
     public void setClientName(String clientName) {
         this.clientName = clientName;
+    }
+
+    public String getTechnology() {
+        return technology;
+    }
+
+    public void setTechnology(String technology) {
+        this.technology = technology;
     }
 
     public String getVendorName() {
@@ -152,20 +141,12 @@ public class PlacementDto {
         this.remarks = remarks;
     }
 
-    public BigDecimal getBillRateUSD() {
-        return billRateUSD;
+    public BigDecimal getBillRate() {
+        return billRate;
     }
 
-    public void setBillRateUSD(BigDecimal billRateUSD) {
-        this.billRateUSD = billRateUSD;
-    }
-
-    public BigDecimal getBillRateINR() {
-        return billRateINR;
-    }
-
-    public void setBillRateINR(BigDecimal billRateINR) {
-        this.billRateINR = billRateINR;
+    public void setBillRate(BigDecimal billRate) {
+        this.billRate = billRate;
     }
 
     public BigDecimal getPayRate() {
@@ -188,7 +169,47 @@ public class PlacementDto {
         return status;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public String getStatusMessage() {
         return statusMessage;
+    }
+
+    public void setStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
+    }
+
+    public String getInterviewId() {
+        return interviewId;
+    }
+
+    public void setInterviewId(String interviewId) {
+        this.interviewId = interviewId;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
+
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

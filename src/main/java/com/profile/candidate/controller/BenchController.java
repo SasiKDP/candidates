@@ -11,6 +11,8 @@ import com.profile.candidate.model.BenchDetails;
 import com.profile.candidate.repository.BenchRepository;
 import com.profile.candidate.service.BenchService;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,8 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import javax.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -37,13 +38,14 @@ import java.util.stream.Collectors;
         "http://mymulya.com:443",
         "http://182.18.177.16:443",
         "http://localhost/",
+        "http://192.168.0.135",
+        "http://182.18.177.16"
 })
 @RestController
 @RequestMapping("/candidate")
 public class BenchController {
 
     private static final Logger logger = LoggerFactory.getLogger(BenchController.class);
-
 
     private static final String UPLOAD_DIR = "/your/upload/directory"; // Ensu
     private final BenchService benchService;
@@ -143,6 +145,7 @@ public class BenchController {
         }
     }
 
+
     @GetMapping("/bench/filter-by-date")
     public ResponseEntity<?> getBenchDetailsByDateRange(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -171,7 +174,6 @@ public class BenchController {
                 return ResponseEntity.ok(Collections.singletonMap("error", "No bench details found in this date range."));
             }
 
-
             return ResponseEntity.ok(dtoList);
         } catch (DateRangeValidationException e) {
             logger.error("❌ Date Range Validation Error: {}", e.getMessage());
@@ -193,6 +195,7 @@ public class BenchController {
             return ResponseEntity.notFound().build();
         }
     }
+
     @PutMapping("/bench/updatebench/{id}")
     public ResponseEntity<Object> updateBenchDetails(
             @PathVariable String id,
@@ -298,7 +301,6 @@ public class BenchController {
         }
     }
 
-
     @GetMapping("/bench/download/{id}")
     public ResponseEntity<byte[]> downloadResume(@PathVariable String id) {
         try {
@@ -314,14 +316,12 @@ public class BenchController {
             if (resumeFile == null || resumeFile.length == 0) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
-
             // **Use actual filename stored in the database (or default name)**
             String fileName = benchDetails.getFullName(); // Assuming you have this field in your entity
 
             if (fileName == null || fileName.isBlank()) {
                 fileName = "Resume_" + id + ".pdf"; // Fallback name
             }
-
             // **Return the file with correct Content-Disposition**
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_PDF)

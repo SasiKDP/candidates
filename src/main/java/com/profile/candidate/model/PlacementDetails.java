@@ -1,8 +1,10 @@
 package com.profile.candidate.model;
 
 import jakarta.persistence.*;
-
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -12,28 +14,20 @@ import java.time.LocalDate;
 @Setter
 @Getter
 @Entity
-@Table(name = "placement_prod")
+@Table(name = "placements")
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlacementDetails {
 
     @Id
     @Column(name = "id", updatable = false, nullable = false)
-    private String id; // e.g. PLACEMENT001
+    private String id;
 
-    @Column(name = "candidate_full_name")
+    @Column(name = "candidateFullName")
     private String candidateFullName;
 
-    @Column(name = "candidate_email_id")
-    private String candidateEmailId;
-
-    @Email(message = "Invalid email format")
-    @NotBlank(message = "Email is mandatory")
-    @Column(name = "client_email")
-    private String clientEmail;
-
-    @Pattern(regexp = "^\\d{10}$", message = "contact number must be 10 digits")
-    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "^\\d{10}$", message = "contactNumber must be 10 digits")
+    @NotBlank(message = "contact number is required")
     @Column(name = "candidateContactNo")
     private String candidateContactNo;
 
@@ -42,6 +36,12 @@ public class PlacementDetails {
 
     @Column(name = "client_name")
     private String clientName;
+
+    @Column(name= "candidateId")
+    private String candidateId;
+
+    @Column(name="candidateEmailId")
+    private String candidateEmailId;
 
     @Column(name = "vendor_name")
     private String vendorName;
@@ -52,6 +52,7 @@ public class PlacementDetails {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+
     @Column(name = "recruiter")
     private String recruiter;
 
@@ -60,11 +61,8 @@ public class PlacementDetails {
 
     @DecimalMin(value = "0.0", inclusive = false, message = "Bill Rate must be a positive number")
     @Digits(integer = 10, fraction = 5, message = "Invalid format for Bill Rate")
-    @Column(name = "bill_rate_usd")
-    private BigDecimal billRateUSD;
-
-    @Column(name = "bill_rate_inr")
-    private BigDecimal billRateINR;
+    @Column(name = "bill_rate")
+    private BigDecimal billRate;
 
     @DecimalMin(value = "0.0", inclusive = false, message = "Pay Rate must be a positive number")
     @Digits(integer = 10, fraction =5, message = "Invalid format for Pay Rate")
@@ -81,17 +79,29 @@ public class PlacementDetails {
     private String remarks;
 
     @Column(name = "status")
-    private String status;
+    private String status = "";
 
     @Column(name = "status_message")
     private String statusMessage;
 
-    public String getCandidateEmailId() {
-        return candidateEmailId;
+    @Column(name = "created_At")
+    private LocalDate createdAt;
+    @Column(name= "interview_id")
+    private String interviewId;
+
+    // Automatically set the current date
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDate.now();
+        }
+    }
+    public LocalDate getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCandidateEmailId(String candidateEmailId) {
-        this.candidateEmailId = candidateEmailId;
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
     }
 
     public String getId() {
@@ -110,14 +120,6 @@ public class PlacementDetails {
         this.candidateFullName = candidateFullName;
     }
 
-    public String getClientEmail() {
-        return clientEmail;
-    }
-
-    public void setClientEmail(String clientEmail) {
-        this.clientEmail = clientEmail;
-    }
-
     public String getCandidateContactNo() {
         return candidateContactNo;
     }
@@ -134,12 +136,29 @@ public class PlacementDetails {
         this.technology = technology;
     }
 
+
     public String getClientName() {
         return clientName;
     }
 
     public void setClientName(String clientName) {
         this.clientName = clientName;
+    }
+
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
+    }
+
+    public String getCandidateId() {
+        return candidateId;
+    }
+
+    public void setCandidateId(String candidateId) {
+        this.candidateId = candidateId;
     }
 
     public String getVendorName() {
@@ -182,20 +201,12 @@ public class PlacementDetails {
         this.sales = sales;
     }
 
-    public BigDecimal getBillRateUSD() {
-        return billRateUSD;
+    public BigDecimal getBillRate() {
+        return billRate;
     }
 
-    public void setBillRateUSD(BigDecimal billRateUSD) {
-        this.billRateUSD = billRateUSD;
-    }
-
-    public BigDecimal getBillRateINR() {
-        return billRateINR;
-    }
-
-    public void setBillRateINR(BigDecimal billRateINR) {
-        this.billRateINR = billRateINR;
+    public void setBillRate(BigDecimal billRate) {
+        this.billRate = billRate;
     }
 
     public BigDecimal getPayRate() {
@@ -244,6 +255,15 @@ public class PlacementDetails {
 
     public void setStatusMessage(String statusMessage) {
         this.statusMessage = statusMessage;
+    }
+
+
+    public String getInterviewId() {
+        return interviewId;
+    }
+
+    public void setInterviewId(String interviewId) {
+        this.interviewId = interviewId;
     }
 }
 

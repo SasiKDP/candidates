@@ -1,17 +1,19 @@
 package com.profile.candidate.dto;
 
+import java.util.List;
+
 public class InterviewResponseDto {
 
     private boolean success;
     private String message;
-    private InterviewPayload payload;
+    private InterviewData data;
     private Object errors;  // Assuming you will have error details if any
 
     // Constructor
-    public InterviewResponseDto(boolean success, String message, InterviewPayload payload, Object errors) {
+    public InterviewResponseDto(boolean success, String message, InterviewData data, Object errors) {
         this.success = success;
         this.message = message;
-        this.payload = payload;
+        this.data = data;
         this.errors = errors;
     }
 
@@ -32,12 +34,12 @@ public class InterviewResponseDto {
         this.message = message;
     }
 
-    public InterviewPayload getPayload() {
-        return payload;
+    public InterviewData getData() {
+        return data;
     }
 
-    public void setPayload(InterviewPayload payload) {
-        this.payload = payload;
+    public void setData(InterviewData data) {
+        this.data = data;
     }
 
     public Object getErrors() {
@@ -47,26 +49,15 @@ public class InterviewResponseDto {
     public void setErrors(Object errors) {
         this.errors = errors;
     }
-
-    @Override
-    public String toString() {
-        return "InterviewResponseDto{" +
-                "success=" + success +
-                ", message='" + message + '\'' +
-                ", payload=" + payload +
-                ", errors=" + errors +
-                '}';
-    }
-
     // Static inner class to represent the payload
-    public static class InterviewPayload {
+    public static class InterviewData {
         private String candidateId;
         private String userEmail;
         private String emailId;
-        private String clientEmail;
+        private List<String> clientEmail;
 
         // Constructor
-        public InterviewPayload(String candidateId, String userEmail, String emailId, String clientEmail) {
+        public InterviewData(String candidateId, String userEmail, String emailId, List<String> clientEmail) {
             this.candidateId = candidateId;
             this.userEmail = userEmail;
             this.emailId = emailId;
@@ -98,14 +89,12 @@ public class InterviewResponseDto {
             this.emailId = emailId;
         }
 
-        public String getClientEmail() {
+        public List<String> getClientEmail() {
             return clientEmail;
         }
-
-        public void setClientEmail(String clientEmail) {
+        public void setClientEmail(List<String> clientEmail) {
             this.clientEmail = clientEmail;
         }
-
         @Override
         public String toString() {
             return "InterviewPayload{" +

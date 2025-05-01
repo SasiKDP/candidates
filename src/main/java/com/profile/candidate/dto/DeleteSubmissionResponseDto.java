@@ -1,27 +1,27 @@
 package com.profile.candidate.dto;
 
-public class DeleteCandidateResponseDto {
-    private String status;
+public class DeleteSubmissionResponseDto {
+
+    private boolean status;
     private String message;
-    private DeleteCandidateResponseDto.CandidateData data;
+    private SubmissionData data;
     private String error;
 
     // Constructor
-
-    public DeleteCandidateResponseDto() {
-    }
-    public DeleteCandidateResponseDto(String status, String message, CandidateData data, String error) {
+    public DeleteSubmissionResponseDto(boolean status, String message, SubmissionData data, String error) {
         this.status = status;
         this.message = message;
         this.data = data;
         this.error = error;
+
     }
+
     // Getters and Setters
-    public String getStatus() {
+    public boolean getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(boolean status) {
         this.status = status;
     }
 
@@ -33,14 +33,6 @@ public class DeleteCandidateResponseDto {
         this.message = message;
     }
 
-    public CandidateData getData() {
-        return data;
-    }
-
-    public void setData(CandidateData data) {
-        this.data = data;
-    }
-
     public String getError() {
         return error;
     }
@@ -49,19 +41,26 @@ public class DeleteCandidateResponseDto {
         this.error = error;
     }
 
+    public SubmissionData getPayload() {
+        return data;
+    }
+
+    public void setPayload(SubmissionData data) {
+        this.data = data;
+    }
+
     // Nested class for Payload
-    public static class CandidateData {
+    public static class SubmissionData {
         private String candidateId;
-        private String candidateName;
+        private String jobId;
 
-        public CandidateData(String candidateId, String candidateName) {
+        // Constructor
+        public SubmissionData(String candidateId, String jobId) {
             this.candidateId = candidateId;
-            this.candidateName = candidateName;
+            this.jobId = jobId;
         }
 
-        public CandidateData() {
-        }
-
+        // Getters and Setters
         public String getCandidateId() {
             return candidateId;
         }
@@ -70,12 +69,12 @@ public class DeleteCandidateResponseDto {
             this.candidateId = candidateId;
         }
 
-        public String getCandidateName() {
-            return candidateName;
+        public String getJobId() {
+            return jobId;
         }
 
-        public void setCandidateName(String candidateName) {
-            this.candidateName = candidateName;
+        public void setJobId(String jobId) {
+            this.jobId = jobId;
         }
     }
 }

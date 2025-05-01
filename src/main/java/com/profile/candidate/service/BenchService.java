@@ -21,6 +21,7 @@ import java.util.Optional;
 public class BenchService {
     private final BenchRepository benchRepository;
 
+
     private static final Logger logger = LoggerFactory.getLogger(BenchService.class);
 
     @Autowired
@@ -29,21 +30,8 @@ public class BenchService {
     }
 
     public List<BenchDetails> findAllBenchDetails() {
-        // Define start and end of the current month
-        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
-        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
-
-        logger.info("Fetching bench details from {} to {}", startOfMonth, endOfMonth);
-
-        // Fetch only current month bench records
-        List<BenchDetails> benchDetailsList = benchRepository.findByCreatedDateBetween(startOfMonth, endOfMonth);
-
-        logger.info("Total bench records fetched for current month: {}", benchDetailsList.size());
-
-        return benchDetailsList;
+        return benchRepository.findAll();
     }
-
-
 
     public Optional<BenchDetails> findBenchDetailsById(String id) {
         return benchRepository.findById(id);
@@ -86,12 +74,15 @@ public class BenchService {
             throw new IllegalArgumentException("Duplicate entry: Contact number already exists -> " + benchDetails.getContactNumber());
         }
 
+        // ✅ Check for duplicate full name
+//        if (benchRepository.existsByFullName(benchDetails.getFullName())) {
+//            throw new IllegalArgumentException("Duplicate entry: Full name already exists -> " + benchDetails.getFullName());
+//        }
+
         // ✅ Auto-generate ID if not provided
         if (benchDetails.getId() == null || benchDetails.getId().isEmpty()) {
             benchDetails.setId(generateCustomId());
         }
-
-        // ✅ Set createdDate
         benchDetails.setCreatedDate(LocalDate.now());
 
         // ✅ Store resume if provided
@@ -192,7 +183,6 @@ public class BenchService {
             throw new RuntimeException("Something went wrong while processing your request. Please try again later.");
         }
     }
-
     public BenchDetailsDto getBenchById(String benchId) {
         Optional<BenchDetails> optionalBench = benchRepository.findById(benchId);
         if (optionalBench.isPresent()) {
@@ -216,5 +206,4 @@ public class BenchService {
             return null;
         }
     }
-
 }
