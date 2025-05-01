@@ -168,7 +168,10 @@ public class PlacementService {
 
     // ✅ UPDATED: Return full placement details using PlacementDto
     public List<PlacementDetails> getAllPlacements() {
-        return placementRepository.findAll(); // Fetch directly from PlacementDetails table
+        LocalDate now = LocalDate.now();
+        LocalDate startDate = now.withDayOfMonth(1); // 1st of current month
+        LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth()); // last day of current month
+        return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);// Fetch directly from PlacementDetails table
     }
 
 
@@ -227,5 +230,9 @@ public class PlacementService {
         counts.put("interviews", ((Number) result[6]).longValue());
 
         return counts;
+    }
+
+    public List<PlacementDetails> getPlacementsByDateRange(LocalDate startDate, LocalDate endDate) {
+        return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
     }
 }

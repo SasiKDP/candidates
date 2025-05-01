@@ -6,11 +6,13 @@ import com.profile.candidate.exceptions.ResourceNotFoundException;
 import com.profile.candidate.model.PlacementDetails;
 import com.profile.candidate.service.PlacementService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -119,5 +121,14 @@ public class PlacementController {
     public ResponseEntity<Map<String, Long>> getDashboardCounts() {
         Map<String, Long> counts = service.getCounts();
         return ResponseEntity.ok(counts);
+    }
+
+    @GetMapping("/placement/filterByDate")
+    public ResponseEntity<List<PlacementDetails>> getPlacementsByDateRange(
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        List<PlacementDetails> placements = service.getPlacementsByDateRange(startDate, endDate);
+        return ResponseEntity.ok(placements);
     }
 }
