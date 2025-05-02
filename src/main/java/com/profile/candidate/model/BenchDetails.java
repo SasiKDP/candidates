@@ -51,7 +51,6 @@ public class BenchDetails {
  @JsonProperty("skills")  // ✅ Ensure proper mapping
  private List<String> skills;  // ✅ Expecting an array, NOT a string
 
-
  @Column(name = "technology")
  private String technology;
 
@@ -63,6 +62,7 @@ public class BenchDetails {
  public void setTechnology(String technology) {
   this.technology = technology;
  }
+
 
  @Lob
  @JdbcTypeCode(SqlTypes.JSON)
@@ -76,10 +76,6 @@ public class BenchDetails {
 
  @Column(name = "created_date")
  private LocalDate createdDate;
-
-
- @Column(name = "technology")
- private String technology;
 
  public LocalDate getCreatedDate() {
   return createdDate;
@@ -146,15 +142,6 @@ public class BenchDetails {
  public void setContactNumber(@NotBlank(message = "Contact number is required") @Pattern(regexp = "^\\+?[0-9. ()-]{7,15}$", message = "Contact number must be valid") String contactNumber) {
   this.contactNumber = contactNumber;
  }
-
- public String getTechnology() {
-  return technology;
- }
-
- public void setTechnology(String technology) {
-  this.technology = technology;
- }
-
  public byte[] getResume() {
   return resume;
  }
