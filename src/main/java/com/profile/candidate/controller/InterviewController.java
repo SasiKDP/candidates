@@ -219,15 +219,6 @@ public class InterviewController {
                     null,
                     null
             ));
-//        } catch (Exception e) {
-//            // Log unexpected errors and return 500
-//            logger.error("Error while scheduling interview: {}", e.getMessage());
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
-//                    false,
-//                    "An error occurred while scheduling the interview.",
-//                    null,
-//                    null
-//            ));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -237,7 +228,7 @@ public class InterviewController {
             @PathVariable String candidateId,
             @PathVariable String jobId,
             @RequestBody InterviewDto interviewRequest) {
-        //try {
+
             logger.info("Received interview update request for and candidateId: {}", candidateId);
 
             if (candidateId == null || jobId == null) {

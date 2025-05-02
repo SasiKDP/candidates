@@ -43,6 +43,8 @@ public class BenchService {
 
     public List<BenchDetails> findBenchDetailsByReferredBy(String referredBy) {
         return benchRepository.findByReferredBy(referredBy);
+
+
     }
 
     private String generateCustomId() {
@@ -58,9 +60,6 @@ public class BenchService {
 
         // ✅ Generate new ID in "BENCH001" format
         return String.format("BENCH%03d", nextNumber);
-
-
-
     }
 
 
@@ -96,7 +95,6 @@ public class BenchService {
         if (benchDetails.getTechnology() != null) {
             benchDetails.setTechnology(benchDetails.getTechnology());
         }
-
         return benchRepository.save(benchDetails);
     }
 

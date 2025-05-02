@@ -68,6 +68,7 @@ public class BenchController {
             @RequestParam(value = "linkedin", required = false) String linkedin,
             @RequestParam(value = "referredBy", required = false) String referredBy,
             @RequestParam(value = "technology", required = false) String technology)
+
     {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -140,7 +141,6 @@ public class BenchController {
                             bench.getReferredBy(),
                             bench.getCreatedDate(),
                             bench.getTechnology()
-
                     ))
                     .collect(Collectors.toList());
 
@@ -215,6 +215,7 @@ public class BenchController {
             @RequestParam(value = "linkedin", required = false) String linkedin,
             @RequestParam(value = "referredBy", required = false) String referredBy,
             @RequestParam(value = "technology", required = false) String technology
+
     ) {
         try {
             // 🔹 Log incoming request data

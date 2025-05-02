@@ -1,5 +1,6 @@
 package com.profile.candidate.controller;
 
+import com.profile.candidate.dto.DashboardCountsProjection;
 import com.profile.candidate.dto.PlacementDto;
 import com.profile.candidate.dto.PlacementResponseDto;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
@@ -30,7 +31,6 @@ public class PlacementController {
 
     @Autowired
     private PlacementService service;
-
     private static final Logger logger = LoggerFactory.getLogger(PlacementController.class);
 
 
@@ -127,11 +127,11 @@ public class PlacementController {
         Map<String, Long> counts = service.getCounts();
         return ResponseEntity.ok(counts);
     }
-
     @GetMapping("/placement/filterByDate")
     public ResponseEntity<List<PlacementDetails>> getPlacementsByDateRange(
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
         List<PlacementDetails> placements = service.getPlacementsByDateRange(startDate, endDate);
         return ResponseEntity.ok(placements);
     }
@@ -164,5 +164,6 @@ public class PlacementController {
                     .body(Collections.singletonMap("message", "An error occurred while fetching dashboard counts"));
         }
     }
-}
 
+
+}
