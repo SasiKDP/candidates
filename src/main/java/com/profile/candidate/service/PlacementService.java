@@ -18,8 +18,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 public class PlacementService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PlacementService.class);
+    private static final Logger logger = LoggerFactory.getLogger(InterviewService.class);
 
 
     private final PlacementRepository placementRepository;
@@ -97,7 +95,6 @@ public class PlacementService {
         } else {
             logger.info("No interview ID provided. Skipping interview details update.");
         }
-
         placementDetails.setStatus("Active");
         PlacementDetails saved = placementRepository.save(placementDetails);
         boolean isPlaced = "Active".equalsIgnoreCase(saved.getStatus());
@@ -109,8 +106,6 @@ public class PlacementService {
                 isPlaced
         );
     }
-
-
 
     public PlacementResponseDto updatePlacement(String id, PlacementDto dto) {
         PlacementDetails existing = placementRepository.findById(id)
@@ -138,6 +133,7 @@ public class PlacementService {
         Optional.ofNullable(dto.getRemarks()).ifPresent(existing::setRemarks);
         Optional.ofNullable(dto.getStatus()).ifPresent(existing::setStatus);
         Optional.ofNullable(dto.getStatusMessage()).ifPresent(existing::setStatusMessage);
+        Optional.ofNullable(dto.getHourlyRate()).ifPresent(existing::setHourlyRate);
 
         if (dto.getPayRate() != null) {
             existing.setPayRate(dto.getPayRate());
@@ -170,21 +166,13 @@ public class PlacementService {
 
     // ✅ UPDATED: Return full placement details using PlacementDto
     public List<PlacementDetails> getAllPlacements() {
-        LocalDate now = LocalDate.now();
-        LocalDate startDate = now.withDayOfMonth(1); // 1st of current month
-        LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth()); // last day of current month
-        return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);// Fetch directly from PlacementDetails table
+        return placementRepository.findAll(); // Fetch directly from PlacementDetails table
     }
-
-
     public PlacementResponseDto getPlacementById(String id) {
         PlacementDetails placement = placementRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Placement not found with ID: " + id));
         return convertToResponseDto(placement);
     }
-
-
-
     private PlacementResponseDto convertToResponseDto(PlacementDetails updated) {
         return new PlacementResponseDto(
                 updated.getId(),
@@ -193,7 +181,6 @@ public class PlacementService {
 
         );
     }
-
     private PlacementDetails convertToEntity(PlacementDto dto) {
         PlacementDetails entity = new PlacementDetails();
         entity.setCandidateFullName(dto.getCandidateFullName());
@@ -215,41 +202,11 @@ public class PlacementService {
         entity.setStatus(dto.getStatus());
         entity.setStatusMessage(dto.getStatusMessage());
         entity.setInterviewId(dto.getInterviewId());
+        entity.setHourlyRate(dto.getHourlyRate());
         return entity;
     }
-
-
     public Map<String, Long> getCounts() {
-        // Use LocalDate to get the first and last day of the current month
-        LocalDate startOfMonthDate = LocalDate.now().withDayOfMonth(1);
-        LocalDate endOfMonthDate = startOfMonthDate.plusMonths(1).minusDays(1);
-
-        // Convert to LocalDateTime with start and end of the day
-        LocalDateTime startOfMonth = startOfMonthDate.atStartOfDay(); // 00:00:00.000
-        LocalDateTime endOfMonth = endOfMonthDate.atTime(23, 59, 59, 999999999); // 23:59:59.999
-
-        // Call the repository method with the calculated date range
-        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth);
-
-        // Map the results to meaningful keys
-        Map<String, Long> counts = new HashMap<>();
-        counts.put("requirements", ((Number) result[0]).longValue());
-        counts.put("candidates", ((Number) result[1]).longValue());
-        counts.put("clients", ((Number) result[2]).longValue());
-        counts.put("placements", ((Number) result[3]).longValue());
-        counts.put("bench", ((Number) result[4]).longValue());
-        counts.put("users", ((Number) result[5]).longValue());
-        counts.put("interviews", ((Number) result[6]).longValue());
-
-        return counts;
-    }
-
-
-    public Map<String, Long> getCountsByDateRange(LocalDate fromDate, LocalDate toDate) {
-        LocalDateTime startDateTime = fromDate.atStartOfDay(); // 00:00
-        LocalDateTime endDateTime = toDate.atTime(LocalTime.MAX); // 23:59:59.999999999
-
-        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startDateTime, endDateTime);
+        Object[] result = (Object[]) placementRepository.getAllCounts();
 
         Map<String, Long> counts = new HashMap<>();
         counts.put("requirements", ((Number) result[0]).longValue());
@@ -263,7 +220,5 @@ public class PlacementService {
         return counts;
     }
 
-    public List<PlacementDetails> getPlacementsByDateRange(LocalDate startDate, LocalDate endDate) {
-        return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
-    }
+
 }

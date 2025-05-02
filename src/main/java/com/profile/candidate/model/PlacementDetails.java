@@ -5,12 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
-
 @Setter
 @Getter
 @Entity
@@ -86,8 +83,14 @@ public class PlacementDetails {
 
     @Column(name = "created_At")
     private LocalDate createdAt;
+
     @Column(name= "interview_id")
     private String interviewId;
+
+    @DecimalMin(value = "0.0", inclusive = false, message = "Pay Rate must be a positive number")
+    @Digits(integer = 10, fraction =5, message = "Invalid format for Pay Rate")
+    @Column(name = "hourly_rate")
+    private BigDecimal hourlyRate;
 
     // Automatically set the current date
     @PrePersist
@@ -96,6 +99,16 @@ public class PlacementDetails {
             createdAt = LocalDate.now();
         }
     }
+
+
+    public BigDecimal getHourlyRate() {
+        return hourlyRate;
+    }
+
+    public void setHourlyRate(BigDecimal hourlyRate) {
+        this.hourlyRate = hourlyRate;
+    }
+
     public LocalDate getCreatedAt() {
         return createdAt;
     }

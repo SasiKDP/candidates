@@ -60,6 +60,16 @@ public class SubmissionsGetResponse {
 
         private LocalDateTime submittedAt;
 
+        private String recruiterName;
+
+        public String getRecruiterName() {
+            return recruiterName;
+        }
+
+        public void setRecruiterName(String recruiterName) {
+            this.recruiterName = recruiterName;
+        }
+
         public String getSubmissionId() {
             return submissionId;
         }

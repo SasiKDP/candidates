@@ -55,13 +55,11 @@ public class SubmissionController {
         logger.info("Fetched {} submissions between {} and {}", submissions.size(), startDate, endDate);
         return ResponseEntity.ok(submissions);
     }
-
     @GetMapping("/submissions/{userId}/filterByDate")
     public ResponseEntity<?> getSubmissionsByUserIdAndDateRange(
             @PathVariable String userId,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
         try {
             // Fetch submissions by userId within the given date range
             List<SubmissionGetResponseDto> submissions = submissionService.getSubmissionsByUserIdAndDateRange(userId, startDate, endDate);
@@ -74,7 +72,6 @@ public class SubmissionController {
             logger.info("Fetched {} submissions successfully for userId: {} between {} and {}", submissions.size(), userId, startDate, endDate);
             // Return all candidate details with status 200 OK
             return ResponseEntity.ok(submissions);
-
         } catch (CandidateNotFoundException ex) {
             // Return message in JSON body for 404
             logger.error("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
@@ -146,6 +143,7 @@ public class SubmissionController {
                     .body(new ErrorResponseDto(false, "Unexpected error: " + e.getMessage()));
         }
     }
+
     @Transactional
     @DeleteMapping("deletesubmission/{submissionId}")
     public ResponseEntity<DeleteSubmissionResponseDto> deleteSubmission(@PathVariable("submissionId") String submissionId) {
@@ -204,12 +202,17 @@ public class SubmissionController {
         } catch (CandidateNotFoundException ex) {
             logger.error("No submissions found for userId: {}", userId);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
         } catch (Exception ex) {
             logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
+//    @GetMapping("/submissions/filterByDate")
+//    public ResponseEntity<SubmissionsGetResponse> getAllSubmissions(
+//        @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+//        @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
+//
+//        return new ResponseEntity<>(submissionService.getAllSubmissionsFilterByDate(startDate,endDate),HttpStatus.OK);
+//    }
 
 }

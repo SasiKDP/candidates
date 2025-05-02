@@ -43,6 +43,8 @@ public class Submissions {
 
     private LocalDateTime submittedAt;
 
+    private String recruiterName;
+
     public LocalDate getProfileReceivedDate() {
         return profileReceivedDate;
     }
@@ -145,5 +147,13 @@ public class Submissions {
 
     public void setClientName(String clientName) {
         this.clientName = clientName;
+    }
+
+    public String getRecruiterName() {
+        return recruiterName;
+    }
+
+    public void setRecruiterName(String recruiterName) {
+        this.recruiterName = recruiterName;
     }
 }
