@@ -1149,7 +1149,9 @@ public class InterviewService {
                             interview.getClientName(),
                             interview.getInterviewLevel(),
                             latestInterviewStatus,
+                            interview.getRecruiterName(),
                             interview.getIsPlaced()
+
                     ));
                 }
             }
@@ -1202,6 +1204,7 @@ public class InterviewService {
                                 tuple.get("client_name", String.class),
                                 tuple.get("interview_level", String.class),
                                 latestInterviewStatus,
+                                tuple.get("recruiterName",String.class),
                                 tuple.get("is_placed", Boolean.class)
                         ));
                     }
@@ -1252,7 +1255,6 @@ public class InterviewService {
 
         for (InterviewDetails interview : interviews) {
             if (interview.getInterviewDateTime() == null) continue;
-
             String latestInterviewStatus = latestInterviewStatusFromJson(interview.getInterviewStatus());
 
             response.add(new GetInterviewResponseDto(
@@ -1272,6 +1274,7 @@ public class InterviewService {
                     interview.getClientName(),
                     interview.getInterviewLevel(),
                     latestInterviewStatus,
+                    interview.getRecruiterName(),
                     interview.getIsPlaced()
             ));
         }

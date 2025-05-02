@@ -22,7 +22,7 @@ public class SubmissionGetResponseDto {
 
         private String contactNumber;
 
-        private String candidateEmail;
+        private String candidateEmailId;
 
         private float totalExperience;
 
@@ -37,6 +37,16 @@ public class SubmissionGetResponseDto {
         private String preferredLocation;
 
         private String skills;
+
+        private String recruiterName;
+
+    public String getRecruiterName() {
+        return recruiterName;
+    }
+
+    public void setRecruiterName(String recruiterName) {
+        this.recruiterName = recruiterName;
+    }
 
     public SubmissionGetResponseDto(Submissions submissions) {
     }
@@ -158,11 +168,11 @@ public class SubmissionGetResponseDto {
         this.contactNumber = contactNumber;
     }
 
-    public String getCandidateEmail() {
-        return candidateEmail;
+    public String getCandidateEmailId() {
+        return candidateEmailId;
     }
 
-    public void setCandidateEmail(String candidateEmail) {
-        this.candidateEmail = candidateEmail;
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
     }
 }

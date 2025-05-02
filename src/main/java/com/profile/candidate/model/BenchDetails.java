@@ -77,6 +77,10 @@ public class BenchDetails {
  @Column(name = "created_date")
  private LocalDate createdDate;
 
+
+ @Column(name = "technology")
+ private String technology;
+
  public LocalDate getCreatedDate() {
   return createdDate;
  }
@@ -143,7 +147,13 @@ public class BenchDetails {
   this.contactNumber = contactNumber;
  }
 
+ public String getTechnology() {
+  return technology;
+ }
 
+ public void setTechnology(String technology) {
+  this.technology = technology;
+ }
 
  public byte[] getResume() {
   return resume;

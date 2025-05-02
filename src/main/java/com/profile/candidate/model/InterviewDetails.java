@@ -242,6 +242,16 @@ public class InterviewDetails {
     public ObjectMapper getObjectMapper() {
         return objectMapper;
     }
+
+    private String recruiterName;
+
+    public String getRecruiterName() {
+        return recruiterName;
+    }
+
+    public void setRecruiterName(String recruiterName) {
+        this.recruiterName = recruiterName;
+    }
 }
 
 

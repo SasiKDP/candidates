@@ -22,22 +22,20 @@ public class GetInterviewResponseDto {
     private String clientName;              // Client Name
     private String interviewLevel;          // Interview Level (e.g., 1st, 2nd round)
     private String interviewStatus;
+    private String recruiterName;
     private boolean isPlaced;// New field for status
 
 
     // Constructor
 
-    public GetInterviewResponseDto(String interviewId,
-                                   String jobId,
-                                   String candidateId,
-                                   String candidateFullName,
-                                   String candidateContactNo,
-                                   String candidateEmailId, String userEmail,
-                                   String userId, OffsetDateTime interviewDateTime,
+    public GetInterviewResponseDto(String interviewId, String jobId,
+                                   String candidateId, String candidateFullName,
+                                   String candidateContactNo, String candidateEmailId,
+                                   String userEmail, String userId, OffsetDateTime interviewDateTime,
                                    Integer duration, String zoomLink,
                                    LocalDateTime interviewScheduledTimestamp, List<String> clientEmail,
                                    String clientName, String interviewLevel, String interviewStatus,
-                                   boolean isPlaced) {
+                                   String recruiterName, boolean isPlaced) {
         this.interviewId = interviewId;
         this.jobId = jobId;
         this.candidateId = candidateId;
@@ -54,12 +52,21 @@ public class GetInterviewResponseDto {
         this.clientName = clientName;
         this.interviewLevel = interviewLevel;
         this.interviewStatus = interviewStatus;
+        this.recruiterName = recruiterName;
         this.isPlaced = isPlaced;
     }
 
 
     // Getters and Setters
 
+
+    public String getRecruiterName() {
+        return recruiterName;
+    }
+
+    public void setRecruiterName(String recruiterName) {
+        this.recruiterName = recruiterName;
+    }
 
     public boolean getIsPlaced() {
         return isPlaced;

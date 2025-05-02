@@ -2,7 +2,6 @@ package com.profile.candidate.repository;
 
 import com.profile.candidate.model.PlacementDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,9 +27,6 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
             nativeQuery = true)
     Object getAllCounts();
 
-    @Query("SELECT p FROM PlacementDetails p WHERE p.createdAt BETWEEN :startDate AND :endDate")
-    List<PlacementDetails> findPlacementsByCreatedAtBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-
     @Query(value = "SELECT " +
             "(SELECT COUNT(*) FROM requirements_model WHERE requirement_added_time_stamp BETWEEN :startDate AND :endDate) AS requirementsCount, " +
             "(SELECT COUNT(*) FROM candidate_submissions WHERE submitted_at BETWEEN :startDate AND :endDate) AS candidatesCount, " +
@@ -41,4 +37,13 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
             "(SELECT COUNT(*) FROM interview_details WHERE timestamp BETWEEN :startDate AND :endDate) AS interviewsCount",
             nativeQuery = true)
     Object getAllCountsByDateRange(@Param("startDate") LocalDateTime startDate,
-                                   @Param("endDate") LocalDateTime endDate);}
+                                   @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT p FROM PlacementDetails p WHERE p.createdAt BETWEEN :startDate AND :endDate")
+    List<PlacementDetails> findPlacementsByCreatedAtBetween(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+
+}

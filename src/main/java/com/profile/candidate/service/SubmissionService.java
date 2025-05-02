@@ -86,6 +86,7 @@ public class SubmissionService {
         data.setProfileReceivedDate(sub.getProfileReceivedDate());
         data.setRequiredTechnologiesRating(sub.getRequiredTechnologiesRating());
         data.setClientName(sub.getClientName());
+        data.setRecruiterName(sub.getRecruiterName());
         CandidateDetails candidate = sub.getCandidate();
         //CandidateDto candidateDto = new CandidateDto();
         data.setUserId(candidate.getUserId());
@@ -101,22 +102,9 @@ public class SubmissionService {
         data.setNoticePeriod(candidate.getNoticePeriod());
         data.setCurrentLocation(candidate.getCurrentLocation());
 
+
         return data;
     }
-//    public SubmissionsGetResponse getSubmissionsByUserId(String userId) {
-//        List<CandidateDetails> candidates = candidateRepository.findByUserId(userId);
-//        List<SubmissionsGetResponse.GetSubmissionData> submissionsResponses = new ArrayList<>();
-//
-//        for (CandidateDetails candidate : candidates) {
-//            List<Submissions> submissions =  submissionRepository.findByCandidate(candidate);
-//
-//            for (Submissions submission : submissions) {
-//                submissionsResponses.add(convertToSubmissionsGetResponse(submission));
-//            }
-//        }
-//        SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions Found",submissionsResponses,null);
-//    return response;
-//    }
     @Transactional
     public DeleteSubmissionResponseDto deleteSubmissionById(String submissionId) {
         logger.info("Received request to delete candidate with candidateId: {}", submissionId);
@@ -464,7 +452,8 @@ private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions s
     dto.setPreferredLocation(sub.getPreferredLocation());
     dto.setSkills(sub.getSkills());
     dto.setContactNumber(sub.getCandidate().getContactNumber());
-    dto.setCandidateEmail(sub.getCandidate().getCandidateEmailId());
+    dto.setCandidateEmailId(sub.getCandidate().getCandidateEmailId());
+    dto.setRecruiterName(sub.getRecruiterName());
 
     return dto;
 }
@@ -486,6 +475,15 @@ private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions s
         }).collect(Collectors.toList());
     }
 
+    public SubmissionsGetResponse getAllSubmissionsFilterByDate(LocalDate startDate, LocalDate endDate) {
+
+        List<Submissions> submissions = submissionRepository.findByProfileReceivedDateBetween(startDate,endDate);
+        List<SubmissionsGetResponse.GetSubmissionData> data =submissions.stream()
+                .map(this::convertToSubmissionsGetResponse)
+                .collect(Collectors.toList());
+        SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions found",data,null);
+        return response;
+    }
 }
 
 

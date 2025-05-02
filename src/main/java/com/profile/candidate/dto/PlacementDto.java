@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,6 +34,15 @@ public class PlacementDto {
     private String interviewId;
     private String jobId;
     private LocalDate createdAt;
+
+    private BigDecimal hourlyRate;
+
+    public BigDecimal getHourlyRate() {
+        return hourlyRate;
+    }
+    public void setHourlyRate(BigDecimal hourlyRate) {
+        this.hourlyRate = hourlyRate;
+    }
 
     public String getCandidateFullName() {
         return candidateFullName;
