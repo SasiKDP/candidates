@@ -58,6 +58,9 @@ public class BenchService {
 
         // ✅ Generate new ID in "BENCH001" format
         return String.format("BENCH%03d", nextNumber);
+
+
+
     }
 
 
@@ -88,6 +91,10 @@ public class BenchService {
         // ✅ Store resume if provided
         if (resumeFile != null && !resumeFile.isEmpty()) {
             benchDetails.setResume(resumeFile.getBytes());
+        }
+
+        if (benchDetails.getTechnology() != null) {
+            benchDetails.setTechnology(benchDetails.getTechnology());
         }
 
         return benchRepository.save(benchDetails);
@@ -124,6 +131,7 @@ public class BenchService {
             }
             if (benchDetails.getLinkedin() != null) existingBench.setLinkedin(benchDetails.getLinkedin());
             if (benchDetails.getReferredBy() != null) existingBench.setReferredBy(benchDetails.getReferredBy());
+            if (benchDetails.getTechnology() != null) existingBench.setTechnology(benchDetails.getTechnology());
 
             return benchRepository.save(existingBench);
         }).orElseThrow(() -> new IllegalArgumentException("BenchDetails with ID " + id + " not found"));
@@ -200,6 +208,7 @@ public class BenchService {
             dto.setLinkedin(bench.getLinkedin());
             dto.setReferredBy(bench.getReferredBy());
             dto.setCreatedDate(bench.getCreatedDate());
+            dto.setTechnology(bench.getTechnology());
 
             return dto;
         } else {

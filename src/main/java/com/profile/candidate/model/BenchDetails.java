@@ -51,6 +51,19 @@ public class BenchDetails {
  @JsonProperty("skills")  // ✅ Ensure proper mapping
  private List<String> skills;  // ✅ Expecting an array, NOT a string
 
+
+ @Column(name = "technology")
+ private String technology;
+
+
+ public String getTechnology() {
+  return technology;
+ }
+
+ public void setTechnology(String technology) {
+  this.technology = technology;
+ }
+
  @Lob
  @JdbcTypeCode(SqlTypes.JSON)
  private byte[] resume;
