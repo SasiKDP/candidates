@@ -90,6 +90,7 @@ public class CandidateController {
             submission.setPreferredLocation(formData.get("preferredLocation"));
             submission.setSkills(formData.get("skills"));
             submission.setCommunicationSkills(formData.get("communicationSkills"));
+            submission.setClientName(formData.get("clientName"));
             if (formData.get("requiredTechnologiesRating") != null) {
                 submission.setRequiredTechnologiesRating(Double.parseDouble(formData.get("requiredTechnologiesRating")));
             }

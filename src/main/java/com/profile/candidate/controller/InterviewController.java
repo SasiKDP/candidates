@@ -229,7 +229,6 @@ public class InterviewController {
                     interviewRequest.getInterviewStatus(),
                     interviewRequest.isSkipNotification()
             ); // Added status update
-
             return ResponseEntity.ok(response);
     }
     @GetMapping("/interviews/interviewsByUserId/{userId}")
@@ -246,7 +245,6 @@ public class InterviewController {
         GetInterviewResponse interviews = interviewService.getScheduledInterviewsByUserIdAndDateRange(userId, startDate, endDate);
 
         return ResponseEntity.ok(interviews);
-
     }
 
     @GetMapping("/interviews/filterByDate")
