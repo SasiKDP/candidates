@@ -647,6 +647,8 @@ public class InterviewService {
             throw new NoInterviewsFoundException("Invalid Interview Id " + interviewId);
         }
         InterviewDetails i = optionalInterviewDetails.get();
+
+        logger.info("Latest Interview Status :{}",latestInterviewStatusFromJson(i.getInterviewStatus()));
         GetInterviewResponse.InterviewData payload = new GetInterviewResponse.InterviewData(
                 i.getInterviewId(),
                 i.getJobId(),
@@ -706,7 +708,6 @@ public class InterviewService {
             interviewLevel = determineInterviewType(clientEmail, zoomLink);
         }
         interviewDetails.setInterviewLevel(interviewLevel);
-
 
             interviewDetails.setClientEmailList(clientEmail);
             interviewDetails.setZoomLink(zoomLink);
@@ -844,43 +845,37 @@ public class InterviewService {
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
     }
     public String latestInterviewStatusFromJson(String interviewStatusJson) {
-
         String latestInterviewStatus = null;
         ObjectMapper objectMapper = new ObjectMapper();
-        // Handle interviewStatus as a JSON or plain text
+
         if (interviewStatusJson != null && !interviewStatusJson.trim().isEmpty()) {
             try {
-                // Check if it's a valid JSON format
                 if (interviewStatusJson.trim().startsWith("{") || interviewStatusJson.trim().startsWith("[")) {
-                    // Deserialize the JSON into a List of Maps
                     List<Map<String, Object>> statusHistory = objectMapper.readValue(interviewStatusJson, List.class);
-                    // Extract the latest status from the history
+
                     if (!statusHistory.isEmpty()) {
                         Optional<Map<String, Object>> latestStatus = statusHistory.stream()
-                                .max(Comparator.comparing(
-                                        entry -> (String) entry.get("timestamp"),
-                                        Comparator.nullsLast(Comparator.naturalOrder())
-                                ));
-                        // Sorting by timestamp
+                                .filter(entry -> entry.get("timestamp") != null)
+                                .max(Comparator.comparing(entry -> Instant.parse((String) entry.get("timestamp"))));
+
                         if (latestStatus.isPresent()) {
                             latestInterviewStatus = (String) latestStatus.get().get("status");
                         }
                     }
                 } else {
-                    // If it's a plain string, just treat it as the status
                     latestInterviewStatus = interviewStatusJson;
                 }
             } catch (JsonParseException e) {
-                // Handle invalid JSON (in case there's an error parsing the interviewStatus)
                 System.err.println("Error parsing interview status JSON: Invalid JSON format detected.");
-                latestInterviewStatus = interviewStatusJson;  // Treat it as plain string if JSON parsing fails
+                latestInterviewStatus = interviewStatusJson;
             } catch (IOException e) {
-                // Handle other IO issues
                 System.err.println("Error reading interview status: " + e.getMessage());
             }
         }
+
         return latestInterviewStatus;
     }
+
 
     private String buildCandidateScheduleEmailBody(String recipientName, String formattedDate, String formattedTime,
                                                    int formattedDuration, String formattedZoomLink, String jobTitle,
