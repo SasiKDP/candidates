@@ -87,11 +87,7 @@ public class GetInterviewResponse {
             this.isPlaced = isPlaced;
             this.recruiterName = recruiterName;
         }
-
-
         // Getters and Setters
-
-
         public String getRecruiterName() {
             return recruiterName;
         }
@@ -235,40 +231,6 @@ public class GetInterviewResponse {
         public void setLatestInterviewStatus(String latestInterviewStatus) {
             this.latestInterviewStatus = latestInterviewStatus;
         }
-
-        public InterviewData(String interviewId,
-                             String jobId,
-                             String candidateId,
-                             String candidateFullName,
-                             String candidateContactNo,
-                             String candidateEmailId,
-                             String userEmail,
-                             String userId,
-                             OffsetDateTime interviewDateTime,
-                             Integer duration, String zoomLink,
-                             LocalDateTime interviewScheduledTimestamp,
-                             List<String> clientEmail,
-                             String clientName,
-                             String interviewLevel,
-                             String latestInterviewStatus) {
-            this.interviewId = interviewId;
-            this.jobId = jobId;
-            this.candidateId = candidateId;
-            this.candidateFullName = candidateFullName;
-            this.candidateContactNo = candidateContactNo;
-            this.candidateEmailId = candidateEmailId;
-            this.userEmail = userEmail;
-            this.userId = userId;
-            this.interviewDateTime = interviewDateTime;
-            this.duration = duration;
-            this.zoomLink = zoomLink;
-            this.interviewScheduledTimestamp = interviewScheduledTimestamp;
-            this.clientEmail = clientEmail;
-            this.clientName = clientName;
-            this.interviewLevel = interviewLevel;
-            this.latestInterviewStatus = latestInterviewStatus;
-        }
-
         public InterviewData() {
         }
     }

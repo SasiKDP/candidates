@@ -1045,7 +1045,9 @@ public class InterviewService {
                         i.getClientEmailList(),
                         i.getClientName(),
                         i.getInterviewLevel(),
-                        latestInterviewStatusFromJson(i.getInterviewStatus())
+                        latestInterviewStatusFromJson(i.getInterviewStatus()),
+                        i.getIsPlaced(),
+                        i.getRecruiterName()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
@@ -1157,7 +1159,6 @@ public class InterviewService {
                             latestInterviewStatus,
                             interview.getRecruiterName(),
                             interview.getIsPlaced()
-
                     ));
                 }
             }
