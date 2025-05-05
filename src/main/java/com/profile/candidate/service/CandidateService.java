@@ -46,16 +46,10 @@ public class CandidateService {
     private SubmissionRepository submissionRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
-
     private String generateCustomId() {
-        List<Integer> existingNumbers = candidateRepository.findAll().stream()
-                .map(CandidateDetails::getCandidateId)
-                .filter(id -> id != null && id.matches("CAND\\d{4}"))
-                .map(id -> Integer.parseInt(id.replace("CAND", "")))
-                .toList();
-
-        int nextNumber = existingNumbers.stream().max(Integer::compare).orElse(0) + 1;
-        return String.format("CAND%04d", nextNumber);
+        Integer maxNumber = candidateRepository.findMaxCandidateNumber();
+        int nextNumber = (maxNumber != null) ? maxNumber + 1 : 1;
+        return String.format("CAND%05d", nextNumber);
     }
 
     // Method to submit a candidate profile
@@ -96,7 +90,6 @@ public class CandidateService {
             submissionDetails.setResume(resumeData);
             submissionDetails.setResumeFilePath(resumeFilePath);
         }
-
         // Step 5: Check if candidate already exists
         Optional<CandidateDetails> existingCandidateOpt = candidateRepository.findByCandidateEmailId(candidateDetails.getCandidateEmailId());
         CandidateDetails savedCandidate;
