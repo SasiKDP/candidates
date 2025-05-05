@@ -144,25 +144,6 @@ public class InterviewController {
                     interviewRequest.isSkipNotification()
                     ); // Added status update
             return ResponseEntity.ok(response);
-       // }
-//        catch (CandidateNotFoundException e) {
-//            logger.error("Candidate not found for userId: {}", userId);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-//                    false, "Candidate not found for the User Id.", null, null
-//            ));
-//        }
-//        catch (InterviewNotScheduledException e) {
-//            logger.error("No interview scheduled for candidateId: {}", candidateId);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
-//                    false, "No scheduled interview found for this candidate.", null, null
-//            ));
-//        }
-//        catch (Exception e) {
-//            logger.error("Error while updating interview: {}", e.getMessage());
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InterviewResponseDto(
-//                    false, "An error occurred while updating the interview.", null, null
-//            ));
-//        }
 
     }
     @PostMapping("/interview-schedule")
@@ -192,9 +173,7 @@ public class InterviewController {
                         null
                 ));
             }
-            //Check if the candidate belongs to the user
-
-            // Proceed with scheduling the interview if the validation passes
+            //Check if the candidate belongs to the user// Proceed with scheduling the interview if the validation passes
             InterviewResponseDto response = interviewService.scheduleInterviewWithOutUserId(
                     interviewRequest.getCandidateId(),
                     interviewRequest.getInterviewDateTime(),

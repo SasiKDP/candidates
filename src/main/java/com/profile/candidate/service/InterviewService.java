@@ -111,6 +111,7 @@ public class InterviewService {
         interviewDetails.setCandidateEmailId(candidateEmailId);
         interviewDetails.setTimestamp(LocalDateTime.now());
         interviewDetails.setIsPlaced(false);
+        interviewDetails.setRecruiterName(candidateRepository.findUserNameByEmail(userEmail));
 
         String clientId = interviewRepository.findClientIdByClientName(clientName);
         if (clientId == null) throw new InvalidClientException("No Client With Name :" + clientName);
@@ -577,7 +578,8 @@ public class InterviewService {
                         i.getClientName(),
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
-                        i.getIsPlaced()
+                        i.getIsPlaced(),
+                        i.getRecruiterName()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", dataList, null);
@@ -613,7 +615,8 @@ public class InterviewService {
                             i.getClientName(),
                             i.getInterviewLevel(),
                             latestInterviewStatusFromJson(i.getInterviewStatus()),
-                            i.getIsPlaced()
+                            i.getIsPlaced(),
+                            i.getRecruiterName()
                     ))
                     .collect(Collectors.toList());
             return new GetInterviewResponse(true, "Interviews found", dataList, null);
@@ -661,7 +664,8 @@ public class InterviewService {
                 i.getClientName(),
                 i.getInterviewLevel(),
                 latestInterviewStatusFromJson(i.getInterviewStatus()),
-                i.getIsPlaced()
+                i.getIsPlaced(),
+                i.getRecruiterName()
         );
         return new GetInterviewResponse(true, "Interview found", List.of(payload), null);
     }
@@ -788,7 +792,8 @@ public class InterviewService {
                         i.getClientName(),
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
-                        i.getIsPlaced()
+                        i.getIsPlaced(),
+                        i.getRecruiterName()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", dataList, null);
@@ -832,7 +837,8 @@ public class InterviewService {
                         i.getClientName(),
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
-                        i.getIsPlaced()
+                        i.getIsPlaced(),
+                        i.getRecruiterName()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
@@ -1039,7 +1045,9 @@ public class InterviewService {
                         i.getClientEmailList(),
                         i.getClientName(),
                         i.getInterviewLevel(),
-                        latestInterviewStatusFromJson(i.getInterviewStatus())
+                        latestInterviewStatusFromJson(i.getInterviewStatus()),
+                        i.getIsPlaced(),
+                        i.getRecruiterName()
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
@@ -1151,7 +1159,6 @@ public class InterviewService {
                             latestInterviewStatus,
                             interview.getRecruiterName(),
                             interview.getIsPlaced()
-
                     ));
                 }
             }
