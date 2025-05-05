@@ -104,6 +104,13 @@ public class CandidateService {
         // Step 6: Set submission details
         String submissionId = savedCandidate.getCandidateId() + "_" + submissionDetails.getJobId();
 
+        // Step 8: Fetch team lead and recruiter details
+        String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submissionDetails.getJobId());
+        String recruiterEmail = savedCandidate.getUserEmail();
+        String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+        String teamLeadName=candidateRepository.findUserNameByEmail(teamLeadEmail);
+
+
         Submissions submission = new Submissions();
         submission.setCandidate(savedCandidate);
         submission.setJobId(submissionDetails.getJobId());
@@ -118,14 +125,11 @@ public class CandidateService {
         submission.setPreferredLocation(submissionDetails.getPreferredLocation());
         submission.setProfileReceivedDate(LocalDate.now());
         submission.setClientName(submissionDetails.getClientName());
+        submission.setSubmittedAt(LocalDateTime.now());
+        submission.setRecruiterName(recruiterName);
         // Save the submission
         submissionRepository.save(submission);
 
-        // Step 8: Fetch team lead and recruiter details
-        String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submissionDetails.getJobId());
-        String recruiterEmail = savedCandidate.getUserEmail();
-        String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
-        String teamLeadName=candidateRepository.findUserNameByEmail(teamLeadEmail);
 
         // Step 9: Send notification if emails are available
         if (recruiterEmail == null || teamLeadEmail == null) {
