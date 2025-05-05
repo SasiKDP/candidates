@@ -64,9 +64,10 @@ public class GetInterviewResponse {
         private String interviewLevel;          // Interview Level (e.g., 1st, 2nd round)
         private String latestInterviewStatus;
         private boolean isPlaced;
+        private String recruiterName;
         //private String emailId;
 
-        public InterviewData(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus, boolean isPlaced) {
+        public InterviewData(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus, boolean isPlaced, String recruiterName) {
             this.interviewId = interviewId;
             this.jobId = jobId;
             this.candidateId = candidateId;
@@ -84,11 +85,20 @@ public class GetInterviewResponse {
             this.interviewLevel = interviewLevel;
             this.latestInterviewStatus = latestInterviewStatus;
             this.isPlaced = isPlaced;
+            this.recruiterName = recruiterName;
         }
 
 
         // Getters and Setters
 
+
+        public String getRecruiterName() {
+            return recruiterName;
+        }
+
+        public void setRecruiterName(String recruiterName) {
+            this.recruiterName = recruiterName;
+        }
 
         public boolean isPlaced() {
             return isPlaced;
