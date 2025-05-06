@@ -8,6 +8,8 @@ import com.profile.candidate.repository.SubmissionRepository;
 import com.profile.candidate.service.CandidateService;
 import com.profile.candidate.service.SubmissionService;
 import jakarta.transaction.Transactional;
+import org.apache.tika.Tika;
+import org.apache.tika.mime.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,8 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.http.*;
 
 @CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
         "http://192.168.0.135:80",
@@ -107,43 +111,53 @@ public class SubmissionController {
         logger.info("Getting Submissions for user Id {}",userId);
         return new ResponseEntity<>(submissionService.getSubmissionsByUserId(userId),HttpStatus.OK);
     }
+
     @GetMapping("/download-resume/{candidateId}/{jobId}")
-    public ResponseEntity<Object> downloadResume(@PathVariable String candidateId,@PathVariable String jobId) {
+    public ResponseEntity<Object> downloadResume(@PathVariable String candidateId, @PathVariable String jobId) {
         try {
             logger.info("Downloading resume for candidate ID: {}", candidateId);
-            Submissions submissions = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
-            if (submissions==null) {
-                logger.error("Submission Not Found with Candidate ID : {} for Job Id :{}",candidateId,jobId);
-                throw new CandidateNotFoundException("Submissions not found with Candidate ID: "+candidateId+" and JobId: "+jobId);
+            Submissions submissions = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, jobId);
+            if (submissions == null) {
+                logger.error("Submission Not Found with Candidate ID : {} for Job Id :{}", candidateId, jobId);
+                throw new CandidateNotFoundException("Submissions not found with Candidate ID: " + candidateId + " and JobId: " + jobId);
             }
-            byte[] resumeBytes = submissions.getResume(); // Assuming `getResume()` returns the BLOB data
 
+            byte[] resumeBytes = submissions.getResume();
             if (resumeBytes == null || resumeBytes.length == 0) {
-                logger.error("Resume is missing for candidate ID and Job Id: {}", candidateId,jobId);
+                logger.error("Resume is missing for candidate ID and Job Id: {}", candidateId, jobId);
                 return ResponseEntity
                         .status(HttpStatus.NOT_FOUND)
                         .body(new ErrorResponseDto(false, "Resume is missing for candidate ID: " + candidateId));
             }
-            // Assuming you want to set the filename based on candidate's name or other criteria
-            String filename = submissions.getCandidate().getFullName()+ "-Resume.pdf"; // Adjust filename logic as needed
-            // Convert the byte array to a ByteArrayResource
+
+            // Detect MIME type using Tika
+            Tika tika = new Tika();
+            String contentType = tika.detect(resumeBytes);
+
+            // Get appropriate file extension
+            String extension;
+            try {
+                extension = MimeTypes.getDefaultMimeTypes().forName(contentType).getExtension();
+            } catch (Exception e) {
+                extension = ".bin"; // fallback if type is unknown
+            }
+
+            // Build dynamic filename
+            String filename = submissions.getCandidate().getFullName().replaceAll("\\s+", "_") + "-Resume" + extension;
+
             ByteArrayResource resource = new ByteArrayResource(resumeBytes);
-            // Set content type (you can change this to match the actual file type)
-            String contentType = "application/pdf"; // You can dynamically determine the content type if needed
-            // Return the file as a response for download
+
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .body(resource);
 
-        }
-        catch (CandidateNotFoundException e) {
+        } catch (CandidateNotFoundException e) {
             logger.error("Candidate not found: {}", e.getMessage());
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponseDto(false, e.getMessage()));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Unexpected error while downloading resume for candidate ID {}: {}", candidateId, e.getMessage());
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
