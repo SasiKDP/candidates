@@ -228,12 +228,46 @@ public class SubmissionController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-//    @GetMapping("/submissions/filterByDate")
-//    public ResponseEntity<SubmissionsGetResponse> getAllSubmissions(
-//        @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-//        @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
-//
-//        return new ResponseEntity<>(submissionService.getAllSubmissionsFilterByDate(startDate,endDate),HttpStatus.OK);
-//    }
+    @PutMapping("/editSubmissionSuperAdmin/{submissionId}")
+    public ResponseEntity<CandidateResponseDto> editSubmissionWithOutUserId(
+            @PathVariable("submissionId") String submissionId,
+            @RequestParam Map<String, String> allParams,
+            @RequestParam(value = "resumeFile", required = false) MultipartFile resumeFile) {
+
+        Submissions updateSubmission = new Submissions();
+        CandidateDetails updatedCandidateDetails = new CandidateDetails();
+
+        updateSubmission.setJobId(allParams.get("jobId"));
+        //updatedCandidateDetails.setUserId(allParams.get("userId"));
+        updatedCandidateDetails.setFullName(allParams.get("fullName"));
+        updatedCandidateDetails.setCandidateEmailId(allParams.get("candidateEmailId"));
+        updatedCandidateDetails.setContactNumber(allParams.get("contactNumber"));
+        updatedCandidateDetails.setQualification(allParams.get("qualification"));
+        if (allParams.get("totalExperience") != null) {
+            updatedCandidateDetails.setTotalExperience(Float.parseFloat(allParams.get("totalExperience")));
+        }
+        updatedCandidateDetails.setCurrentCTC(allParams.get("currentCTC"));
+        updatedCandidateDetails.setExpectedCTC(allParams.get("expectedCTC"));
+        updatedCandidateDetails.setNoticePeriod(allParams.get("noticePeriod"));
+        updatedCandidateDetails.setCurrentLocation(allParams.get("currentLocation"));
+        if (allParams.get("relevantExperience") != null) {
+            updatedCandidateDetails.setRelevantExperience(Float.parseFloat(allParams.get("relevantExperience")));
+        }
+        updatedCandidateDetails.setCurrentOrganization(allParams.get("currentOrganization"));
+        updatedCandidateDetails.setUserEmail(allParams.get("userEmail"));
+
+        updateSubmission.setCandidate(updatedCandidateDetails);
+        updateSubmission.setPreferredLocation(allParams.get("preferredLocation"));
+        updateSubmission.setSkills(allParams.get("skills"));
+        updateSubmission.setCommunicationSkills(allParams.get("communicationSkills"));
+        if (allParams.get("requiredTechnologiesRating") != null) {
+            updateSubmission.setRequiredTechnologiesRating(Double.parseDouble(allParams.get("requiredTechnologiesRating")));
+        }
+        updateSubmission.setOverallFeedback(allParams.get("overallFeedback"));
+
+        CandidateResponseDto response = submissionService.editSubmissionWithOutUserId(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
 
 }
