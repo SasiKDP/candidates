@@ -46,7 +46,8 @@ public class CandidateService {
     private SubmissionRepository submissionRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
-    private String generateCustomId() {
+    private String
+    generateCustomId() {
         Integer maxNumber = candidateRepository.findMaxCandidateNumber();
         int nextNumber = (maxNumber != null) ? maxNumber + 1 : 1;
         return String.format("CAND%05d", nextNumber);
@@ -110,7 +111,6 @@ public class CandidateService {
         String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
         String teamLeadName=candidateRepository.findUserNameByEmail(teamLeadEmail);
 
-
         Submissions submission = new Submissions();
         submission.setCandidate(savedCandidate);
         submission.setJobId(submissionDetails.getJobId());
@@ -130,7 +130,6 @@ public class CandidateService {
         // Save the submission
         submissionRepository.save(submission);
 
-
         // Step 9: Send notification if emails are available
         if (recruiterEmail == null || teamLeadEmail == null) {
             logger.warn("Email not sent: recruiterEmail or teamLeadEmail is null.");
@@ -144,7 +143,6 @@ public class CandidateService {
                 savedCandidate.getUserId(),
                 submissionId
         );
-
         return new CandidateResponseDto(
                 "Success",
                 "Candidate profile submitted successfully.",

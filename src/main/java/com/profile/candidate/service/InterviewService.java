@@ -857,7 +857,6 @@ public class InterviewService {
                         Optional<Map<String, Object>> latestStatus = statusHistory.stream()
                                 .filter(entry -> entry.get("timestamp") != null)
                                 .max(Comparator.comparing(entry -> Instant.parse((String) entry.get("timestamp"))));
-
                         if (latestStatus.isPresent()) {
                             latestInterviewStatus = (String) latestStatus.get().get("status");
                         }
@@ -872,7 +871,6 @@ public class InterviewService {
                 System.err.println("Error reading interview status: " + e.getMessage());
             }
         }
-
         return latestInterviewStatus;
     }
 
@@ -1056,7 +1054,6 @@ public class InterviewService {
         // Convert to LocalDateTime for repository calls
         LocalDateTime startDateTime = startOfMonth.atStartOfDay();
         LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
-
         logger.info("Fetching interviews for userId: {} between {} and {}", userId, startOfMonth, endOfMonth);
 
         // Fetch role

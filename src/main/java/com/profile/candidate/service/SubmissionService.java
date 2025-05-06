@@ -49,7 +49,6 @@ public class SubmissionService {
         SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions found",data,null);
         return response;
     }
-
     public SubmissionsGetResponse getSubmissions(String candidateId) {
         Optional<CandidateDetails> candidateDetails = candidateRepository.findById(candidateId);
         if (candidateDetails.isEmpty()) {
@@ -86,6 +85,7 @@ public class SubmissionService {
         data.setProfileReceivedDate(sub.getProfileReceivedDate());
         data.setRequiredTechnologiesRating(sub.getRequiredTechnologiesRating());
         data.setClientName(sub.getClientName());
+        logger.info("clientNAme :{}",sub.getClientName());
         data.setRecruiterName(sub.getRecruiterName());
         CandidateDetails candidate = sub.getCandidate();
         //CandidateDto candidateDto = new CandidateDto();
@@ -483,6 +483,102 @@ private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions s
                 .collect(Collectors.toList());
         SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions found",data,null);
         return response;
+    }
+    public CandidateResponseDto editSubmissionWithOutUserId(String submissionId, CandidateDetails updatedCandidateDetails, Submissions updatedSubmissionsDetails, MultipartFile resumeFile) {
+
+        Optional<Submissions> submissions = submissionRepository.findById(submissionId);
+        if (submissions.isEmpty())
+            throw new SubmissionNotFoundException("No Submissions Found with Submission Id :" + submissionId);
+        try {
+            logger.info("Edit Submission started for SubmissionId: {}", submissionId);
+            String candidateId = submissionRepository.findCandidateIdBySubmissionId(submissionId);
+            logger.info("Candidate Id fetched with submissionId :" + candidateId);
+            if (candidateId == null)
+                throw new CandidateNotFoundException("No Candidate Found with SubmissionId :" + submissionId);
+            Optional<CandidateDetails> existingCandidateOpt = candidateRepository.findById(candidateId);
+            if (!existingCandidateOpt.isPresent()) {
+                logger.error("No Candidate found with Id {}" + candidateId);
+                throw new CandidateNotFoundException("Candidate Not Exists with candidateId " + candidateId);
+            }
+//            Optional<CandidateDetails> optionalCandidate=candidateRepository.findByCandidateIdAndUserId(candidateId,updatedCandidateDetails.getUserId());
+//            if(optionalCandidate.isEmpty()) {
+//                logger.error("Candidate Id {} Not Related to User Id {}", candidateId, updatedCandidateDetails.getUserId());
+//                throw new CandidateNotFoundException("Candidate Id: " + candidateId + " Not related to UserId: " + updatedCandidateDetails.getUserId());
+//            }
+            Submissions existedSubmission = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, updatedSubmissionsDetails.getJobId());
+            if (existedSubmission == null) {
+                logger.error("Candidate Not Submitted For JobId {} ", updatedSubmissionsDetails.getJobId());
+                throw new SubmissionNotFoundException("Candidate Not Submitted for JobId " + updatedSubmissionsDetails.getJobId());
+            }
+            CandidateDetails existingCandidate = existingCandidateOpt.get();
+            updateCandidateFields(existingCandidate, updatedCandidateDetails);
+            if (resumeFile != null && !resumeFile.isEmpty()) {
+                existedSubmission.setResumeFilePath(updatedSubmissionsDetails.getResumeFilePath());
+            }
+            existedSubmission.setCandidate(existingCandidate);
+            existedSubmission.setJobId(updatedSubmissionsDetails.getJobId());
+            existedSubmission.setSkills(updatedSubmissionsDetails.getSkills());
+            existedSubmission.setPreferredLocation(updatedSubmissionsDetails.getPreferredLocation());
+            existedSubmission.setProfileReceivedDate(LocalDate.now());
+            existedSubmission.setCommunicationSkills(updatedSubmissionsDetails.getCommunicationSkills());
+            existedSubmission.setRequiredTechnologiesRating(updatedSubmissionsDetails.getRequiredTechnologiesRating());
+            existedSubmission.setOverallFeedback(updatedSubmissionsDetails.getOverallFeedback());
+            existedSubmission.setSubmittedAt(LocalDateTime.now());
+
+            if (resumeFile != null && !resumeFile.isEmpty()) {
+                // Convert the resume file to byte[] and set it in the candidateDetails object
+                byte[] resumeData = resumeFile.getBytes();
+                //candidateDetails.setResume(resumeData);// Store the resume as binary data in DB
+                existedSubmission.setResume(resumeData);
+                // Save the resume to the file system and store the file path in DB
+                String resumeFilePath = saveResumeToFileSystem(resumeFile);
+                // candidateDetails.setResumeFilePath(resumeFilePath);// Store the file path in DB
+                existedSubmission.setResumeFilePath(resumeFilePath);
+            }
+            // Update candidate fields with the new data (e.g., name, contact, etc.)
+            updateCandidateFields(existingCandidate, updatedCandidateDetails);
+            if (resumeFile != null && !resumeFile.isEmpty())
+                saveFile(existedSubmission, resumeFile);  // This saves the file and updates the submission's resumeFilePath
+
+            candidateRepository.save(existingCandidate);
+            submissionRepository.save(existedSubmission);
+            // ------------------ 📧 Send Resubmission Notification Email ------------------
+            String recruiterEmail = existingCandidate.getUserEmail();
+            String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
+            String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(existedSubmission.getJobId());
+            String teamLeadName = candidateRepository.findUserNameByEmail(teamLeadEmail);
+            if (recruiterEmail != null && teamLeadEmail != null) {
+                try {
+                    logger.info("Sending candidate resubmission email notification...");
+                    emailService.sendCandidateNotification(existedSubmission, recruiterName, recruiterEmail, teamLeadName, teamLeadEmail, "submission");
+                } catch (Exception e) {
+                    logger.error("Error sending resubmission email: {}", e.getMessage(), e);
+                }
+            } else {
+                logger.warn("Email not sent. recruiterEmail or teamLeadEmail is null. RecruiterEmail: {}, TeamLeadEmail: {}",
+                        recruiterEmail, teamLeadEmail);
+            }
+            // Return a success response with the updated candidate details
+            CandidateResponseDto.CandidateData data = new CandidateResponseDto.CandidateData(
+                    existingCandidate.getCandidateId(),
+                    existingCandidate.getUserId(),
+                    existedSubmission.getSubmissionId()
+            );
+            return new CandidateResponseDto(
+                    "Success",
+                    "Candidate successfully updated",
+                    data,
+                    null);
+        } catch (InvalidFileTypeException ex) {
+            // Custom handling for InvalidFileTypeException
+            logger.error("Invalid file type for resume: {}", ex.getMessage());
+            throw ex; // Rethrow to be caught by GlobalExceptionHandler
+        } catch (IOException ex) {
+            // Specific handling for I/O issues, such as file saving errors
+            logger.error("Failed to save resume file: {}", ex.getMessage());
+            throw new RuntimeException("An error occurred while saving the resume file", ex);
+        }
+
     }
 }
 
