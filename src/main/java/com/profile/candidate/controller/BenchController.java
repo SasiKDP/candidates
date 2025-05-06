@@ -11,6 +11,7 @@ import com.profile.candidate.model.BenchDetails;
 import com.profile.candidate.repository.BenchRepository;
 import com.profile.candidate.service.BenchService;
 import jakarta.persistence.EntityNotFoundException;
+import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -313,7 +314,6 @@ public class BenchController {
     @GetMapping("/bench/download/{id}")
     public ResponseEntity<byte[]> downloadResume(@PathVariable String id) {
         try {
-            // Fetch BenchDetails by ID
             Optional<BenchDetails> benchDetailsOptional = benchRepository.findById(id);
             if (benchDetailsOptional.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
@@ -325,15 +325,35 @@ public class BenchController {
             if (resumeFile == null || resumeFile.length == 0) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             }
-            // **Use actual filename stored in the database (or default name)**
-            String fileName = benchDetails.getFullName(); // Assuming you have this field in your entity
 
-            if (fileName == null || fileName.isBlank()) {
-                fileName = "Resume_" + id + ".pdf"; // Fallback name
+            Tika tika = new Tika();
+            String contentType = tika.detect(resumeFile);
+
+            // Map content type to correct file extension
+            String extension;
+            switch (contentType) {
+                case "application/pdf":
+                    extension = ".pdf";
+                    break;
+                case "application/msword":
+                    extension = ".doc";
+                    break;
+                case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    extension = ".docx";
+                    break;
+                default:
+                    extension = ".bin"; // fallback
+                    break;
             }
-            // **Return the file with correct Content-Disposition**
+
+            String fileName = benchDetails.getFullName();
+            if (fileName == null || fileName.isBlank()) {
+                fileName = "Resume_" + id;
+            }
+            fileName = fileName.replaceAll("\\s+", "_") + extension;
+
             return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_PDF)
+                    .contentType(MediaType.parseMediaType(contentType))
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                     .body(resumeFile);
 
@@ -341,5 +361,4 @@ public class BenchController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
-
 }
