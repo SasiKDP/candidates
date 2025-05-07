@@ -145,10 +145,13 @@ public class InterviewService {
         if (!skipNotification) {
             String jobTitle = interviewRepository.findJobTitleByJobId(jobId);
             String subject = "Interview Scheduled for " + interviewDetails.getFullName();
+            // Convert the interview time to IST timezone
+            ZoneOffset istOffset = ZoneOffset.of("+05:30");
+            OffsetDateTime interviewTimeInIST = interviewDateTime.withOffsetSameInstant(istOffset);
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
             DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-            String formattedDate = interviewDateTime.format(dateFormatter);
-            String formattedTime = interviewDateTime.format(timeFormatter);
+            String formattedDate = interviewTimeInIST.format(dateFormatter);  // formatted date in IST
+            String formattedTime = interviewTimeInIST.format(timeFormatter);  // formatted time in IST
             String userName = interviewRepository.findUsernameByUserId(userId);
             emailService.sendEmailToUser(userEmail, subject, buildUserScheduleEmailBody(userName, clientName,
                     formattedDate, formattedTime, duration, zoomLink, jobTitle, interviewDetails.getFullName()));
@@ -305,10 +308,13 @@ public class InterviewService {
         interviewRepository.save(interviewDetails);
         logger.info("Interview details updated successfully for candidateId: {}", candidateId);
         // Prepare email content
+        ZoneOffset istOffset = ZoneOffset.of("+05:30");
+        OffsetDateTime interviewTimeInIST = (interviewDateTime != null) ? interviewDateTime.withOffsetSameInstant(istOffset) : null;
+
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-        String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(dateFormatter) : "N/A";
-        String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(timeFormatter) : "N/A";
+        String formattedDate = (interviewTimeInIST != null) ? interviewTimeInIST.format(dateFormatter) : "N/A";
+        String formattedTime = (interviewTimeInIST != null) ? interviewTimeInIST.format(timeFormatter) : "N/A";
         String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
         String formattedZoomLink = (zoomLink != null && !zoomLink.isEmpty()) ? "<a href='" + zoomLink + "'>Click here to join</a>" : "N/A";
         String subject = "Interview Update for " + interviewDetails.getFullName();
@@ -467,10 +473,13 @@ public class InterviewService {
         interviewRepository.save(interviewDetails);
         logger.info("Interview details updated successfully for candidateId: {}", candidateId);
         // Prepare email content
+        ZoneOffset istOffset = ZoneOffset.of("+05:30");
+        OffsetDateTime interviewTimeInIST = (interviewDateTime != null) ? interviewDateTime.withOffsetSameInstant(istOffset) : null;
+
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-        String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(dateFormatter) : "N/A";
-        String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(timeFormatter) : "N/A";
+        String formattedDate = (interviewTimeInIST != null) ? interviewTimeInIST.format(dateFormatter) : "N/A";
+        String formattedTime = (interviewTimeInIST != null) ? interviewTimeInIST.format(timeFormatter) : "N/A";
         String formattedDuration = (duration != null) ? duration + " minutes" : "N/A";
         String formattedZoomLink = (zoomLink != null && !zoomLink.isEmpty()) ? "<a href='" + zoomLink + "'>Click here to join</a>" : "N/A";
 
@@ -738,10 +747,13 @@ public class InterviewService {
         if (!skipNotification) {
             //sending mails
             String jobTitle = interviewRepository.findJobTitleByJobId(jobId);
+            ZoneOffset istOffset = ZoneOffset.of("+05:30");
+            OffsetDateTime interviewTimeInIST = (interviewDateTime != null) ? interviewDateTime.withOffsetSameInstant(istOffset) : null;
+
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
             DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-            String formattedDate = (interviewDateTime != null) ? interviewDateTime.format(dateFormatter) : "N/A";
-            String formattedTime = (interviewDateTime != null) ? interviewDateTime.format(timeFormatter) : "N/A";
+            String formattedDate = (interviewTimeInIST != null) ? interviewTimeInIST.format(dateFormatter) : "N/A";
+            String formattedTime = (interviewTimeInIST != null) ? interviewTimeInIST.format(timeFormatter) : "N/A";
 
             String subject = "Interview Scheduled for " + interviewDetails.getFullName();
             emailService.sendEmailsToClients(interviewDetails.getClientEmailList(), subject, buildClientScheduleEmailBody(clientName,

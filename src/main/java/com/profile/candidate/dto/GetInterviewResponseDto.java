@@ -21,21 +21,26 @@ public class GetInterviewResponseDto {
     private List<String> clientEmail;             // Client Email
     private String clientName;              // Client Name
     private String interviewLevel;          // Interview Level (e.g., 1st, 2nd round)
-    private String interviewStatus;
+    private String latestInterviewStatus;
     private String recruiterName;
     private boolean isPlaced;// New field for status
 
 
     // Constructor
 
-    public GetInterviewResponseDto(String interviewId, String jobId,
-                                   String candidateId, String candidateFullName,
-                                   String candidateContactNo, String candidateEmailId,
-                                   String userEmail, String userId, OffsetDateTime interviewDateTime,
-                                   Integer duration, String zoomLink,
-                                   LocalDateTime interviewScheduledTimestamp, List<String> clientEmail,
-                                   String clientName, String interviewLevel, String interviewStatus,
-                                   String recruiterName, boolean isPlaced) {
+
+    // Getters and Setters
+
+
+    public String getRecruiterName() {
+        return recruiterName;
+    }
+
+    public void setRecruiterName(String recruiterName) {
+        this.recruiterName = recruiterName;
+    }
+
+    public GetInterviewResponseDto(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus, String recruiterName, boolean isPlaced) {
         this.interviewId = interviewId;
         this.jobId = jobId;
         this.candidateId = candidateId;
@@ -51,21 +56,9 @@ public class GetInterviewResponseDto {
         this.clientEmail = clientEmail;
         this.clientName = clientName;
         this.interviewLevel = interviewLevel;
-        this.interviewStatus = interviewStatus;
+        this.latestInterviewStatus = latestInterviewStatus;
         this.recruiterName = recruiterName;
         this.isPlaced = isPlaced;
-    }
-
-
-    // Getters and Setters
-
-
-    public String getRecruiterName() {
-        return recruiterName;
-    }
-
-    public void setRecruiterName(String recruiterName) {
-        this.recruiterName = recruiterName;
     }
 
     public boolean getIsPlaced() {
@@ -164,14 +157,13 @@ public class GetInterviewResponseDto {
         this.interviewScheduledTimestamp = interviewScheduledTimestamp;
     }
 
-    public String getInterviewStatus() {
-        return interviewStatus;
+    public String getLatestInterviewStatus() {
+        return latestInterviewStatus;
     }
 
-    public void setInterviewStatus(String interviewStatus) {
-        this.interviewStatus = interviewStatus;
+    public void setLatestInterviewStatus(String latestInterviewStatus) {
+        this.latestInterviewStatus = latestInterviewStatus;
     }
-
 
     public List<String> getClientEmail() {
         return clientEmail;
