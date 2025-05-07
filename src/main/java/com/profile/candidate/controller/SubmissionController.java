@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.*;
-
 @CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
         "http://192.168.0.135:80",
         "http://mymulya.com:443",
@@ -268,6 +267,5 @@ public class SubmissionController {
         CandidateResponseDto response = submissionService.editSubmissionWithOutUserId(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
 
 }
