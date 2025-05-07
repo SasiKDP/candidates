@@ -75,6 +75,7 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
     @Query(value = """
             SELECT 
                 c.job_id,
+                c.interview_id AS interview_id,
                 c.candidate_id,
                 c.full_name,
                 c.contact_number,
@@ -89,7 +90,8 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
                 c.client_name,
                 c.interview_level,
                 c.interview_status,
-                c.is_placed 
+                c.is_placed,
+                c.recruiter_name AS recruiterName
             FROM 
                 interview_details c
             WHERE 
