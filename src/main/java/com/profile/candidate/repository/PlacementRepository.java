@@ -35,8 +35,8 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
             "(SELECT COUNT(*) FROM bench_details WHERE created_date BETWEEN :startDate AND :endDate) AS benchCount, " +
             "(SELECT COUNT(*) FROM user_details WHERE created_at BETWEEN :startDate AND :endDate) AS usersCount, " +
             "(SELECT COUNT(*) FROM production.interview_details WHERE timestamp BETWEEN :startDate AND :endDate) AS interviewsCount, " +
-            "(SELECT COUNT(*) FROM production.interview_details WHERE timestamp BETWEEN :startDate AND :endDate AND LOWER(TRIM(interview_level)) = 'internal') AS internalInterviews, " +
-            "(SELECT COUNT(*) FROM production.interview_details WHERE timestamp BETWEEN :startDate AND :endDate AND LOWER(TRIM(interview_level)) IN ('external', 'external-l1', 'external-l2', 'external-final')) AS externalInterviews, " +
+            "(SELECT COUNT(*) FROM production.interview_details WHERE timestamp BETWEEN :startDate AND :endDate AND interview_level = 'INTERNAL') AS internal_interviews_count, " +  // Changed name
+            "(SELECT COUNT(*) FROM production.interview_details WHERE timestamp BETWEEN :startDate AND :endDate AND (interview_level = 'EXTERNAL' OR interview_level = 'EXTERNAL-L1' OR interview_level = 'EXTERNAL-L2' OR interview_level = 'FINAL')) AS external_interviews_count, " +  // Changed name
             "(SELECT COUNT(*) FROM job_recruiters jr " +
             "JOIN requirements_model rm ON jr.job_id = rm.job_id " +
             "WHERE rm.requirement_added_time_stamp BETWEEN :startDate AND :endDate AND jr.recruiter_id = :recruiterId) AS assignedCount",

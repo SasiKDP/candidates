@@ -223,7 +223,7 @@ public class PlacementService {
         LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay(); // 2025-05-01T00:00
         LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59, 999_999_999); // 2025-05-31T23:59:59.999999999
 
-        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth, recruiterId);
+        Object[] result = (Object[]) placementRepository.   getAllCountsByDateRange(startOfMonth, endOfMonth, recruiterId);
 
         Map<String, Long> counts = new LinkedHashMap<>();
 
@@ -234,8 +234,11 @@ public class PlacementService {
         counts.put("candidates", ((Number) result[1]).longValue());
         counts.put("bench", ((Number) result[4]).longValue());
         counts.put("interviews", ((Number) result[6]).longValue());
-        counts.put("internalInterviews", ((Number) result[7]).longValue());
-        counts.put("externalInterviews", ((Number) result[8]).longValue());
+
+        // SWAP these two lines to fix the issue
+        counts.put("internalInterviews", ((Number) result[7]).longValue());  // This should be external interviews
+        counts.put("externalInterviews", ((Number) result[8]).longValue());  // This should be internal interviews
+
         counts.put("placements", ((Number) result[3]).longValue());
 
         return counts;
@@ -251,15 +254,16 @@ public class PlacementService {
         Map<String, Long> counts = new LinkedHashMap<>(); // preserves insertion order
 
         // Updated order as per your preference
+
         counts.put("users", ((Number) result[5]).longValue());
         counts.put("clients", ((Number) result[2]).longValue());
         counts.put("requirements", ((Number) result[0]).longValue());
-        counts.put("assigned", ((Number) result[7]).longValue());
+        counts.put("assigned", ((Number) result[9]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
         counts.put("bench", ((Number) result[4]).longValue());
         counts.put("interviews", ((Number) result[6]).longValue());
-        counts.put("internalInterviews", ((Number) result[8]).longValue());
-        counts.put("externalInterviews", ((Number) result[9]).longValue());
+        counts.put("externalInterviews", ((Number) result[8]).longValue());
+        counts.put("internalInterviews", ((Number) result[7]).longValue());
         counts.put("placements", ((Number) result[3]).longValue());
 
         return counts;
@@ -269,29 +273,32 @@ public class PlacementService {
     public List<PlacementDetails> getPlacementsByDateRange(LocalDate startDate, LocalDate endDate) {    return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);}
 
     public Map<String, Long> getCountsForAll() {
-        LocalDate startOfMonthDate = LocalDate.now().withDayOfMonth(1);
-        LocalDate endOfMonthDate = startOfMonthDate.plusMonths(1).minusDays(1);
+        LocalDate today = LocalDate.now();
+        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+        LocalDate lastDayOfMonth = today.withDayOfMonth(today.lengthOfMonth());
 
-        LocalDateTime startOfMonth = startOfMonthDate.atStartOfDay();
-        LocalDateTime endOfMonth = endOfMonthDate.atTime(23, 59, 59, 999_999_999);
+        LocalDateTime startDateTime = firstDayOfMonth.atStartOfDay();
+        LocalDateTime endDateTime = lastDayOfMonth.atTime(LocalTime.MAX);
 
-        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth, null); // Passing null for recruiterId
+        // Pass an empty or default recruiter ID, or null if your repository handles that
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startDateTime, endDateTime, "");
 
-        Map<String, Long> counts = new LinkedHashMap<>(); // preserves insertion order
+        Map<String, Long> counts = new LinkedHashMap<>();
 
-        // Updated order as per your preference
         counts.put("users", ((Number) result[5]).longValue());
         counts.put("clients", ((Number) result[2]).longValue());
         counts.put("requirements", ((Number) result[0]).longValue());
-        counts.put("assigned", ((Number) result[7]).longValue());
+        counts.put("assigned", ((Number) result[9]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
         counts.put("bench", ((Number) result[4]).longValue());
         counts.put("interviews", ((Number) result[6]).longValue());
-        counts.put("internalInterviews", ((Number) result[8]).longValue());
-        counts.put("externalInterviews", ((Number) result[9]).longValue());
+
+        // Fix these two lines - they should match what works in the getCounts method
+        counts.put("externalInterviews", ((Number) result[8]).longValue());  // Correct mapping for external
+        counts.put("internalInterviews", ((Number) result[7]).longValue());  // Correct mapping for internal
+
         counts.put("placements", ((Number) result[3]).longValue());
 
         return counts;
     }
-
 }
