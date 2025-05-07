@@ -295,22 +295,8 @@ public class InterviewService {
         if (interviewDetails.getInterviewLevel() == null) {
             interviewDetails.setInterviewLevel(determineInterviewType(clientEmails, zoomLink));
         }
-        // Handle internal vs. external interview constraints
-        if ("External".equalsIgnoreCase(interviewDetails.getInterviewLevel())) {
-            // External interview: Only update clientEmail and zoomLink if provided, don't nullify
-            if (clientEmails != null || clientEmails.isEmpty()) interviewDetails.setClientEmailList(clientEmails);
-            if (zoomLink != null) interviewDetails.setZoomLink(zoomLink);
-        } else {
-            // Internal interview: Ensure clientEmail and zoomLink are mandatory
-            if (clientEmails == null || clientEmails.isEmpty()) {
-                throw new IllegalArgumentException("Client email is required for Internal interviews.");
-            }
-            if (zoomLink == null || zoomLink.isEmpty()) {
-                throw new IllegalArgumentException("Zoom link is required for Internal interviews.");
-            }
             interviewDetails.setClientEmailList(clientEmails);
             interviewDetails.setZoomLink(zoomLink);
-        }
         // Update timestamp
         interviewDetails.setTimestamp(LocalDateTime.now());
         // Save updated candidate details
@@ -1052,7 +1038,6 @@ public class InterviewService {
         LocalDate today = LocalDate.now();
         LocalDate startOfMonth = today.withDayOfMonth(1);
         LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
-
         // Convert to LocalDateTime for repository calls
         LocalDateTime startDateTime = startOfMonth.atStartOfDay();
         LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
