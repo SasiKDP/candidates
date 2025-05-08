@@ -3,8 +3,10 @@ package com.profile.candidate.service;
 import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
+import com.profile.candidate.model.InterviewDetails;
 import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.CandidateRepository;
+import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.repository.SubmissionRepository;
 import jakarta.persistence.Tuple;
 import jakarta.transaction.Transactional;
@@ -35,6 +37,8 @@ public class SubmissionService {
     CandidateRepository candidateRepository;
     @Autowired
     InterviewEmailService emailService;
+    @Autowired
+    InterviewRepository interviewRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(SubmissionService.class);
 
@@ -124,9 +128,13 @@ public class SubmissionService {
         String jobIdBeforeDelete = submission.getJobId();
         // Delete the candidate from the repository
         submissionRepository.delete(submission);
-         logger.info("Candidate with ID {} deleted successfully", submissionId);
-         logger.info("recruiterName {} and  recruiterEmail {} and teamLeadEmail {} and teamLeadName {} ",recruiterName,recruiterEmail,teamLeadEmail,teamLeadName);
-        emailService.sendCandidateNotification(submission, recruiterName, recruiterEmail, teamLeadName,teamLeadEmail, "deletion");
+        logger.info("Candidate with ID {} deleted successfully", submissionId);
+
+        InterviewDetails interview=interviewRepository.findInterviewsByCandidateIdAndJobId(submission.getCandidate().getCandidateId(),submission.getJobId());
+        if (interview!=null){
+            interviewRepository.delete(interview);
+        }
+        logger.info("Interview with ID {} deleted successfully", interview.getInterviewId());
         // Prepare the response with candidate details
         DeleteSubmissionResponseDto.SubmissionData data = new DeleteSubmissionResponseDto.SubmissionData(submissionIdBeforeDelete, jobIdBeforeDelete);
 
