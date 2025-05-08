@@ -169,12 +169,22 @@ public class PlacementService {
     // ✅ UPDATED: Return full placement details using PlacementDto
     public List<PlacementDetails> getAllPlacements() {
         LocalDate now = LocalDate.now();
-        LocalDate startDate = now.withDayOfMonth(1);
-        // 1st of current month    LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth()); // last day of current month    return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);// Fetch directly from PlacementDetails table
-        LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth());
-        return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
-    }
+        LocalDate startDate = now.withDayOfMonth(1); // 1st of current month
+        LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth()); // last day of current month
 
+        logger.info("Fetching placements between {} and {}", startDate, endDate);
+
+        List<PlacementDetails> allPlacements = placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
+        logger.info("Total placements found: {}", allPlacements.size());
+
+        List<PlacementDetails> activePlacements = allPlacements.stream()
+                .filter(placement -> "Active".equalsIgnoreCase(placement.getStatus()))
+                .collect(Collectors.toList());
+
+        logger.info("Active placements count: {}", activePlacements.size());
+
+        return activePlacements;
+    }
 
     public PlacementResponseDto getPlacementById(String id) {
         PlacementDetails placement = placementRepository.findById(id)
