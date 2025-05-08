@@ -130,7 +130,7 @@ public class PlacementService {
                 existing.setStartDate(LocalDate.parse(start, formatter)));
         Optional.ofNullable(dto.getEndDate()).ifPresent(end ->
                 existing.setEndDate(LocalDate.parse(end, formatter)));
-        Optional.ofNullable(dto.getRecruiter()).ifPresent(existing::setRecruiter);
+        Optional.ofNullable(dto.getRecruiterName()).ifPresent(existing::setRecruiterName);
         Optional.ofNullable(dto.getSales()).ifPresent(existing::setSales);
         Optional.ofNullable(dto.getEmploymentType()).ifPresent(existing::setEmploymentType);
         Optional.ofNullable(dto.getRemarks()).ifPresent(existing::setRemarks);
@@ -205,7 +205,7 @@ public class PlacementService {
         entity.setVendorName(dto.getVendorName());
         entity.setStartDate(dto.getStartDate() != null ? LocalDate.parse(dto.getStartDate(), formatter) : null);
         entity.setEndDate(dto.getEndDate() != null ? LocalDate.parse(dto.getEndDate(), formatter) : null);
-        entity.setRecruiter(dto.getRecruiter());
+        entity.setRecruiterName(dto.getRecruiterName());
         entity.setSales(dto.getSales());
         entity.setPayRate(dto.getPayRate());
         entity.setBillRate(dto.getBillRate());
