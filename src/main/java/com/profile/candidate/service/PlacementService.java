@@ -185,7 +185,7 @@ public class PlacementService {
         logger.info("Total placements found: {}", allPlacements.size());
 
         List<PlacementDetails> activePlacements = allPlacements.stream()
-                .filter(placement -> "Active".equalsIgnoreCase(placement.getStatus()))
+                .filter(placement -> !"inactive".equalsIgnoreCase(placement.getStatus()))
                 .collect(Collectors.toList());
 
         logger.info("Active placements count: {}", activePlacements.size());
