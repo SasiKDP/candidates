@@ -151,11 +151,6 @@ public class PlacementController {
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String recruiterId) {
 
-        if (recruiterId == null || recruiterId.trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Missing required parameter: recruiterId"));
-        }
-
         if (endDate.isBefore(startDate)) {
             logger.warn("End date {} is before start date {}", endDate, startDate);
             return ResponseEntity.badRequest()
@@ -163,7 +158,13 @@ public class PlacementController {
         }
 
         try {
-            Map<String, Long> counts = service.getCountsByDateRange(startDate, endDate, recruiterId);
+            Map<String, Long> counts;
+
+            if (recruiterId != null && !recruiterId.trim().isEmpty()) {
+                counts = service.getCountsByDateRange(startDate, endDate, recruiterId);
+            } else {
+                counts = service.getCountsByDateRangeForAll(startDate, endDate); // Add this method to your service
+            }
 
             if (counts.values().stream().allMatch(count -> count == 0)) {
                 logger.warn("No dashboard data found between {} and {}", startDate, endDate);
@@ -179,4 +180,5 @@ public class PlacementController {
                     .body(Map.of("message", "An error occurred while fetching dashboard counts"));
         }
     }
+
 }

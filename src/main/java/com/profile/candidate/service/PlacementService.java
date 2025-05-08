@@ -233,7 +233,7 @@ public class PlacementService {
         LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay(); // 2025-05-01T00:00
         LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59, 999_999_999); // 2025-05-31T23:59:59.999999999
 
-        Object[] result = (Object[]) placementRepository.   getAllCountsByDateRange(startOfMonth, endOfMonth, recruiterId);
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth, recruiterId);
 
         Map<String, Long> counts = new LinkedHashMap<>();
 
@@ -311,4 +311,28 @@ public class PlacementService {
 
         return counts;
     }
+
+    public Map<String, Long> getCountsByDateRangeForAll(LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime startDateTime = fromDate.atStartOfDay();
+        LocalDateTime endDateTime = toDate.atTime(LocalTime.MAX);
+
+        // Pass empty recruiterId to indicate no filter
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startDateTime, endDateTime, "");
+
+        Map<String, Long> counts = new LinkedHashMap<>();
+
+        counts.put("users", ((Number) result[5]).longValue());
+        counts.put("clients", ((Number) result[2]).longValue());
+        counts.put("requirements", ((Number) result[0]).longValue());
+        counts.put("assigned", ((Number) result[9]).longValue());
+        counts.put("candidates", ((Number) result[1]).longValue());
+        counts.put("bench", ((Number) result[4]).longValue());
+        counts.put("interviews", ((Number) result[6]).longValue());
+        counts.put("externalInterviews", ((Number) result[8]).longValue());
+        counts.put("internalInterviews", ((Number) result[7]).longValue());
+        counts.put("placements", ((Number) result[3]).longValue());
+
+        return counts;
+    }
+
 }
