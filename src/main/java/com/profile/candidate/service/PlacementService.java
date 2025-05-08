@@ -169,12 +169,22 @@ public class PlacementService {
     // ✅ UPDATED: Return full placement details using PlacementDto
     public List<PlacementDetails> getAllPlacements() {
         LocalDate now = LocalDate.now();
-        LocalDate startDate = now.withDayOfMonth(1);
-        // 1st of current month    LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth()); // last day of current month    return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);// Fetch directly from PlacementDetails table
-        LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth());
-        return placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
-    }
+        LocalDate startDate = now.withDayOfMonth(1); // 1st of current month
+        LocalDate endDate = now.withDayOfMonth(now.lengthOfMonth()); // last day of current month
 
+        logger.info("Fetching placements between {} and {}", startDate, endDate);
+
+        List<PlacementDetails> allPlacements = placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
+        logger.info("Total placements found: {}", allPlacements.size());
+
+        List<PlacementDetails> activePlacements = allPlacements.stream()
+                .filter(placement -> "Active".equalsIgnoreCase(placement.getStatus()))
+                .collect(Collectors.toList());
+
+        logger.info("Active placements count: {}", activePlacements.size());
+
+        return activePlacements;
+    }
 
     public PlacementResponseDto getPlacementById(String id) {
         PlacementDetails placement = placementRepository.findById(id)
@@ -223,7 +233,7 @@ public class PlacementService {
         LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay(); // 2025-05-01T00:00
         LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59, 999_999_999); // 2025-05-31T23:59:59.999999999
 
-        Object[] result = (Object[]) placementRepository.   getAllCountsByDateRange(startOfMonth, endOfMonth, recruiterId);
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth, recruiterId);
 
         Map<String, Long> counts = new LinkedHashMap<>();
 
@@ -301,4 +311,28 @@ public class PlacementService {
 
         return counts;
     }
+
+    public Map<String, Long> getCountsByDateRangeForAll(LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime startDateTime = fromDate.atStartOfDay();
+        LocalDateTime endDateTime = toDate.atTime(LocalTime.MAX);
+
+        // Pass empty recruiterId to indicate no filter
+        Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startDateTime, endDateTime, "");
+
+        Map<String, Long> counts = new LinkedHashMap<>();
+
+        counts.put("users", ((Number) result[5]).longValue());
+        counts.put("clients", ((Number) result[2]).longValue());
+        counts.put("requirements", ((Number) result[0]).longValue());
+        counts.put("assigned", ((Number) result[9]).longValue());
+        counts.put("candidates", ((Number) result[1]).longValue());
+        counts.put("bench", ((Number) result[4]).longValue());
+        counts.put("interviews", ((Number) result[6]).longValue());
+        counts.put("externalInterviews", ((Number) result[8]).longValue());
+        counts.put("internalInterviews", ((Number) result[7]).longValue());
+        counts.put("placements", ((Number) result[3]).longValue());
+
+        return counts;
+    }
+
 }
