@@ -56,56 +56,63 @@ public class PlacementService {
     public PlacementResponseDto savePlacement(PlacementDto placementDto) {
         PlacementDetails placementDetails = convertToEntity(placementDto);
 
-        // Validate payRate < billRate
-        if (placementDetails.getPayRate() != null && placementDetails.getBillRate() != null) {
-            if (placementDetails.getPayRate().compareTo(placementDetails.getBillRate()) > 0) {
-                throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate.");
-            }
-        }
-
-        placementDetails.setId(generateCustomId());
-        logger.info("Generated ID is: " + placementDetails.getId());
-
-        // Calculate Gross Profit
-        if (placementDetails.getBillRate() != null && placementDetails.getPayRate() != null) {
-            BigDecimal grossProfit = placementDetails.getBillRate()
-                    .subtract(placementDetails.getPayRate())
-                    .setScale(2, RoundingMode.HALF_UP);
-            placementDetails.setGrossProfit(grossProfit);
-        }
-
-        // Check for duplicate interview ID
-        if (placementDto.getInterviewId() != null) {
-            boolean alreadyPlaced = placementRepository.existsByInterviewId(placementDto.getInterviewId());
-            if (alreadyPlaced) {
-                throw new DuplicateInterviewPlacementException("Interview ID " + placementDto.getInterviewId() + " is already used in a placement.");
+        PlacementDetails placement = placementRepository.findByCandidateContactNoAndClientName(placementDto.getCandidateContactNo(),placementDto.getClientName());
+        if (placement == null) {
+            // Validate payRate < billRate
+            if (placementDetails.getPayRate() != null && placementDetails.getBillRate() != null) {
+                if (placementDetails.getPayRate().compareTo(placementDetails.getBillRate()) > 0) {
+                    throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate.");
+                }
             }
 
-            // Update interviewDetails.isPlaced = true
-            Optional<InterviewDetails> interviewDetailsOpt = interviewRepository.findById(placementDto.getInterviewId());
-            if (interviewDetailsOpt.isPresent()) {
-                InterviewDetails interviewDetails = interviewDetailsOpt.get();
-                interviewDetails.setIsPlaced(true);
-                interviewRepository.save(interviewDetails);
-                logger.info("Interview details updated: " + interviewDetails);
+            placementDetails.setId(generateCustomId());
+            logger.info("Generated ID is: " + placementDetails.getId());
+
+            // Calculate Gross Profit
+            if (placementDetails.getBillRate() != null && placementDetails.getPayRate() != null) {
+                BigDecimal grossProfit = placementDetails.getBillRate()
+                        .subtract(placementDetails.getPayRate())
+                        .setScale(2, RoundingMode.HALF_UP);
+                placementDetails.setGrossProfit(grossProfit);
+            }
+
+            // Check for duplicate interview ID
+            if (placementDto.getInterviewId() != null) {
+                boolean alreadyPlaced = placementRepository.existsByInterviewId(placementDto.getInterviewId());
+                if (alreadyPlaced) {
+                    throw new DuplicateInterviewPlacementException("Interview ID " + placementDto.getInterviewId() + " is already used in a placement.");
+                }
+
+                // Update interviewDetails.isPlaced = true
+                Optional<InterviewDetails> interviewDetailsOpt = interviewRepository.findById(placementDto.getInterviewId());
+                if (interviewDetailsOpt.isPresent()) {
+                    InterviewDetails interviewDetails = interviewDetailsOpt.get();
+                    interviewDetails.setIsPlaced(true);
+                    interviewRepository.save(interviewDetails);
+                    logger.info("Interview details updated: " + interviewDetails);
+                } else {
+                    logger.warn("Interview ID " + placementDto.getInterviewId() + " not found. Proceeding without updating interview details.");
+                }
+
             } else {
-                logger.warn("Interview ID " + placementDto.getInterviewId() + " not found. Proceeding without updating interview details.");
+                logger.info("No interview ID provided. Skipping interview details update.");
             }
 
-        } else {
-            logger.info("No interview ID provided. Skipping interview details update.");
+            placementDetails.setStatus("Active");
+
+            PlacementDetails saved = placementRepository.save(placementDetails);
+            boolean isPlaced = "Active".equalsIgnoreCase(saved.getStatus());
+
+            return new PlacementResponseDto(
+                    saved.getId(),
+                    saved.getCandidateFullName(),
+                    saved.getCandidateContactNo(),
+                    isPlaced
+            );
         }
-
-        placementDetails.setStatus("Active");
-        PlacementDetails saved = placementRepository.save(placementDetails);
-        boolean isPlaced = "Active".equalsIgnoreCase(saved.getStatus());
-
-        return new PlacementResponseDto(
-                saved.getId(),
-                saved.getCandidateFullName(),
-                saved.getCandidateContactNo(),
-                isPlaced
-        );
+        else {
+            throw new CandidateAlreadyExistsException("Placement Already Exists");
+        }
     }
 
 

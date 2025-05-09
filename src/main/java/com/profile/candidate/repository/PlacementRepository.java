@@ -52,4 +52,5 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
     );
 
 
+    PlacementDetails findByCandidateContactNoAndClientName(String candidateContactNo, String clientName);
 }
