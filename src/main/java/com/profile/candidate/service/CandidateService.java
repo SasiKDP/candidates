@@ -130,6 +130,8 @@ public class CandidateService {
         // Save the submission
         submissionRepository.save(submission);
 
+        // Update the requirement status after saving the candidate
+        submissionRepository.updateRequirementStatus(submission.getJobId());
 
         // Step 9: Send notification if emails are available
         if (recruiterEmail == null || teamLeadEmail == null) {

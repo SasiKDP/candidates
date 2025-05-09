@@ -3,7 +3,9 @@ package com.profile.candidate.repository;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.Submissions;
 import jakarta.persistence.Tuple;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -124,5 +126,11 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
     List<Submissions> findByProfileReceivedDateBetween(LocalDate start, LocalDate end);
 
 
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE requirements_model r SET r.status = 'Submitted' " +
+            "WHERE r.job_id = :jobId AND EXISTS " +
+            "(SELECT 1 FROM candidate_submissions c WHERE c.job_id = :jobId)", nativeQuery = true)
+    void updateRequirementStatus(@Param("jobId") String jobId);
 
 }
