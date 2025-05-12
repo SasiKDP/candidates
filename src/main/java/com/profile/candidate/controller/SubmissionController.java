@@ -2,6 +2,7 @@ package com.profile.candidate.controller;
 
 import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.CandidateNotFoundException;
+import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.SubmissionRepository;
@@ -267,5 +268,21 @@ public class SubmissionController {
         CandidateResponseDto response = submissionService.editSubmissionWithOutUserId(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
+    @GetMapping("/submissions/teamlead/{userId}/filterByDate")
+    public ResponseEntity<?> getSubmissionsByDateRange(@PathVariable String userId,
+      @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        try {
+            TeamleadSubmissionsDTO submissions = submissionService.getSubmissionsForTeamlead(userId, startDate, endDate);
+            return ResponseEntity.ok(submissions);
+        } catch (DateRangeValidationException e) {
+            logger.warn("Invalid date range: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error fetching submissions for userId: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("message", "An error occurred while fetching submissions"));
+        }
+    }
 }
