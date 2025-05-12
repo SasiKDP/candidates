@@ -350,34 +350,38 @@ public class SubmissionService {
         return tuples.stream().map(tuple -> {
             SubmissionGetResponseDto dto = new SubmissionGetResponseDto();
 
+            // Common fields from both queries
             dto.setSubmissionId(tuple.get("submission_id", String.class));
             dto.setCandidateId(tuple.get("candidate_id", String.class));
             dto.setFullName(tuple.get("full_name", String.class));
-            dto.setUserName(tuple.get("user_name",String.class));
-            dto.setUserEmail(tuple.get("user_email", String.class));
-            dto.setSkills(tuple.get("skills", String.class)); // Corrected field mapping
-            dto.setPreferredLocation(tuple.get("preferred_location", String.class)); // Corrected field mapping
+            dto.setSkills(tuple.get("skills", String.class));
             dto.setJobId(tuple.get("job_id", String.class));
-            dto.setUserId(tuple.get("user_id",String.class));
-            dto.setUserEmail(tuple.get("user_email", String.class)); // Corrected field mapping
-            dto.setClientName(tuple.get("client_name", String.class)); // Corrected field mapping
+            dto.setUserId(tuple.get("user_id", String.class));
+            dto.setUserEmail(tuple.get("user_email", String.class));
+            dto.setPreferredLocation(tuple.get("preferred_location", String.class));
+            dto.setClientName(tuple.get("client_name", String.class));
+            //dto.setJobTitle(tuple.get("job_title", String.class));
+            dto.setRecruiterName(tuple.get("recruiter_name", String.class));
+            dto.setUserName(tuple.get("recruiter_name",String.class));
+            // Fields from both queries
+            dto.setContactNumber(tuple.get("contact_number", String.class));
+            dto.setCandidateEmailId(tuple.get("candidate_email_id", String.class));
+            dto.setTotalExperience(tuple.get("total_experience", Float.class));
+            dto.setRelevantExperience(tuple.get("relevant_experience", Float.class));
 
-            // Parsing profileReceivedDate as LocalDate (ensure it comes in a valid format)
-            String timestamp = tuple.get("profile_received_date", String.class);  // Assuming timestamp is a string
-            if (timestamp != null) {
+            // Handle profile received date
+            String profileReceivedDateStr = tuple.get("profile_received_date", String.class);
+            if (profileReceivedDateStr != null) {
                 try {
-                    LocalDate profileReceivedDate = LocalDate.parse(timestamp, DateTimeFormatter.ISO_DATE);
+                    LocalDate profileReceivedDate = LocalDate.parse(profileReceivedDateStr);
                     dto.setProfileReceivedDate(profileReceivedDate);
                 } catch (Exception e) {
-                    // Fallback if date parsing fails
-                    System.err.println("Error parsing profileReceivedDate: " + e.getMessage());
+                    logger.error("Error parsing profileReceivedDate: {}", e.getMessage());
                 }
             }
-
             return dto;
         }).collect(Collectors.toList());
     }
-
     // Method to get candidate submissions by userId
     public List<SubmissionGetResponseDto> getSubmissionsByUserId(String userId) {
         // ✅ Validate user existence and fetch role
@@ -589,6 +593,29 @@ private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions s
             throw new RuntimeException("An error occurred while saving the resume file", ex);
         }
 
+    }
+    public TeamleadSubmissionsDTO getSubmissionsForTeamlead(String userId, LocalDate startDate, LocalDate endDate) {
+        // 1. Validate input dates
+        if (startDate == null || endDate == null) {
+            throw new DateRangeValidationException("Start date and end date must not be null.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new DateRangeValidationException("End date cannot be before start date.");
+        }
+        // 2. Convert LocalDate to LocalDateTime
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+        // 3. Log
+        logger.info("Fetching submissions for teamlead with userId: {} between {} and {}", userId, startDateTime, endDateTime);
+        // 4. Fetch submissions
+        List<Tuple> selfSubs = submissionRepository.findSelfSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        List<Tuple> teamSubs = submissionRepository.findTeamSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
+        logger.info("Fetched {} self submissions for teamlead with userId: {}", selfSubs.size(), userId);
+        logger.info("Fetched {} team submissions for teamlead with userId: {}", teamSubs.size(), userId);
+        // 5. Map results
+        List<SubmissionGetResponseDto> selfSubDtos = mapTuplesToResponseDto(selfSubs);
+        List<SubmissionGetResponseDto> teamSubDtos = mapTuplesToResponseDto(teamSubs);
+        return new TeamleadSubmissionsDTO(selfSubDtos, teamSubDtos);
     }
 }
 
