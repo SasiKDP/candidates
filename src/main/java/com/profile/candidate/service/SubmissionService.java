@@ -133,8 +133,9 @@ public class SubmissionService {
         InterviewDetails interview=interviewRepository.findInterviewsByCandidateIdAndJobId(submission.getCandidate().getCandidateId(),submission.getJobId());
         if (interview!=null){
             interviewRepository.delete(interview);
+            logger.info("Interview with ID {} deleted successfully", interview.getInterviewId());
         }
-        logger.info("Interview with ID {} deleted successfully", interview.getInterviewId());
+
         // Prepare the response with candidate details
         DeleteSubmissionResponseDto.SubmissionData data = new DeleteSubmissionResponseDto.SubmissionData(submissionIdBeforeDelete, jobIdBeforeDelete);
 
