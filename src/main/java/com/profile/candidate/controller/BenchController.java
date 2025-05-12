@@ -309,37 +309,29 @@ public class BenchController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-
-    @GetMapping("/bench/download/{id}")
-    public ResponseEntity<byte[]> downloadResume(@PathVariable String id) {
+    @GetMapping("/bench/download/{benchId}")
+    public ResponseEntity<byte[]> downloadResume(@PathVariable String benchId) {
         try {
-            // Fetch BenchDetails by ID
-            Optional<BenchDetails> benchDetailsOptional = benchRepository.findById(id);
-            if (benchDetailsOptional.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            BenchDetails benchDetails = benchService.findById(benchId);
+
+            if (benchDetails == null || benchDetails.getResume() == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(null);
             }
 
-            BenchDetails benchDetails = benchDetailsOptional.get();
-            byte[] resumeFile = benchDetails.getResume();
+            byte[] resumeData = benchDetails.getResume();
+            String filename = benchDetails.getFullName().replaceAll("\\s+", "_") + "_Resume.docx"; // Change extension here
 
-            if (resumeFile == null || resumeFile.length == 0) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-            }
-            // **Use actual filename stored in the database (or default name)**
-            String fileName = benchDetails.getFullName(); // Assuming you have this field in your entity
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+            headers.setContentDispositionFormData("attachment", filename);
 
-            if (fileName == null || fileName.isBlank()) {
-                fileName = "Resume_" + id + ".pdf"; // Fallback name
-            }
-            // **Return the file with correct Content-Disposition**
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_PDF)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                    .body(resumeFile);
+            return new ResponseEntity<>(resumeData, headers, HttpStatus.OK);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
 
 }

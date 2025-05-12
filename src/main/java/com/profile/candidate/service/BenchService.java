@@ -213,4 +213,10 @@ public class BenchService {
             return null;
         }
     }
+
+    public BenchDetails findById(String benchId) {
+        return benchRepository.findById(benchId)
+                .orElse(null);
+    }
+
 }
