@@ -105,6 +105,7 @@ public class SubmissionService {
         data.setExpectedCTC(candidate.getExpectedCTC());
         data.setNoticePeriod(candidate.getNoticePeriod());
         data.setCurrentLocation(candidate.getCurrentLocation());
+        data.setUserEmail(candidate.getUserEmail());
 
 
         return data;
@@ -360,23 +361,34 @@ public class SubmissionService {
             dto.setUserEmail(tuple.get("user_email", String.class));
             dto.setPreferredLocation(tuple.get("preferred_location", String.class));
             dto.setClientName(tuple.get("client_name", String.class));
-            //dto.setJobTitle(tuple.get("job_title", String.class));
             dto.setRecruiterName(tuple.get("recruiter_name", String.class));
-            dto.setUserName(tuple.get("recruiter_name",String.class));
-            // Fields from both queries
+            dto.setUserName(tuple.get("recruiter_name", String.class));
+
+            // Candidate information fields
             dto.setContactNumber(tuple.get("contact_number", String.class));
             dto.setCandidateEmailId(tuple.get("candidate_email_id", String.class));
             dto.setTotalExperience(tuple.get("total_experience", Float.class));
             dto.setRelevantExperience(tuple.get("relevant_experience", Float.class));
+            dto.setCurrentOrganization(tuple.get("current_organization", String.class));
+            dto.setQualification(tuple.get("qualification", String.class));
+            dto.setCurrentCTC(tuple.get("current_ctc", String.class));
+            dto.setExpectedCTC(tuple.get("expected_ctc", String.class));
+            dto.setNoticePeriod(tuple.get("notice_period", String.class));
+            dto.setCurrentLocation(tuple.get("current_location", String.class));
 
-            // Handle profile received date
-            String profileReceivedDateStr = tuple.get("profile_received_date", String.class);
-            if (profileReceivedDateStr != null) {
+            // Submission information fields
+            dto.setCommunicationSkills(tuple.get("communication_skills", String.class));
+            dto.setRequiredTechnologiesRating(tuple.get("required_technologies_rating", Double.class));
+            dto.setOverallFeedback(tuple.get("overall_feedback", String.class));
+
+            String timestamp = tuple.get("profile_received_date", String.class);  // Assuming timestamp is a string
+            if (timestamp != null) {
                 try {
-                    LocalDate profileReceivedDate = LocalDate.parse(profileReceivedDateStr);
+                    LocalDate profileReceivedDate = LocalDate.parse(timestamp, DateTimeFormatter.ISO_DATE);
                     dto.setProfileReceivedDate(profileReceivedDate);
                 } catch (Exception e) {
-                    logger.error("Error parsing profileReceivedDate: {}", e.getMessage());
+                    // Fallback if date parsing fails
+                    System.err.println("Error parsing profileReceivedDate: " + e.getMessage());
                 }
             }
             return dto;
@@ -447,29 +459,39 @@ public class SubmissionService {
             return dto;
         }).collect(Collectors.toList());
     }
+    private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions sub) {
+        String candidateId = submissionRepository.findCandidateIdBySubmissionId(sub.getSubmissionId());
 
-private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions sub) {
-    SubmissionGetResponseDto dto = new SubmissionGetResponseDto();
+        SubmissionGetResponseDto dto = new SubmissionGetResponseDto();
 
-    dto.setSubmissionId(sub.getSubmissionId());
-    dto.setCandidateId(sub.getCandidate().getCandidateId());
-    dto.setUserId(sub.getCandidate().getUserId());
-    dto.setUserName(sub.getCandidate().getFullName()); // assuming userName refers to full name
-    dto.setUserEmail(sub.getCandidate().getUserEmail());
-    dto.setFullName(sub.getCandidate().getFullName());
-    dto.setTotalExperience(sub.getCandidate().getTotalExperience());
-    dto.setRelevantExperience(sub.getCandidate().getRelevantExperience());
-    dto.setJobId(sub.getJobId());
-    dto.setClientName(sub.getClientName());
-    dto.setProfileReceivedDate(sub.getProfileReceivedDate());
-    dto.setPreferredLocation(sub.getPreferredLocation());
-    dto.setSkills(sub.getSkills());
-    dto.setContactNumber(sub.getCandidate().getContactNumber());
-    dto.setCandidateEmailId(sub.getCandidate().getCandidateEmailId());
-    dto.setRecruiterName(sub.getRecruiterName());
+        dto.setSubmissionId(sub.getSubmissionId());
+        dto.setCandidateId(sub.getCandidate().getCandidateId());
+        dto.setUserId(sub.getCandidate().getUserId());
+        dto.setFullName(sub.getCandidate().getFullName());
+        dto.setCandidateEmailId(sub.getCandidate().getCandidateEmailId());
+        dto.setContactNumber(sub.getCandidate().getContactNumber());
+        dto.setCurrentOrganization(sub.getCandidate().getCurrentOrganization());
+        dto.setQualification(sub.getCandidate().getQualification());
+        dto.setTotalExperience(sub.getCandidate().getTotalExperience());
+        dto.setRelevantExperience(sub.getCandidate().getRelevantExperience());
+        dto.setCurrentCTC(sub.getCandidate().getCurrentCTC());
+        dto.setExpectedCTC(sub.getCandidate().getExpectedCTC());
+        dto.setNoticePeriod(sub.getCandidate().getNoticePeriod());
+        dto.setCurrentLocation(sub.getCandidate().getCurrentLocation());
+        dto.setJobId(sub.getJobId());
+        dto.setClientName(sub.getClientName());
+        dto.setProfileReceivedDate(sub.getProfileReceivedDate());
+        dto.setPreferredLocation(sub.getPreferredLocation());
+        dto.setSkills(sub.getSkills());
+        dto.setCommunicationSkills(sub.getCommunicationSkills());
+        dto.setRequiredTechnologiesRating(sub.getRequiredTechnologiesRating());
+        dto.setOverallFeedback(sub.getOverallFeedback());
+        dto.setRecruiterName(sub.getRecruiterName());
+        dto.setUserName(sub.getRecruiterName());
+        dto.setUserEmail(sub.getCandidate().getUserEmail());
 
-    return dto;
-}
+        return dto;
+    }
     public List<SubmissionGetResponseDto> getAllSubmissionsByDateRange(LocalDate startDate, LocalDate endDate) {
 
         if (endDate.isBefore(startDate)) {
