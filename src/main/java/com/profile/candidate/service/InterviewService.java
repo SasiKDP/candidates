@@ -1238,9 +1238,7 @@ public class InterviewService {
                 teamInterviewsRaw.size(), userId, startDate, endDate);
 
         // 6. Handle empty result
-        if (selfInterviewsRaw.isEmpty() && teamInterviewsRaw.isEmpty()) {
-            throw new CandidateNotFoundException("No scheduled interviews found between " + startDate + " and " + endDate);
-        }
+
 
         // 7. Parse the raw data into response DTOs using the updated GetInterviewResponseDto
         List<GetInterviewResponseDto> selfInterviews = parseInterviewCandidates(selfInterviewsRaw);
