@@ -83,9 +83,6 @@ public class PlacementService {
                     throw new DuplicateInterviewPlacementException("Interview ID " + placementDto.getInterviewId() + " is already used in a placement.");
                 }
 
-
-
-
                 // Update interviewDetails.isPlaced = true
                 Optional<InterviewDetails> interviewDetailsOpt = interviewRepository.findById(placementDto.getInterviewId());
                 if (interviewDetailsOpt.isPresent()) {
