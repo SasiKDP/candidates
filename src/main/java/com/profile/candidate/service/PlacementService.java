@@ -75,7 +75,7 @@ public class PlacementService {
                         .setScale(2, RoundingMode.HALF_UP);
                 placementDetails.setGrossProfit(grossProfit);
             }
-             // Check for duplicate interview ID
+            // Check for duplicate interview ID
             if (placementDto.getInterviewId() != null) {
                 boolean alreadyPlaced = placementRepository.existsByInterviewId(placementDto.getInterviewId());
                 if (alreadyPlaced) {
@@ -87,6 +87,7 @@ public class PlacementService {
                 if (candidatePlaced) {
                     throw new CandidateAlreadyExistsException("Candidate is already placed");
                 }
+
 
                 // Update interviewDetails.isPlaced = true
                 Optional<InterviewDetails> interviewDetailsOpt = interviewRepository.findById(placementDto.getInterviewId());
