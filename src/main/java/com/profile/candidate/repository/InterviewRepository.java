@@ -149,6 +149,9 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
             @Param("endDate") LocalDateTime endDate);
 
     InterviewDetails findByCandidateId(String candidateId);
+
+    Optional<InterviewDetails> findByContactNumberAndCandidateEmailId(String candidateContactNo, String candidateEmailId);
+
 }
 
 
