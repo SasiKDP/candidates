@@ -8,50 +8,70 @@ import java.util.List;
 
 public class SubmissionGetResponseDto {
 
-        private String submissionId;
+    private String submissionId;
 
-        private String candidateId;
+    private String candidateId;
 
-        private String userId;
+    private String userId;
 
-         private String userName;
+    private String fullName;
 
-        private String userEmail;
+    private String candidateEmailId;
 
-        private String fullName;
+    private String contactNumber;
 
-        private String contactNumber;
+    private String currentOrganization;
 
-        private String candidateEmailId;
+    private String qualification;
 
-        private float totalExperience;
+    private float totalExperience;
 
-        private float relevantExperience;
+    private float relevantExperience;
 
-        private String jobId;
+    private String currentCTC;
 
-        private String clientName;
+    private String expectedCTC;
 
-        private LocalDate profileReceivedDate;
+    private String noticePeriod;
 
-        private String preferredLocation;
+    private String currentLocation;
 
-        private String skills;
+    private String jobId;
 
-        private String recruiterName;
+    private String clientName;
 
-    public String getRecruiterName() {
-        return recruiterName;
+    private LocalDate profileReceivedDate;
+
+    private String preferredLocation;
+
+    private String skills;  // Now it's just a single string
+
+    private String communicationSkills;
+
+    private Double requiredTechnologiesRating;
+
+    private String overallFeedback;
+
+    private String recruiterName;
+
+    private String userName;
+
+    private String userEmail;
+
+    public String getUserName() {
+        return userName;
     }
 
-    public void setRecruiterName(String recruiterName) {
-        this.recruiterName = recruiterName;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
-    public SubmissionGetResponseDto(Submissions submissions) {
+    public String getUserEmail() {
+        return userEmail;
     }
 
-    public SubmissionGetResponseDto() {
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 
     public String getSubmissionId() {
@@ -86,6 +106,37 @@ public class SubmissionGetResponseDto {
         this.fullName = fullName;
     }
 
+    public String getCandidateEmailId() {
+        return candidateEmailId;
+    }
+
+    public void setCandidateEmailId(String candidateEmailId) {
+        this.candidateEmailId = candidateEmailId;
+    }
+
+    public String getContactNumber() {
+        return contactNumber;
+    }
+
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
+    }
+
+    public String getCurrentOrganization() {
+        return currentOrganization;
+    }
+
+    public void setCurrentOrganization(String currentOrganization) {
+        this.currentOrganization = currentOrganization;
+    }
+
+    public String getQualification() {
+        return qualification;
+    }
+
+    public void setQualification(String qualification) {
+        this.qualification = qualification;
+    }
 
     public float getTotalExperience() {
         return totalExperience;
@@ -103,6 +154,37 @@ public class SubmissionGetResponseDto {
         this.relevantExperience = relevantExperience;
     }
 
+    public String getCurrentCTC() {
+        return currentCTC;
+    }
+
+    public void setCurrentCTC(String currentCTC) {
+        this.currentCTC = currentCTC;
+    }
+
+    public String getExpectedCTC() {
+        return expectedCTC;
+    }
+
+    public void setExpectedCTC(String expectedCTC) {
+        this.expectedCTC = expectedCTC;
+    }
+
+    public String getNoticePeriod() {
+        return noticePeriod;
+    }
+
+    public void setNoticePeriod(String noticePeriod) {
+        this.noticePeriod = noticePeriod;
+    }
+
+    public String getCurrentLocation() {
+        return currentLocation;
+    }
+
+    public void setCurrentLocation(String currentLocation) {
+        this.currentLocation = currentLocation;
+    }
 
     public String getJobId() {
         return jobId;
@@ -144,35 +226,35 @@ public class SubmissionGetResponseDto {
         this.skills = skills;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getCommunicationSkills() {
+        return communicationSkills;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setCommunicationSkills(String communicationSkills) {
+        this.communicationSkills = communicationSkills;
     }
 
-    public String getUserEmail() {
-        return userEmail;
+    public Double getRequiredTechnologiesRating() {
+        return requiredTechnologiesRating;
     }
 
-    public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
+    public void setRequiredTechnologiesRating(Double requiredTechnologiesRating) {
+        this.requiredTechnologiesRating = requiredTechnologiesRating;
     }
 
-    public String getContactNumber() {
-        return contactNumber;
+    public String getOverallFeedback() {
+        return overallFeedback;
     }
 
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
+    public void setOverallFeedback(String overallFeedback) {
+        this.overallFeedback = overallFeedback;
     }
 
-    public String getCandidateEmailId() {
-        return candidateEmailId;
+    public String getRecruiterName() {
+        return recruiterName;
     }
 
-    public void setCandidateEmailId(String candidateEmailId) {
-        this.candidateEmailId = candidateEmailId;
+    public void setRecruiterName(String recruiterName) {
+        this.recruiterName = recruiterName;
     }
 }
