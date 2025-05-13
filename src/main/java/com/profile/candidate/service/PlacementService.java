@@ -75,13 +75,19 @@ public class PlacementService {
                         .setScale(2, RoundingMode.HALF_UP);
                 placementDetails.setGrossProfit(grossProfit);
             }
-
             // Check for duplicate interview ID
             if (placementDto.getInterviewId() != null) {
                 boolean alreadyPlaced = placementRepository.existsByInterviewId(placementDto.getInterviewId());
                 if (alreadyPlaced) {
                     throw new DuplicateInterviewPlacementException("Interview ID " + placementDto.getInterviewId() + " is already used in a placement.");
                 }
+
+                // Candidate placed check (if applicable - you need a real condition here)
+                boolean candidatePlaced = placementRepository.existsByCandidateEmailId(placementDto.getCandidateEmailId());
+                if (candidatePlaced) {
+                    throw new CandidateAlreadyExistsException("Candidate is already placed");
+                }
+
 
                 // Update interviewDetails.isPlaced = true
                 Optional<InterviewDetails> interviewDetailsOpt = interviewRepository.findById(placementDto.getInterviewId());
