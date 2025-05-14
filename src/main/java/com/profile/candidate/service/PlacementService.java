@@ -28,6 +28,7 @@ public class PlacementService {
     private static final Logger logger = LoggerFactory.getLogger(PlacementService.class);
 
 
+    private InterviewService interviewService;
     private final PlacementRepository placementRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -151,7 +152,7 @@ public class PlacementService {
                 InterviewDetails interviewDetails = interviewDetailsOpt.get();
 
                 // Check if status is placed
-                if (!"placed".equalsIgnoreCase(interviewDetails.getInterviewStatus())) {
+                if (!"placed".equalsIgnoreCase(interviewService.latestInterviewStatusFromJson(interviewDetails.getInterviewStatus()))) {
                     throw new CandidateNotFoundException("Candidate status is not placed in the interview table.");
                 }
                 // Update interviewDetails.isPlaced = true if status is placed
