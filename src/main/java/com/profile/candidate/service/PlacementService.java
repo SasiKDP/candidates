@@ -26,8 +26,7 @@ import java.util.stream.Collectors;
 public class PlacementService {
 
     private static final Logger logger = LoggerFactory.getLogger(PlacementService.class);
-
-
+    @Autowired
     private InterviewService interviewService;
     private final PlacementRepository placementRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -150,6 +149,7 @@ public class PlacementService {
 
             if (interviewDetailsOpt.isPresent()) {
                 InterviewDetails interviewDetails = interviewDetailsOpt.get();
+                logger.info("Generated ID is: " +interviewDetailsOpt.get() );
 
                 // Check if status is placed
                 if (!"placed".equalsIgnoreCase(interviewService.latestInterviewStatusFromJson(interviewDetails.getInterviewStatus()))) {
