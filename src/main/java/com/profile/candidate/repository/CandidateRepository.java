@@ -16,13 +16,13 @@ import java.util.Optional;
 
 @Repository
 public interface CandidateRepository extends JpaRepository<CandidateDetails, String> {
-    // Additional custom queries if needed
+
     // Find candidate by email
     Optional<CandidateDetails> findByCandidateEmailId(String candidateEmailId);
     List<CandidateDetails> findByUserId(String userId);
 
     Optional<CandidateDetails> findByCandidateIdAndUserId(String candidateId, String userId);
-    // Method to fetch all candidates (this is already provided by JpaRepository)
+
     List<CandidateDetails> findAll();
     // Native SQL query to join candidates and requirements_model_prod tables based on jobId
     @Query(value = "SELECT r.client_name FROM requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
@@ -39,5 +39,7 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     @Query(value = "SELECT MAX(CAST(SUBSTRING(candidate_id, 5) AS UNSIGNED)) FROM candidates", nativeQuery = true)
     Integer findMaxCandidateNumber();
 
+    @Query(value = "SELECT u.user_name FROM user_details u WHERE u.user_id= :userId",nativeQuery = true)
+    String findUserNameByUserId(@Param("userId") String userId);
 
 }
