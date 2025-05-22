@@ -31,9 +31,8 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
             "(SELECT COUNT(*) FROM requirements_model WHERE requirement_added_time_stamp BETWEEN :startDate AND :endDate) AS requirementsCount, " +
             "(SELECT COUNT(*) FROM candidate_submissions WHERE submitted_at BETWEEN :startDate AND :endDate) AS candidatesCount, " +
             "(SELECT COUNT(*) FROM bdm_client WHERE created_at BETWEEN :startDate AND :endDate) AS clientsCount, " +
-            "(SELECT COUNT(*) FROM placements WHERE created_at BETWEEN :startDate AND :endDate AND LOWER(TRIM(status))= 'Active' AND employment_type='Contract') AS contractPlacementsCount, " +
+            "(SELECT COUNT(*) FROM placements WHERE created_at BETWEEN :startDate AND :endDate AND LOWER(TRIM(status))= 'Active' AND employment_type!='Full-time') AS contractPlacementsCount, " +
             "(SELECT COUNT(*) FROM placements WHERE created_at BETWEEN :startDate AND :endDate AND LOWER(TRIM(status))= 'Active' AND employment_type='Full-time') AS fulltimePlacementsCount, " +
-            "(SELECT COUNT(*) FROM placements WHERE created_at BETWEEN :startDate AND :endDate AND LOWER(TRIM(status))= 'Active' AND employment_type='Part-time') AS contractPlacementsCount, " +
             "(SELECT COUNT(*) FROM bench_details WHERE created_date BETWEEN :startDate AND :endDate) AS benchCount, " +
 
             "(SELECT COUNT(*) FROM user_details WHERE created_at BETWEEN :startDate AND :endDate) AS usersCount, " +
