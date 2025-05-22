@@ -178,7 +178,22 @@ public class PlacementService {
         placementRepository.deleteById(id);
     }
 
-    // ✅ UPDATED: Return full placement details using PlacementDto
+    public PlacementResponseDto getPlacementById(String id) {
+        PlacementDetails placement = placementRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Placement not found with ID: " + id));
+
+        LocalDate now = LocalDate.now();
+        if ("active".equalsIgnoreCase(placement.getStatus()) &&
+                placement.getEndDate() != null &&
+                now.isAfter(placement.getEndDate())) {
+
+            placement.setStatus("terminated");
+            placementRepository.save(placement);
+        }
+
+        return convertToResponseDto(placement);
+    }
+
     public List<PlacementDetails> getAllPlacements() {
         LocalDate now = LocalDate.now();
         LocalDate startDate = now.withDayOfMonth(1); // 1st of current month
@@ -189,21 +204,27 @@ public class PlacementService {
         List<PlacementDetails> allPlacements = placementRepository.findPlacementsByCreatedAtBetween(startDate, endDate);
         logger.info("Total placements found: {}", allPlacements.size());
 
-        List<PlacementDetails> activePlacements = allPlacements.stream()
-                .filter(placement -> !"inactive".equalsIgnoreCase(placement.getStatus()))
-                .collect(Collectors.toList());
+        List<PlacementDetails> updatedPlacements = new ArrayList<>();
 
-        logger.info("Active placements count: {}", activePlacements.size());
+        for (PlacementDetails placement : allPlacements) {
+            // Update status if endDate has passed and status is still active
+            if ("active".equalsIgnoreCase(placement.getStatus()) &&
+                    placement.getEndDate() != null &&
+                    now.isAfter(placement.getEndDate())) {
 
-        return activePlacements;
+                placement.setStatus("terminated");
+                placementRepository.save(placement); // Save the change
+            }
+
+            // Only return non-inactive placements
+            if (!"inactive".equalsIgnoreCase(placement.getStatus())) {
+                updatedPlacements.add(placement);
+            }
+        }
+
+        logger.info("Filtered placements count: {}", updatedPlacements.size());
+        return updatedPlacements;
     }
-
-    public PlacementResponseDto getPlacementById(String id) {
-        PlacementDetails placement = placementRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Placement not found with ID: " + id));
-        return convertToResponseDto(placement);
-    }
-
 
     private PlacementResponseDto convertToResponseDto(PlacementDetails updated) {
         return new PlacementResponseDto(
