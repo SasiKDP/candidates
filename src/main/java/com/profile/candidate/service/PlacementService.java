@@ -212,7 +212,7 @@ public class PlacementService {
                     placement.getEndDate() != null &&
                     now.isAfter(placement.getEndDate())) {
 
-                placement.setStatus("terminated");
+                placement.setStatus("completed");
                 placementRepository.save(placement); // Save the change
             }
 
@@ -334,21 +334,21 @@ public class PlacementService {
 
         Map<String, Long> counts = new LinkedHashMap<>();
 
-        counts.put("users", ((Number) result[7]).longValue());
+        counts.put("users", ((Number) result[6]).longValue());
         counts.put("clients", ((Number) result[2]).longValue());
         counts.put("requirements", ((Number) result[0]).longValue());
-        counts.put("assigned", ((Number) result[11]).longValue());
+        counts.put("assigned", ((Number) result[10]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
-        counts.put("bench", ((Number) result[6]).longValue());
-        counts.put("interviews", ((Number) result[8]).longValue());
+        counts.put("bench", ((Number) result[5]).longValue());
+        counts.put("interviews", ((Number) result[7]).longValue());
 
         // Fix these two lines - they should match what works in the getCounts method
-        counts.put("externalInterviews", ((Number) result[10]).longValue());  // Correct mapping for external
-        counts.put("internalInterviews", ((Number) result[9]).longValue());  // Correct mapping for internal
+        counts.put("externalInterviews", ((Number) result[9]).longValue());  // Correct mapping for external
+        counts.put("internalInterviews", ((Number) result[8]).longValue());  // Correct mapping for internal
 
         counts.put("contractPlacements", ((Number) result[3]).longValue());
         counts.put("fulltimePlacements", ((Number) result[4]).longValue());
-        counts.put("parttimePlacements", ((Number) result[5]).longValue());
+
 
         return counts;
     }
@@ -362,21 +362,21 @@ public class PlacementService {
 
         Map<String, Long> counts = new LinkedHashMap<>();
 
-        counts.put("users", ((Number) result[7]).longValue());
+        counts.put("users", ((Number) result[6]).longValue());
         counts.put("clients", ((Number) result[2]).longValue());
         counts.put("requirements", ((Number) result[0]).longValue());
-        counts.put("assigned", ((Number) result[11]).longValue());
+        counts.put("assigned", ((Number) result[10]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
-        counts.put("bench", ((Number) result[6]).longValue());
-        counts.put("interviews", ((Number) result[8]).longValue());
+        counts.put("bench", ((Number) result[5]).longValue());
+        counts.put("interviews", ((Number) result[7]).longValue());
 
         // Fix these two lines - they should match what works in the getCounts method
-        counts.put("externalInterviews", ((Number) result[10]).longValue());  // Correct mapping for external
-        counts.put("internalInterviews", ((Number) result[9]).longValue());  // Correct mapping for internal
+        counts.put("externalInterviews", ((Number) result[9]).longValue());  // Correct mapping for external
+        counts.put("internalInterviews", ((Number) result[8]).longValue());  // Correct mapping for internal
 
         counts.put("contractPlacements", ((Number) result[3]).longValue());
         counts.put("fulltimePlacements", ((Number) result[4]).longValue());
-        counts.put("parttimePlacements", ((Number) result[5]).longValue());
+
 
 
         return counts;
