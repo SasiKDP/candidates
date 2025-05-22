@@ -1,6 +1,7 @@
 package com.profile.candidate.controller;
 
 import com.profile.candidate.dto.DashboardCountsProjection;
+import com.profile.candidate.dto.EncryptionVerifyDto;
 import com.profile.candidate.dto.PlacementDto;
 import com.profile.candidate.dto.PlacementResponseDto;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
@@ -18,6 +19,9 @@ import javax.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @CrossOrigin(origins = {
         "http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000",
@@ -179,6 +183,33 @@ public class PlacementController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "An error occurred while fetching dashboard counts"));
         }
+    }
+
+    @PostMapping("/sendOtp/{userId}/{placementId}")
+    public ResponseEntity<String> sendOtp(@PathVariable String userId,
+                                          @PathVariable String placementId) {
+
+        // Call service to send OTP
+        String response = service.sendSMS(userId,placementId);
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping("/sendOtp/{userId}")
+    public ResponseEntity<String> sendOtp(@PathVariable String userId) {
+
+        // Call service to send OTP
+        String response = service.sendSMS(userId);
+        return ResponseEntity.ok(response);
+    }
+    // Verify OTP
+    @PostMapping("/verifyOtp")
+    public ResponseEntity<String> verifyOtp(@RequestBody EncryptionVerifyDto encryptDTO) {
+        // Ensure both email and OTP are provided
+        String placementId = encryptDTO.getPlacementId();
+        String otp = encryptDTO.getOtp();
+
+        // Call service to verify OTP
+        String response = service.verifyOtp(encryptDTO);
+        return ResponseEntity.ok(response);
     }
 
 }

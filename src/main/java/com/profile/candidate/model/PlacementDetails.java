@@ -56,18 +56,15 @@ public class PlacementDetails {
     @Column(name = "sales")
     private String sales;
 
-    @DecimalMin(value = "0.0", inclusive = false, message = "Bill Rate must be a positive number")
-    @Digits(integer = 10, fraction = 5, message = "Invalid format for Bill Rate")
-    @Column(name = "bill_rate")
-    private BigDecimal billRate;
 
-    @DecimalMin(value = "0.0", inclusive = false, message = "Pay Rate must be a positive number")
-    @Digits(integer = 10, fraction =5, message = "Invalid format for Pay Rate")
+    @Column(name = "bill_rate")
+    private String billRate;
+
     @Column(name = "pay_rate")
-    private BigDecimal payRate;
+    private String payRate;
 
     @Column(name = "gross_profit")
-    private BigDecimal grossProfit;
+    private String grossProfit;
 
     @Column(name = "employment_type")
     private String employmentType;
@@ -214,27 +211,27 @@ public class PlacementDetails {
         this.sales = sales;
     }
 
-    public BigDecimal getBillRate() {
+    public String getBillRate() {
         return billRate;
     }
 
-    public void setBillRate(BigDecimal billRate) {
+    public void setBillRate(String billRate) {
         this.billRate = billRate;
     }
 
-    public BigDecimal getPayRate() {
+    public String getPayRate() {
         return payRate;
     }
 
-    public void setPayRate(BigDecimal payRate) {
+    public void setPayRate(String payRate) {
         this.payRate = payRate;
     }
 
-    public BigDecimal getGrossProfit() {
+    public String getGrossProfit() {
         return grossProfit;
     }
 
-    public void setGrossProfit(BigDecimal grossProfit) {
+    public void setGrossProfit(String grossProfit) {
         this.grossProfit = grossProfit;
     }
 

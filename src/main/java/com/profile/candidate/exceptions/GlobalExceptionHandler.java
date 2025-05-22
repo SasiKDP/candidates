@@ -19,14 +19,14 @@ public class GlobalExceptionHandler {
     // Handle CandidateNotFoundException
     @ExceptionHandler(CandidateNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleCandidateNotFoundException(CandidateNotFoundException ex) {
-        logger.info("handling CandidateNotFoundException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(404,ex.getMessage());
         ErrorResponse response=new ErrorResponse(false,"Candidate Not Found ",null,error);
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND); // HTTP 404
     }
     @ExceptionHandler(InterviewAlreadyScheduledException.class)
     public ResponseEntity<ErrorResponse> handleInterviewAlreadyScheduledException(InterviewAlreadyScheduledException ex) {
-        logger.info("handling InterviewAlreadyScheduledException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(400, ex.getMessage());
         ErrorResponse response=new ErrorResponse(false,"Interview not Scheduled",null,error);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
     // Handle FileSizeExceededException (added for file size exceeded)
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
-        logger.info("handling MaxUploadSizeExceededException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(413,ex.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(
                 false,
@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
     // Handle CandidateAlreadyExistsException
     @ExceptionHandler(CandidateAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleCandidateAlreadyExistsException(CandidateAlreadyExistsException ex) {
-        logger.info("handling CandidateAlreadyExistsException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(409, ex.getMessage());
         ErrorResponse response = new ErrorResponse(
                 true,  // Custom exception message
@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(SubmissionNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleSubmissionNotFoundException(SubmissionNotFoundException ex){
-        logger.info("handling SubmissionNotFoundException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(404,ex.getMessage());
         ErrorResponse response=new ErrorResponse(
                 false,
@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex){
-        logger.info("Handling Exception ");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(500,ex.getMessage());
         ErrorResponse response=new ErrorResponse(false,"Exception",null,error);
         return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
@@ -90,7 +90,6 @@ public class GlobalExceptionHandler {
     // Handle all other unchecked exceptions (generic fallback)
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
-        logger.info("handling RuntimeException in Global Exception Handler");
        ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(500,ex.getMessage());
         ErrorResponse response = new ErrorResponse(
                 false,
@@ -102,7 +101,6 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(InterviewNotScheduledException.class)
     public ResponseEntity<ErrorResponse> handleInterviewNotScheduledException(InterviewNotScheduledException ex){
-        logger.info("handling InterviewNotScheduledException in Global Exception Handler");
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(409,ex.getMessage());
         ErrorResponse response=new ErrorResponse(
                 false,
@@ -114,7 +112,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(InvalidClientException.class)
     public ResponseEntity<ErrorResponse> handleInvalidClientException(InvalidClientException ex){
-        logger.info("handling InvalidClientException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(403, ex.getMessage());
         ErrorResponse response=new ErrorResponse(false,"Interview Not scheduled",null,error);
 
@@ -122,21 +120,21 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(JobNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleInterviewResponseDto(JobNotFoundException ex){
-        logger.info("handling JobNotFoundException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(403, ex.getMessage());
         ErrorResponse response=new ErrorResponse(false,"Interview Not Scheduled",null,error);
         return new ResponseEntity<>(response,HttpStatus.FORBIDDEN);
     }
     @ExceptionHandler(NoInterviewsFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoInterviewsFoundException(NoInterviewsFoundException ex){
-        logger.info("handling NoInterviewsFoundException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(404, ex.getMessage());
       ErrorResponse response=new ErrorResponse(false,"No Interviews Found",null,error);
         return new ResponseEntity<>(response,HttpStatus.NOT_FOUND);
     }
     @ExceptionHandler(DateRangeValidationException.class)
     public ResponseEntity<ErrorResponse> handleDateRangeValidationException(DateRangeValidationException ex){
-        logger.info("handling DateRangeValidationException in Global Exception Handler");
+
         ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(409, ex.getMessage());
         ErrorResponse response=new ErrorResponse(false,"No Interviews Found",null,error);
         return new ResponseEntity<>(response,HttpStatus.CONFLICT);
@@ -149,5 +147,28 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
         response.put("timestamp", LocalDateTime.now());
         return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(PlacementsNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePlacementsNotFoundException(PlacementsNotFoundException ex){
+
+        ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(404, ex.getMessage());
+        ErrorResponse response=new ErrorResponse(false,"Placements Not Found",null,error);
+        return new ResponseEntity<>(response,HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePlacementsNotFoundException(UserNotFoundException ex){
+
+        ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(404, ex.getMessage());
+        ErrorResponse response=new ErrorResponse(false,"User Not Found",null,error);
+        return new ResponseEntity<>(response,HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidOTPException.class)
+    public ResponseEntity<ErrorResponse> handlePlacementsNotFoundException(InvalidOTPException ex){
+
+        ErrorResponse.ErrorDto error=new ErrorResponse.ErrorDto(400, ex.getMessage());
+        ErrorResponse response=new ErrorResponse(false,"Invalid OTP",null,error);
+        return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
     }
 }
