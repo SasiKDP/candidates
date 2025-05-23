@@ -156,7 +156,7 @@ public class PlacementService {
         Optional.ofNullable(dto.getRemarks()).ifPresent(existing::setRemarks);
         Optional.ofNullable(dto.getStatus()).ifPresent(existing::setStatus);
         Optional.ofNullable(dto.getStatusMessage()).ifPresent(existing::setStatusMessage);
-
+        Optional.ofNullable(dto.getGrossProfit()).ifPresent(existing::setGrossProfit);
         if (dto.getPayRate() != null) {
             existing.setPayRate(dto.getPayRate());
         }
@@ -187,7 +187,7 @@ public class PlacementService {
                 placement.getEndDate() != null &&
                 now.isAfter(placement.getEndDate())) {
 
-            placement.setStatus("terminated");
+            placement.setStatus("completed");
             placementRepository.save(placement);
         }
 
@@ -256,6 +256,7 @@ public class PlacementService {
         entity.setStatus(dto.getStatus());
         entity.setStatusMessage(dto.getStatusMessage());
         entity.setInterviewId(dto.getInterviewId());
+        entity.setGrossProfit(dto.getGrossProfit());
         return entity;
     }
 
@@ -421,7 +422,7 @@ public class PlacementService {
         }, 1, 5, TimeUnit.MINUTES); // Initial delay: 1 min, Repeat every 5 mins
     }
 
-    public String sendSMS(String userId, String placementId) {
+    public String sendSMS(String userId, String placementId,boolean isNewPlacement) {
 
         if (userId == null || placementId == null)
             throw new ResourceNotFoundException("User ID or Placement ID can not be null");
@@ -438,13 +439,13 @@ public class PlacementService {
         String formattedDateTime = requestTime.format(dateTimeFormatter);
         String subject="Authorization Required: OTP for Accessing Sensitive Placement Details";
         logger.info("send Email Otp Getting called.");
-        emailService.sendOtpEmail(ADMIN_EMAIL_ID, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,placementDetails.get().getCandidateFullName()));
+        emailService.sendOtpEmail(ADMIN_EMAIL_ID, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,placementDetails.get().getCandidateFullName(),isNewPlacement));
 
         long currentTime = System.currentTimeMillis();
         logger.info("Current Time In milli seconds {}", currentTime);
         otpTimestamps.put(userId, currentTime);
         if (otpTimestamps.containsKey(placementId) && (currentTime - otpTimestamps.get(placementId)) < OTP_COOLDOWN_MS) {
-            return "Please wait before requesting a new OTP.";
+            throw new InvalidOTPException("Please wait before requesting a new OTP.");
         }
         otpStorageOnUserId.put(userId, otp.trim());
         otpStorageOnPlacementId.put(placementId, otp.trim());
@@ -455,14 +456,19 @@ public class PlacementService {
 
         return "Otp Sent Successfully!";
     }
-    public String emailBodyForViewAllPlacementsDetails(String userName, String otp, String requestTime, String candidateName) {
+    public String emailBodyForViewAllPlacementsDetails(String userName, String otp, String requestTime, String candidateName,boolean isNewPlacement) {
 
         String safeUserName = (userName != null) ? userName : "Unknown User";
         String safeRequestTime = (requestTime != null) ? requestTime : "N/A";
         String safeOtp = (otp != null) ? otp : "N/A";
         String safeCandidateName = (candidateName != null) ? candidateName : null;
-
+        if(candidateName==null) {
+            safeCandidateName = isNewPlacement ? "New Candidate" : null;
+        }
         String action = safeCandidateName != null ? "UPDATE" : "VIEW";
+        if (isNewPlacement){
+            action =  "UPDATE";
+        }
         String actionColor = "#3366ff";
 
         String candidateLine = safeCandidateName != null ?
@@ -490,7 +496,7 @@ public class PlacementService {
                 safeOtp
         );
     }
-    public String sendSMS(String userId) {
+    public String sendSMS(String userId,boolean isNewPlacement) {
 
         logger.info("Email SMS started..");
         if (userId == null) throw new ResourceNotFoundException("User ID or Placement ID can not be null");
@@ -502,7 +508,7 @@ public class PlacementService {
         String formattedDateTime = requestTime.format(dateTimeFormatter);
         String subject="Authorization Required: OTP for Accessing Sensitive Placement Details";
 
-        emailService.sendOtpEmail(ADMIN_EMAIL_ID, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,null));
+        emailService.sendOtpEmail(ADMIN_EMAIL_ID, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,null,isNewPlacement));
 
         long currentTime = System.currentTimeMillis();
         logger.info("Current Time In milli seconds {}", currentTime);
