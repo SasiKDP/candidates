@@ -1,9 +1,6 @@
 package com.profile.candidate.controller;
 
-import com.profile.candidate.dto.DashboardCountsProjection;
-import com.profile.candidate.dto.EncryptionVerifyDto;
-import com.profile.candidate.dto.PlacementDto;
-import com.profile.candidate.dto.PlacementResponseDto;
+import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.ResourceNotFoundException;
 import com.profile.candidate.model.PlacementDetails;
 import com.profile.candidate.service.PlacementService;
@@ -185,29 +182,26 @@ public class PlacementController {
         }
     }
 
-    @PostMapping("/sendOtp/{userId}/{placementId}")
-    public ResponseEntity<String> sendOtp(@PathVariable String userId,
-                                          @PathVariable String placementId) {
+    @PostMapping("/sendOtp")
+    public ResponseEntity<String> sendOtp(@RequestBody EncryptionRequestDTO dto) {
 
-        // Call service to send OTP
-        String response = service.sendSMS(userId,placementId);
-        return ResponseEntity.ok(response);
+        logger.info("IsNewPlacement :"+dto.isNewPlacement());
+        if(dto.getPlacementId()==null){
+            String response = service.sendSMS(dto.getUserId(),dto.isNewPlacement());
+            return ResponseEntity.ok(response);
+        }else if(dto.isNewPlacement()){
+            String response=service.sendSMS(dto.getUserId(),dto.isNewPlacement());
+            return ResponseEntity.ok(response);
+        }
+        else {
+            String response = service.sendSMS(dto.getUserId(), dto.getPlacementId(), dto.isNewPlacement());
+            return ResponseEntity.ok(response);
+        }
     }
-    @PostMapping("/sendOtp/{userId}")
-    public ResponseEntity<String> sendOtp(@PathVariable String userId) {
 
-        // Call service to send OTP
-        String response = service.sendSMS(userId);
-        return ResponseEntity.ok(response);
-    }
-    // Verify OTP
     @PostMapping("/verifyOtp")
     public ResponseEntity<String> verifyOtp(@RequestBody EncryptionVerifyDto encryptDTO) {
-        // Ensure both email and OTP are provided
-        String placementId = encryptDTO.getPlacementId();
-        String otp = encryptDTO.getOtp();
 
-        // Call service to verify OTP
         String response = service.verifyOtp(encryptDTO);
         return ResponseEntity.ok(response);
     }
