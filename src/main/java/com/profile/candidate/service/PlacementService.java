@@ -10,6 +10,7 @@ import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.repository.PlacementRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class PlacementService {
 
     private static final Logger logger = LoggerFactory.getLogger(PlacementService.class);
 
-    private static final String ADMIN_EMAIL_ID="putluruarunkumarreddy13@gmail.com";
+    private static final String ADMIN_EMAIL_ID="madhan@dataqinc.com";
     @Autowired
     private InterviewService interviewService;
     @Autowired
@@ -61,72 +62,81 @@ public class PlacementService {
     }
 
 
+    @Transactional
     public PlacementResponseDto savePlacement(PlacementDto placementDto) {
         PlacementDetails placementDetails = convertToEntity(placementDto);
 
-        // Fetch placement by candidateContactNo and clientName
-        PlacementDetails placement = placementRepository.findByCandidateContactNoAndClientName(placementDto.getCandidateContactNo(), placementDto.getClientName());
+        // Check for existing placement by candidateContactNo and clientName
+        PlacementDetails existingPlacement = placementRepository
+                .findByCandidateContactNoAndClientName(placementDto.getCandidateContactNo(), placementDto.getClientName());
 
-        if (placement == null) {
-            // Validate payRate < billRate
-            if (placementDetails.getPayRate() != null && placementDetails.getBillRate() != null) {
-                if (placementDetails.getPayRate().compareTo(placementDetails.getBillRate()) > 0) {
-                    throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate.");
-                }
-            }
-
-            placementDetails.setId(generateCustomId());
-            logger.info("Generated ID is: " + placementDetails.getId());
-
-
-            // Check if the candidate exists in the interview table and if the status is placed
-            Optional<InterviewDetails> interviewDetailsOpt = interviewRepository
-                    .findByContactNumberAndCandidateEmailId(placementDto.getCandidateContactNo(), placementDto.getCandidateEmailId());
-
-            if (interviewDetailsOpt.isPresent()) {
-                InterviewDetails interviewDetails = interviewDetailsOpt.get();
-                logger.info("Generated ID is: " + interviewDetailsOpt.get());
-
-                // Check if status is placed
-                if (!"placed".equalsIgnoreCase(interviewService.latestInterviewStatusFromJson(interviewDetails.getInterviewStatus()))) {
-                    throw new CandidateNotFoundException("Candidate status is not placed in the interview table.");
-                }
-                // Update interviewDetails.isPlaced = true if status is placed
-                interviewDetails.setIsPlaced(true);
-                interviewRepository.save(interviewDetails);
-                logger.info("Interview details updated: " + interviewDetails);
-                // Check for duplicate interview ID
-                if (placementDto.getInterviewId() != null) {
-                    boolean alreadyPlaced = placementRepository.existsByInterviewId(placementDto.getInterviewId());
-                    if (alreadyPlaced) {
-                        throw new DuplicateInterviewPlacementException("Interview ID " + placementDto.getInterviewId() + " is already used in a placement.");
-                    }
-
-                    interviewDetails.setIsPlaced(true);
-                    interviewRepository.save(interviewDetails);
-                    logger.info("Interview details updated: " + interviewDetails);
-                } else {
-                    logger.warn("No matching interview details found. Proceeding with placement without updating interview.");
-                }
-
-            } else {
-                logger.info("No interview ID provided. Skipping interview details update.");
-            }
-
-            placementDetails.setStatus("Active");
-
-            PlacementDetails saved = placementRepository.save(placementDetails);
-            boolean isPlaced = "Active".equalsIgnoreCase(saved.getStatus());
-
-            return new PlacementResponseDto(
-                    saved.getId(),
-                    saved.getCandidateFullName(),
-                    saved.getCandidateContactNo(),
-                    isPlaced
-            );
-        } else {
-            throw new CandidateAlreadyExistsException("Placement Already Exists");
+        if (existingPlacement != null) {
+            throw new CandidateAlreadyExistsException("Placement already exists for this candidate and client.");
         }
+
+        // Validate payRate <= billRate
+        if (placementDetails.getPayRate() != null && placementDetails.getBillRate() != null) {
+            if (placementDetails.getPayRate().compareTo(placementDetails.getBillRate()) > 0) {
+                throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate.");
+            }
+
+            // Optional: enforce a minimum 10% margin
+        /*
+        BigDecimal margin = placementDetails.getBillRate().subtract(placementDetails.getPayRate());
+        BigDecimal minimumMargin = placementDetails.getBillRate().multiply(new BigDecimal("0.10"));
+        if (margin.compareTo(minimumMargin) < 0) {
+            throw new InvalidRateException("Margin is too low. Ensure at least a 10% margin between Bill Rate and Pay Rate.");
+        }
+        */
+        }
+
+        // Generate custom ID
+        placementDetails.setId(generateCustomId());
+        logger.info("Generated ID is: {}", placementDetails.getId());
+
+        // Check interview details and status
+        Optional<InterviewDetails> interviewDetailsOpt = interviewRepository
+                .findByContactNumberAndCandidateEmailId(placementDto.getCandidateContactNo(), placementDto.getCandidateEmailId());
+
+        if (interviewDetailsOpt.isPresent()) {
+            InterviewDetails interviewDetails = interviewDetailsOpt.get();
+            String latestStatus = interviewService.latestInterviewStatusFromJson(interviewDetails.getInterviewStatus());
+            logger.info("Latest interview status: {}", latestStatus);
+
+            // Ensure status is "placed"
+            if (!"placed".equalsIgnoreCase(latestStatus)) {
+                throw new CandidateNotFoundException("Candidate status is not placed in the interview table.");
+            }
+
+            // Check for duplicate interviewId
+            if (placementDto.getInterviewId() != null) {
+                boolean alreadyPlaced = placementRepository.existsByInterviewId(placementDto.getInterviewId());
+                if (alreadyPlaced) {
+                    throw new DuplicateInterviewPlacementException(
+                            "Interview ID " + placementDto.getInterviewId() + " is already used in a placement.");
+                }
+            }
+
+            // Mark candidate as placed in interview
+            interviewDetails.setIsPlaced(true);
+            interviewRepository.save(interviewDetails);
+            logger.info("Interview details updated with isPlaced=true: {}", interviewDetails);
+        } else {
+            logger.warn("No matching interview details found. Proceeding without updating interview.");
+        }
+
+        // Set placement status and save
+        placementDetails.setStatus("Active");
+        PlacementDetails saved = placementRepository.save(placementDetails);
+
+        boolean isPlaced = "Active".equalsIgnoreCase(saved.getStatus());
+
+        return new PlacementResponseDto(
+                saved.getId(),
+                saved.getCandidateFullName(),
+                saved.getCandidateContactNo(),
+                isPlaced
+        );
     }
 
 
