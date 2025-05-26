@@ -261,30 +261,26 @@ public class PlacementService {
     }
 
     public Map<String, Long> getCounts(String recruiterId) {
-        YearMonth currentMonth = YearMonth.now(); // Gets current year-month (e.g., 2025-05)
-
+        YearMonth currentMonth = YearMonth.now(); // e.g., 2025-05
         LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay(); // 2025-05-01T00:00
         LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59, 999_999_999); // 2025-05-31T23:59:59.999999999
 
         Object[] result = (Object[]) placementRepository.getAllCountsByDateRange(startOfMonth, endOfMonth, recruiterId);
 
         Map<String, Long> counts = new LinkedHashMap<>();
-        counts.put("users", ((Number) result[7]).longValue());
-        counts.put("clients", ((Number) result[2]).longValue());
+
+        // Index mapping based on the query
         counts.put("requirements", ((Number) result[0]).longValue());
-        counts.put("assigned", ((Number) result[11]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
-        counts.put("bench", ((Number) result[6]).longValue());
-        counts.put("interviews", ((Number) result[8]).longValue());
-
-        // Fix these two lines - they should match what works in the getCounts method
-        counts.put("externalInterviews", ((Number) result[10]).longValue());  // Correct mapping for external
-        counts.put("internalInterviews", ((Number) result[9]).longValue());  // Correct mapping for internal
-
-//        counts.put("contractPlacements", ((Number) result[3]).longValue());
-//        counts.put("fulltimePlacements", ((Number) result[4]).longValue());
-//        counts.put("parttimePlacements",((Number) result[5]).longValue());
-
+        counts.put("clients", ((Number) result[2]).longValue());
+        counts.put("contractPlacements", ((Number) result[3]).longValue());
+        counts.put("fulltimePlacements", ((Number) result[4]).longValue());
+        counts.put("bench", ((Number) result[5]).longValue());
+        counts.put("users", ((Number) result[6]).longValue());
+        counts.put("interviews", ((Number) result[7]).longValue());
+        counts.put("internalInterviews", ((Number) result[8]).longValue());
+        counts.put("externalInterviews", ((Number) result[9]).longValue());
+        counts.put("assigned", ((Number) result[10]).longValue());
 
         return counts;
     }
@@ -298,21 +294,18 @@ public class PlacementService {
 
         Map<String, Long> counts = new LinkedHashMap<>(); // preserves insertion order
 
-        counts.put("users", ((Number) result[7]).longValue());
-        counts.put("clients", ((Number) result[2]).longValue());
+        // Correct index mapping based on the SQL query (11 values: index 0 to 10)
         counts.put("requirements", ((Number) result[0]).longValue());
-        counts.put("assigned", ((Number) result[11]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
-        counts.put("bench", ((Number) result[6]).longValue());
-        counts.put("interviews", ((Number) result[8]).longValue());
-
-        // Fix these two lines - they should match what works in the getCounts method
-        counts.put("externalInterviews", ((Number) result[10]).longValue());  // Correct mapping for external
-        counts.put("internalInterviews", ((Number) result[9]).longValue());  // Correct mapping for internal
-
+        counts.put("clients", ((Number) result[2]).longValue());
         counts.put("contractPlacements", ((Number) result[3]).longValue());
         counts.put("fulltimePlacements", ((Number) result[4]).longValue());
-        counts.put("parttimePlacements", ((Number) result[5]).longValue());
+        counts.put("bench", ((Number) result[5]).longValue());
+        counts.put("users", ((Number) result[6]).longValue());
+        counts.put("interviews", ((Number) result[7]).longValue());
+        counts.put("internalInterviews", ((Number) result[8]).longValue());
+        counts.put("externalInterviews", ((Number) result[9]).longValue());
+        counts.put("assigned", ((Number) result[10]).longValue());
 
         return counts;
     }
