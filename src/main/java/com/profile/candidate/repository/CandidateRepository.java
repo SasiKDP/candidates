@@ -42,4 +42,5 @@ public interface CandidateRepository extends JpaRepository<CandidateDetails, Str
     @Query(value = "SELECT u.user_name FROM user_details u WHERE u.user_id= :userId",nativeQuery = true)
     String findUserNameByUserId(@Param("userId") String userId);
 
+
 }

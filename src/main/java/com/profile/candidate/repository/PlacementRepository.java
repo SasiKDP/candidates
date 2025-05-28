@@ -55,4 +55,9 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
 
 
     PlacementDetails findByCandidateContactNoAndClientName(String candidateContactNo, String clientName);
+
+    @Query(value="SELECT email FROM user_details  WHERE primary_super_admin = true",nativeQuery = true)
+    List<String> findPrimarySuperAdminEmail();
+
+
 }

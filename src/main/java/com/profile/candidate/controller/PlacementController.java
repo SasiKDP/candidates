@@ -31,14 +31,14 @@ import java.util.concurrent.TimeUnit;
 public class PlacementController {
 
     @Autowired
-    private PlacementService service;
+    private PlacementService placementService;
     private static final Logger logger = LoggerFactory.getLogger(PlacementController.class);
 
 
     // Save placement
     @PostMapping("/placement/create-placement")
     public ResponseEntity<?> savePlacement(@Valid @RequestBody PlacementDto placementDto) {
-        PlacementResponseDto savedPlacement = service.savePlacement(placementDto);
+        PlacementResponseDto savedPlacement = placementService.savePlacement(placementDto);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
@@ -52,7 +52,7 @@ public class PlacementController {
     @PutMapping("/placement/update-placement/{id}")
     public ResponseEntity<?> updatePlacement(@PathVariable String id, @Valid @RequestBody PlacementDto placementDto) {
         try {
-            PlacementResponseDto updated = service.updatePlacement(id, placementDto);
+            PlacementResponseDto updated = placementService.updatePlacement(id, placementDto);
 
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("success", true);
@@ -74,7 +74,7 @@ public class PlacementController {
     @DeleteMapping("/placement/delete-placement/{id}")
     public ResponseEntity<?> deletePlacement(@PathVariable String id) {
         try {
-            service.deletePlacement(id);
+            placementService.deletePlacement(id);
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Placement with ID " + id + " deleted successfully",
@@ -92,7 +92,7 @@ public class PlacementController {
     @GetMapping("/placement/placements-list")
     public ResponseEntity<?> getAllPlacements() {
         // Fetch PlacementDetails entities directly from the service
-        List<PlacementDetails> placements = service.getAllPlacements();
+        List<PlacementDetails> placements = placementService.getAllPlacements();
 
         // Prepare the response structure
         Map<String, Object> response = new LinkedHashMap<>();
@@ -108,7 +108,7 @@ public class PlacementController {
     @GetMapping("/placement/{id}")
     public ResponseEntity<?> getPlacementById(@PathVariable String id) {
         try {
-            PlacementResponseDto placement = service.getPlacementById(id);
+            PlacementResponseDto placement = placementService.getPlacementById(id);
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("success", true);
             response.put("message", "Placement fetched successfully");
@@ -129,9 +129,9 @@ public class PlacementController {
 
         // If recruiterId is provided, use it, otherwise fetch counts without filtering by recruiter
         if (recruiterId != null && !recruiterId.trim().isEmpty()) {
-            counts = service.getCounts(recruiterId);
+            counts = placementService.getCounts(recruiterId);
         } else {
-            counts = service.getCountsForAll(); // Fetch counts without recruiter-specific filter
+            counts = placementService.getCountsForAll(); // Fetch counts without recruiter-specific filter
         }
 
         return ResponseEntity.ok(counts);
@@ -142,7 +142,7 @@ public class PlacementController {
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        List<PlacementDetails> placements = service.getPlacementsByDateRange(startDate, endDate);
+        List<PlacementDetails> placements = placementService.getPlacementsByDateRange(startDate, endDate);
         return ResponseEntity.ok(placements);
     }
 
@@ -162,9 +162,9 @@ public class PlacementController {
             Map<String, Long> counts;
 
             if (recruiterId != null && !recruiterId.trim().isEmpty()) {
-                counts = service.getCountsByDateRange(startDate, endDate, recruiterId);
+                counts = placementService.getCountsByDateRange(startDate, endDate, recruiterId);
             } else {
-                counts = service.getCountsByDateRangeForAll(startDate, endDate); // Add this method to your service
+                counts = placementService.getCountsByDateRangeForAll(startDate, endDate); // Add this method to your service
             }
 
             if (counts.values().stream().allMatch(count -> count == 0)) {
@@ -182,19 +182,19 @@ public class PlacementController {
         }
     }
 
-    @PostMapping("/sendOtp")
+    @PostMapping("/generateOtp")
     public ResponseEntity<String> sendOtp(@RequestBody EncryptionRequestDTO dto) {
 
         logger.info("IsNewPlacement :"+dto.isNewPlacement());
         if(dto.getPlacementId()==null){
-            String response = service.sendSMS(dto.getUserId(),dto.isNewPlacement());
+            String response = placementService.generateOtp(dto.getUserId(),dto.isNewPlacement());
             return ResponseEntity.ok(response);
         }else if(dto.isNewPlacement()){
-            String response=service.sendSMS(dto.getUserId(),dto.isNewPlacement());
+            String response=placementService.generateOtp(dto.getUserId(),dto.isNewPlacement());
             return ResponseEntity.ok(response);
         }
         else {
-            String response = service.sendSMS(dto.getUserId(), dto.getPlacementId(), dto.isNewPlacement());
+            String response = placementService.generateOtp(dto.getUserId(), dto.getPlacementId(), dto.isNewPlacement());
             return ResponseEntity.ok(response);
         }
     }
@@ -202,7 +202,7 @@ public class PlacementController {
     @PostMapping("/verifyOtp")
     public ResponseEntity<String> verifyOtp(@RequestBody EncryptionVerifyDto encryptDTO) {
 
-        String response = service.verifyOtp(encryptDTO);
+        String response = placementService.verifyOtp(encryptDTO);
         return ResponseEntity.ok(response);
     }
 
