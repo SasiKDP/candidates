@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 @Service
 public class PlacementService {
 
+    @Autowired
+    PlacementRepository placementRepository;
 
     @PostConstruct
     public void init() {
@@ -37,13 +39,12 @@ public class PlacementService {
 
     private static final Logger logger = LoggerFactory.getLogger(PlacementService.class);
 
-    private static final String ADMIN_EMAIL_ID="madhan@dataqinc.com";
     @Autowired
     private InterviewService interviewService;
     @Autowired
     private CandidateRepository candidateRepository;
-    @Autowired
-    private PlacementRepository placementRepository;
+
+
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     @Autowired
     private InterviewRepository interviewRepository;
@@ -73,23 +74,6 @@ public class PlacementService {
         if (existingPlacement != null) {
             throw new CandidateAlreadyExistsException("Placement already exists for this candidate and client.");
         }
-
-        // Validate payRate <= billRate
-        if (placementDetails.getPayRate() != null && placementDetails.getBillRate() != null) {
-            if (placementDetails.getPayRate().compareTo(placementDetails.getBillRate()) > 0) {
-                throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate.");
-            }
-
-            // Optional: enforce a minimum 10% margin
-        /*
-        BigDecimal margin = placementDetails.getBillRate().subtract(placementDetails.getPayRate());
-        BigDecimal minimumMargin = placementDetails.getBillRate().multiply(new BigDecimal("0.10"));
-        if (margin.compareTo(minimumMargin) < 0) {
-            throw new InvalidRateException("Margin is too low. Ensure at least a 10% margin between Bill Rate and Pay Rate.");
-        }
-        */
-        }
-
         // Generate custom ID
         placementDetails.setId(generateCustomId());
         logger.info("Generated ID is: {}", placementDetails.getId());
@@ -171,7 +155,6 @@ public class PlacementService {
             existing.setPayRate(dto.getPayRate());
         }
 
-        // 🔥 Important: update billRate if available
         if (dto.getBillRate() != null) {
             existing.setBillRate(dto.getBillRate());
         }
@@ -392,8 +375,8 @@ public class PlacementService {
     private final Random random = new Random();
     private static final long OTP_EXPIRY_TIME_MS = 5 * 60 * 1000; // 5 minutes
     private static final long OTP_COOLDOWN_MS = 60 * 1000; // 1 minute
-
-
+     //String ADMIN_EMAIL_ID="putluruarunkumarreddy13@gmail.com";
+    //String ADMIN_EMAIL_ID=placementRepository.findPrimarySuperAdminEmail();
     private void startOtpCleanupTask() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             long currentTime = System.currentTimeMillis();
@@ -425,8 +408,9 @@ public class PlacementService {
         }, 1, 5, TimeUnit.MINUTES); // Initial delay: 1 min, Repeat every 5 mins
     }
 
-    public String sendSMS(String userId, String placementId,boolean isNewPlacement) {
+    public String generateOtp(String userId, String placementId,boolean isNewPlacement) {
 
+        List<String> ADMIN_EMAILS=placementRepository.findPrimarySuperAdminEmail();
         if (userId == null || placementId == null)
             throw new ResourceNotFoundException("User ID or Placement ID can not be null");
 
@@ -442,7 +426,6 @@ public class PlacementService {
         String formattedDateTime = requestTime.format(dateTimeFormatter);
         String subject="Authorization Required: OTP for Accessing Sensitive Placement Details";
         logger.info("send Email Otp Getting called.");
-        emailService.sendOtpEmail(ADMIN_EMAIL_ID, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,placementDetails.get().getCandidateFullName(),isNewPlacement));
 
         long currentTime = System.currentTimeMillis();
         logger.info("Current Time In milli seconds {}", currentTime);
@@ -450,6 +433,7 @@ public class PlacementService {
         if (otpTimestamps.containsKey(placementId) && (currentTime - otpTimestamps.get(placementId)) < OTP_COOLDOWN_MS) {
             throw new InvalidOTPException("Please wait before requesting a new OTP.");
         }
+        emailService.sendOtpEmail(ADMIN_EMAILS, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,placementDetails.get().getCandidateFullName(),isNewPlacement));
         otpStorageOnUserId.put(userId, otp.trim());
         otpStorageOnPlacementId.put(placementId, otp.trim());
         otpTimestamps.put(placementId, currentTime);
@@ -485,8 +469,8 @@ public class PlacementService {
                 "%s" +
                 "<li><b>Request Time:</b> %s</li>" +
                 "</ul>" +
-                "<p>Please use the following OTP to authorize this request:</p>" +
-                "<h3 style='color: #ff0000;'>%s</h3>" +
+                "<p>Please use the following OTP to authorize this request</p>" +
+                "<p>One Time Password (OTP): <span style='color: #000000; font-size: 1.2em; font-weight: bold;'>%s</span></p>" +
                 "<p><b>Note:</b> This OTP is valid for 5 minutes only. Do not share it with anyone.</p>" +
                 "<p>If you didn't initiate this request, please contact your system administrator immediately.</p>";
 
@@ -499,9 +483,10 @@ public class PlacementService {
                 safeOtp
         );
     }
-    public String sendSMS(String userId,boolean isNewPlacement) {
+    public String generateOtp(String userId,boolean isNewPlacement) {
 
         logger.info("Email SMS started..");
+        List<String> ADMIN_EMAILS=placementRepository.findPrimarySuperAdminEmail();
         if (userId == null) throw new ResourceNotFoundException("User ID or Placement ID can not be null");
         String userName = candidateRepository.findUserNameByUserId(userId);
         if (userName == null) throw new UserNotFoundException("No User Found with ID " + userId);
@@ -511,14 +496,14 @@ public class PlacementService {
         String formattedDateTime = requestTime.format(dateTimeFormatter);
         String subject="Authorization Required: OTP for Accessing Sensitive Placement Details";
 
-        emailService.sendOtpEmail(ADMIN_EMAIL_ID, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,null,isNewPlacement));
-
         long currentTime = System.currentTimeMillis();
         logger.info("Current Time In milli seconds {}", currentTime);
 
         if (otpTimestamps.containsKey(userId) && (currentTime - otpTimestamps.get(userId)) < OTP_COOLDOWN_MS) {
             throw new InvalidOTPException("Please wait before requesting a new OTP.");
         }
+
+        emailService.sendOtpEmail(ADMIN_EMAILS, subject, emailBodyForViewAllPlacementsDetails(userName,otp,formattedDateTime,null,isNewPlacement));
         otpStorageOnUserId.put(userId, otp.trim());
         otpStorageOnPlacementId.put(userId, otp.trim());
         otpTimestamps.put(userId, currentTime);
