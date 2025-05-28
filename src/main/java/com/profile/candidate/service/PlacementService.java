@@ -74,23 +74,6 @@ public class PlacementService {
         if (existingPlacement != null) {
             throw new CandidateAlreadyExistsException("Placement already exists for this candidate and client.");
         }
-
-        // Validate payRate <= billRate
-        if (placementDetails.getPayRate() != null && placementDetails.getBillRate() != null) {
-            if (placementDetails.getPayRate().compareTo(placementDetails.getBillRate()) > 0) {
-                throw new InvalidRateException("Pay Rate cannot be greater than Bill Rate.");
-            }
-
-            // Optional: enforce a minimum 10% margin
-        /*
-        BigDecimal margin = placementDetails.getBillRate().subtract(placementDetails.getPayRate());
-        BigDecimal minimumMargin = placementDetails.getBillRate().multiply(new BigDecimal("0.10"));
-        if (margin.compareTo(minimumMargin) < 0) {
-            throw new InvalidRateException("Margin is too low. Ensure at least a 10% margin between Bill Rate and Pay Rate.");
-        }
-        */
-        }
-
         // Generate custom ID
         placementDetails.setId(generateCustomId());
         logger.info("Generated ID is: {}", placementDetails.getId());
@@ -172,7 +155,6 @@ public class PlacementService {
             existing.setPayRate(dto.getPayRate());
         }
 
-        // 🔥 Important: update billRate if available
         if (dto.getBillRate() != null) {
             existing.setBillRate(dto.getBillRate());
         }
