@@ -91,6 +91,9 @@ public class CandidateController {
             submission.setSkills(formData.get("skills"));
             submission.setCommunicationSkills(formData.get("communicationSkills"));
             submission.setClientName(formData.get("clientName"));
+            submission.setUserId(formData.get("userId"));
+            submission.setUserEmail(formData.get("userEmail"));
+            candidateDetails.setUserEmail(formData.get("userEmail"));
             if (formData.get("requiredTechnologiesRating") != null) {
                 submission.setRequiredTechnologiesRating(Double.parseDouble(formData.get("requiredTechnologiesRating")));
             }

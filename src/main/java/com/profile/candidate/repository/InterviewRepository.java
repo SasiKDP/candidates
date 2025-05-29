@@ -16,7 +16,11 @@ import java.util.Optional;
 public interface InterviewRepository extends JpaRepository<InterviewDetails,String> {
 
 
-    @Query(value = "SELECT id FROM `production`.requirements_model WHERE client_name = :clientName LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT b.id FROM `production`.bdm_client AS b " +
+            "JOIN `production`.requirements_model AS r " +
+            "ON r.client_name LIKE CONCAT(b.client_name, '%') " +
+            "WHERE r.client_name = :clientName " +
+            "LIMIT 1", nativeQuery = true)
     String findClientIdByClientName(@Param("clientName") String clientName);
 
     InterviewDetails findByCandidateIdAndUserId(String candidateId, String userId);

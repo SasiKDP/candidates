@@ -159,7 +159,7 @@ public class SubmissionService {
                 logger.error("No Candidate found with Id {}" + candidateId);
                 throw new CandidateNotFoundException("Candidate Not Exists with candidateId " + candidateId);
             }
-            Optional<CandidateDetails> optionalCandidate=candidateRepository.findByCandidateIdAndUserId(candidateId,updatedCandidateDetails.getUserId());
+            Optional<Submissions> optionalCandidate=submissionRepository.findBySubmissionIdAndUserId(submissionId,updatedCandidateDetails.getUserId());
             if(optionalCandidate.isEmpty()) {
                 logger.error("Candidate Id {} Not Related to User Id {}", candidateId, updatedCandidateDetails.getUserId());
                 throw new CandidateNotFoundException("Candidate Id: " + candidateId + " Not related to UserId: " + updatedCandidateDetails.getUserId());
@@ -239,16 +239,16 @@ public class SubmissionService {
             throw new RuntimeException("An error occurred while saving the resume file", ex);
         }
     }
-    public boolean isCandidateValidForUser(String userId, String candidateId) {
-        // Fetch the candidate by candidateId
-        CandidateDetails candidateDetails = candidateRepository.findById(candidateId)
-                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
-        // Check if the userId associated with the candidate matches the provided userId
-        if (!candidateDetails.getUserId().equals(userId)) {
-            return false;
-        }
-        return true;
-    }
+//    public boolean isCandidateValidForUser(String userId, String candidateId) {
+//        // Fetch the candidate by candidateId
+//        Submissions candidateDetails = submissionRepository.findByCandidateId(candidateId)
+//                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
+//        // Check if the userId associated with the candidate matches the provided userId
+//        if (!candidateDetails.getUserId().equals(userId)) {
+//            return false;
+//        }
+//        return true;
+//    }
     // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
         //if (updatedCandidateDetails.getJobId() != null) existingCandidate.setJobId(updatedCandidateDetails.getJobId());
