@@ -106,7 +106,7 @@ public class CandidateService {
 
         // Step 8: Fetch team lead and recruiter details
         String teamLeadEmail = candidateRepository.findTeamLeadEmailByJobId(submissionDetails.getJobId());
-        String recruiterEmail = savedCandidate.getUserEmail();
+        String recruiterEmail = submissionDetails.getUserEmail();
         String recruiterName = candidateRepository.findUserNameByEmail(recruiterEmail);
         String teamLeadName=candidateRepository.findUserNameByEmail(teamLeadEmail);
 
@@ -126,7 +126,9 @@ public class CandidateService {
         submission.setProfileReceivedDate(LocalDate.now());
         submission.setClientName(submissionDetails.getClientName());
         submission.setSubmittedAt(LocalDateTime.now());
-        submission.setRecruiterName(recruiterName);
+        submission.setRecruiterName(submissionDetails.getRecruiterName());
+        submission.setUserId(submissionDetails.getUserId());
+        submission.setUserEmail(submissionDetails.getUserEmail());
         // Save the submission
         submissionRepository.save(submission);
 
@@ -143,7 +145,7 @@ public class CandidateService {
         // Step 10: Prepare response payload
         CandidateResponseDto.CandidateData data = new CandidateResponseDto.CandidateData(
                 savedCandidate.getCandidateId(),
-                savedCandidate.getUserId(),
+                submissionDetails.getUserId(),
                 submissionId
         );
 

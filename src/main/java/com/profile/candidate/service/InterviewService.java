@@ -14,6 +14,7 @@ import com.profile.candidate.dto.TeamleadInterviewsDTO;
 import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.InterviewDetails;
+import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.repository.SubmissionRepository;
@@ -63,7 +64,7 @@ public class InterviewService {
         if (submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, jobId) == null) {
             throw new JobNotFoundException("Candidate Not Applied for Job " + jobId);
         }
-        Optional<CandidateDetails> candidateDetails = candidateRepository.findByCandidateIdAndUserId(candidateId, userId);
+        Optional<Submissions> candidateDetails = submissionRepository.findBySubmissionIdAndUserId(candidateId, userId);
 
         InterviewDetails inti = interviewRepository.findByCandidateIdAndUserIdAndClientNameAndJobId(candidateId, userId, clientName, jobId);
         InterviewDetails interviewDetails = new InterviewDetails();

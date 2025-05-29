@@ -2,6 +2,7 @@ package com.profile.candidate.model;
 
 import jakarta.persistence.*;
 
+import javax.validation.constraints.NotBlank;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -44,6 +45,26 @@ public class Submissions {
     private LocalDateTime submittedAt;
 
     private String recruiterName;
+
+    private String userEmail;
+
+    private String userId;
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
     public LocalDate getProfileReceivedDate() {
         return profileReceivedDate;

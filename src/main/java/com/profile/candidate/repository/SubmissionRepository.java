@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface SubmissionRepository extends JpaRepository<Submissions,String> {
 
@@ -20,7 +21,7 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
 
      Submissions findByCandidate_CandidateIdAndJobId(String candidateId, String jobId);
 
-
+    Optional<Submissions> findBySubmissionIdAndUserId(String candidateId, String userId);
 
     List<Submissions> findByCandidate_CandidateIdIn(List<String> candidateIds);
 

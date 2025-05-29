@@ -53,11 +53,11 @@ public class InterviewController {
                 throw new InterviewAlreadyScheduledException("Interview Already Scheduled for Candidate Id :"+interviewRequest.getCandidateId());
             }
              //Check if the candidate belongs to the user
-            boolean isValidCandidate =submissionService.isCandidateValidForUser(userId, interviewRequest.getCandidateId());
-            if (!isValidCandidate) {
-                logger.error("Candidate ID does not belong to the provided userId.");
-              throw new InvalidCandidateDataException("Candidate ID does not belong to the provided userId.");
-            }
+//            boolean isValidCandidate =submissionService.isCandidateValidForUser(userId, interviewRequest.getCandidateId());
+//            if (!isValidCandidate) {
+//                logger.error("Candidate ID does not belong to the provided userId.");
+//              throw new InvalidCandidateDataException("Candidate ID does not belong to the provided userId.");
+//            }
             InterviewResponseDto response = interviewService.scheduleInterview(
                     userId,
                     interviewRequest.getCandidateId(),
