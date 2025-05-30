@@ -126,7 +126,7 @@ public class CandidateService {
         submission.setProfileReceivedDate(LocalDate.now());
         submission.setClientName(submissionDetails.getClientName());
         submission.setSubmittedAt(LocalDateTime.now());
-        submission.setRecruiterName(submissionDetails.getRecruiterName());
+        submission.setRecruiterName(recruiterName);
         submission.setUserId(submissionDetails.getUserId());
         submission.setUserEmail(submissionDetails.getUserEmail());
         // Save the submission
