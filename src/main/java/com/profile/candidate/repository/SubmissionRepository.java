@@ -42,7 +42,7 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
     LIMIT 1
 """, nativeQuery = true)
     String findRoleByUserId(@Param("userId") String userId);
-    @Query("SELECT s FROM Submissions s JOIN s.candidate c WHERE c.userId = :userId AND s.profileReceivedDate BETWEEN :startDate AND :endDate")
+    @Query("SELECT s FROM Submissions s  WHERE s.userId = :userId AND s.profileReceivedDate BETWEEN :startDate AND :endDate")
     List<Submissions> findByUserIdAndProfileReceivedDateBetween(
             @Param("userId") String userId,
             @Param("startDate") LocalDate startDate,
