@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=builder /app/target/candidates-docker.jar app.jar
 
 # Expose the port the app runs on
-EXPOSE 8085
+EXPOSE 8086
 
 # Run the JAR file
 ENTRYPOINT ["java", "-jar", "app.jar"]
