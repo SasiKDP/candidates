@@ -47,6 +47,11 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
                                    @Param("endDate") LocalDateTime endDate,
                                    @Param("recruiterId") String recruiterId);
 
+    @Query(value = "SELECT " +
+            "(SELECT COUNT(*) FROM placements WHERE LOWER(TRIM(status)) = 'active' AND employment_type != 'Full-time') AS contractPlacementsCount, " +
+            "(SELECT COUNT(*) FROM placements WHERE LOWER(TRIM(status)) = 'active' AND employment_type = 'Full-time') AS fulltimePlacementsCount",
+            nativeQuery = true)
+    Object getPlacementCountsWithOutDate();
 
     @Query("SELECT p FROM PlacementDetails p WHERE p.createdAt BETWEEN :startDate AND :endDate")
     List<PlacementDetails> findPlacementsByCreatedAtBetween(@Param("startDate") LocalDate startDate,
