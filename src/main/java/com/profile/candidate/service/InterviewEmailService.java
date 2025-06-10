@@ -155,6 +155,16 @@ public class InterviewEmailService {
             }
         }
     }
+    public void sendEmailToCoordinator(String coordinatorEmail , String subject, String emailBody) {
+        if (coordinatorEmail != null && !coordinatorEmail.isEmpty()) {
+            try {
+                logger.info("Sending email to Coordinator: {}", coordinatorEmail);
+                sendInterviewNotification(coordinatorEmail, subject, emailBody);
+            } catch (Exception e) {
+                logger.error("Failed to send email to Coordinator {}: {}", coordinatorEmail, e.getMessage(), e);
+            }
+        }
+    }
     public void sendEmailToUser(String userEmailId, String subject, String emailBody) {
         if (userEmailId != null && !userEmailId.isEmpty()) {
             try {
