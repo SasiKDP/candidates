@@ -33,6 +33,7 @@ public class InterviewDto {
     // Added interviewStatus field
     private String interviewStatus;
 
+    private String assignedTo;
     // Constructor
 
     public boolean isSkipNotification() {
@@ -168,4 +169,11 @@ public class InterviewDto {
         this.clientEmail = clientEmail;
     }
 
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
+    }
 }
