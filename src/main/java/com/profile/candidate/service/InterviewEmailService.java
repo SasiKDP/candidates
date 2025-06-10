@@ -31,6 +31,16 @@ public class InterviewEmailService {
     private static final Logger logger = LoggerFactory.getLogger(InterviewEmailService.class);
 
 
+    public void sendEmailToCoordinator(String coordinatorEmail , String subject, String emailBody) {
+        if (coordinatorEmail != null && !coordinatorEmail.isEmpty()) {
+            try {
+                logger.info("Sending email to Coordinator: {}", coordinatorEmail);
+                sendInterviewNotification(coordinatorEmail, subject, emailBody);
+            } catch (Exception e) {
+                logger.error("Failed to send email to Coordinator {}: {}", coordinatorEmail, e.getMessage(), e);
+            }
+        }
+    }
     public void sendOtpEmail(List<String> toList, String subject, String body) {
         logger.info("sendOtpEmail in Interview Email is called.");
 

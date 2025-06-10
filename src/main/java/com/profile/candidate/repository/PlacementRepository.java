@@ -59,5 +59,11 @@ public interface PlacementRepository extends JpaRepository<PlacementDetails, Str
     @Query(value="SELECT email FROM user_details  WHERE primary_super_admin = true",nativeQuery = true)
     List<String> findPrimarySuperAdminEmail();
 
+    @Query(value = "SELECT " +
+            "(SELECT COUNT(*) FROM placements WHERE LOWER(TRIM(status)) = 'active' AND employment_type != 'Full-time') AS contractPlacementsCount, " +
+            "(SELECT COUNT(*) FROM placements WHERE LOWER(TRIM(status)) = 'active' AND employment_type = 'Full-time') AS fulltimePlacementsCount",
+            nativeQuery = true)
+    Object getPlacementCountsWithOutDate();
+
 
 }

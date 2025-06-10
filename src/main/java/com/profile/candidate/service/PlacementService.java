@@ -266,8 +266,7 @@ public class PlacementService {
         counts.put("requirements", ((Number) result[0]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
         counts.put("clients", ((Number) result[2]).longValue());
-        counts.put("contractPlacements", ((Number) result[3]).longValue());
-        counts.put("fulltimePlacements", ((Number) result[4]).longValue());
+
         counts.put("bench", ((Number) result[5]).longValue());
         counts.put("users", ((Number) result[6]).longValue());
         counts.put("interviews", ((Number) result[7]).longValue());
@@ -291,8 +290,6 @@ public class PlacementService {
         counts.put("requirements", ((Number) result[0]).longValue());
         counts.put("candidates", ((Number) result[1]).longValue());
         counts.put("clients", ((Number) result[2]).longValue());
-        counts.put("contractPlacements", ((Number) result[3]).longValue());
-        counts.put("fulltimePlacements", ((Number) result[4]).longValue());
         counts.put("bench", ((Number) result[5]).longValue());
         counts.put("users", ((Number) result[6]).longValue());
         counts.put("interviews", ((Number) result[7]).longValue());
@@ -333,8 +330,10 @@ public class PlacementService {
         counts.put("externalInterviews", ((Number) result[9]).longValue());  // Correct mapping for external
         counts.put("internalInterviews", ((Number) result[8]).longValue());  // Correct mapping for internal
 
-        counts.put("contractPlacements", ((Number) result[3]).longValue());
-        counts.put("fulltimePlacements", ((Number) result[4]).longValue());
+        Object[] placementsWithOutDate = (Object[]) placementRepository.getPlacementCountsWithOutDate();
+        counts.put("contractPlacements", ((Number) placementsWithOutDate[0]).longValue());
+        counts.put("fulltimePlacements", ((Number) placementsWithOutDate[1]).longValue());
+
 
 
         return counts;
@@ -375,7 +374,7 @@ public class PlacementService {
     private final Random random = new Random();
     private static final long OTP_EXPIRY_TIME_MS = 5 * 60 * 1000; // 5 minutes
     private static final long OTP_COOLDOWN_MS = 60 * 1000; // 1 minute
-     //String ADMIN_EMAIL_ID="putluruarunkumarreddy13@gmail.com";
+    //String ADMIN_EMAIL_ID="putluruarunkumarreddy13@gmail.com";
     //String ADMIN_EMAIL_ID=placementRepository.findPrimarySuperAdminEmail();
     private void startOtpCleanupTask() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {

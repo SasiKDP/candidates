@@ -41,6 +41,8 @@ public class InterviewDetails {
     private LocalDateTime timestamp;
     private boolean isPlaced;
 
+    private String assignedTo;
+    private String coordinatorName;
     @Transient
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -251,6 +253,22 @@ public class InterviewDetails {
 
     public void setRecruiterName(String recruiterName) {
         this.recruiterName = recruiterName;
+    }
+
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
+    }
+
+    public String getCoordinatorName() {
+        return coordinatorName;
+    }
+
+    public void setCoordinatorName(String coordinatorName) {
+        this.coordinatorName = coordinatorName;
     }
 }
 

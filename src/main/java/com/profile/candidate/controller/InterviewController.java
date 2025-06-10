@@ -73,7 +73,8 @@ public class InterviewController {
                     interviewRequest.getFullName(),
                     interviewRequest.getContactNumber(),
                     interviewRequest.getCandidateEmailId(),
-                    interviewRequest.isSkipNotification());
+                    interviewRequest.isSkipNotification(),
+                    interviewRequest.getAssignedTo());
             return ResponseEntity.ok(response);
         }
         catch (JsonProcessingException e) {
@@ -141,8 +142,8 @@ public class InterviewController {
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
                     interviewRequest.getInterviewStatus(),
-                    interviewRequest.isSkipNotification()
-                    ); // Added status update
+                    interviewRequest.isSkipNotification(),
+                    interviewRequest.getAssignedTo()); // Added status update
             return ResponseEntity.ok(response);
 
     }
@@ -187,7 +188,8 @@ public class InterviewController {
                     interviewRequest.getFullName(),
                     interviewRequest.getContactNumber(),
                     interviewRequest.getCandidateEmailId(),
-                    interviewRequest.isSkipNotification());
+                    interviewRequest.isSkipNotification(),
+                    interviewRequest.getAssignedTo());
             return ResponseEntity.ok(response);
         } catch (CandidateNotFoundException e) {
             // If the candidate is not found
