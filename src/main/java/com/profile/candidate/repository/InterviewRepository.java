@@ -16,12 +16,21 @@ import java.util.Optional;
 public interface InterviewRepository extends JpaRepository<InterviewDetails,String> {
 
 
-    @Query(value = "SELECT b.id FROM `production`.bdm_client AS b " +
-            "JOIN `production`.requirements_model AS r " +
+    @Query(value = "SELECT b.id FROM bdm_client AS b " +
+            "JOIN requirements_model AS r " +
             "ON r.client_name LIKE CONCAT(b.client_name, '%') " +
             "WHERE r.client_name = :clientName " +
             "LIMIT 1", nativeQuery = true)
     String findClientIdByClientName(@Param("clientName") String clientName);
+    @Query("SELECT i FROM InterviewDetails i WHERE i.assignedTo = :userId AND i.timestamp BETWEEN :startDateTime AND :endDateTime")
+    List<InterviewDetails> findScheduledInterviewsByAssignedToAndDateRange(
+            @Param("userId") String userId,
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime);
+
+    @Query(value = "SELECT email FROM user_details  " +
+            "WHERE user_id = :userId ", nativeQuery = true)
+    String findUserEmailByUserId(@Param("userId") String userId);
 
     InterviewDetails findByCandidateIdAndUserId(String candidateId, String userId);
 
@@ -46,10 +55,10 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
 
     InterviewDetails findByCandidateIdAndClientName(String candidateId, String clientName);
 
-    @Query(value = "SELECT r.job_title FROM `production`.requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
+    @Query(value = "SELECT r.job_title FROM requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
     String findJobTitleByJobId(@Param("jobId") String jobId);
 
-    @Query(value = "SELECT user_name FROM `production`.user_details WHERE user_id = :userId", nativeQuery = true)
+    @Query(value = "SELECT user_name FROM user_details WHERE user_id = :userId", nativeQuery = true)
     String findUsernameByUserId(@Param("userId") String userId);
 
     @Query("SELECT i FROM InterviewDetails i WHERE i.userId = :userId AND i.timestamp BETWEEN :startDateTime AND :endDateTime")

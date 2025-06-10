@@ -30,10 +30,18 @@ public class InterviewDto {
 
     private String candidateEmailId;
 
+    private String assignedTo;
+
     // Added interviewStatus field
     private String interviewStatus;
 
-    // Constructor
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
+    }
 
     public boolean isSkipNotification() {
         return skipNotification;
