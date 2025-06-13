@@ -304,5 +304,11 @@ public class InterviewController {
                     .body(Collections.singletonMap("message", "An error occurred while fetching interviews"));
         }
     }
+    @GetMapping("/interviewSlots/{userId}")
+    public ResponseEntity<InterviewSlotsDto> getInterviewSlots(
+            @PathVariable String userId
+    ){
 
+        return new ResponseEntity<>(interviewService.getInterviewSlots(userId),HttpStatus.OK);
+    }
 }
