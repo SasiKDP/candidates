@@ -7,10 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.profile.candidate.dto.GetInterviewResponse;
-import com.profile.candidate.dto.GetInterviewResponseDto;
-import com.profile.candidate.dto.InterviewResponseDto;
-import com.profile.candidate.dto.TeamleadInterviewsDTO;
+import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.*;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.InterviewDetails;
@@ -1388,5 +1385,29 @@ public class InterviewService {
         // Return the DTO with both lists
         return new TeamleadInterviewsDTO(selfInterviews, teamInterviews);
     }
+
+    public InterviewSlotsDto getInterviewSlots(String userId){
+
+        if(candidateRepository.findUserNameByUserId(userId).isEmpty())
+            throw new UserNotFoundException("No User Found With Id :"+userId);
+        String role=interviewRepository.findRoleByUserId(userId);
+        if(!role.equalsIgnoreCase("COORDINATOR"))
+            throw new UserNotFoundException("Only COORDINATORS are Allowed");
+        List<InterviewDetails> interviewDetailsList=interviewRepository.findByAssignedTo(userId);
+        InterviewSlotsDto dto=new InterviewSlotsDto();
+        dto.setUserId(userId);
+        List<InterviewSlotsDto.InterviewDateWithDuration> dateTimeList=new ArrayList<>();
+
+         interviewDetailsList.stream()
+                         .forEach((interview)-> {
+                             InterviewSlotsDto.InterviewDateWithDuration timeWithDuration=new InterviewSlotsDto.InterviewDateWithDuration();
+                             timeWithDuration.setInterviewDateTime(interview.getInterviewDateTime());
+                             timeWithDuration.setDuration(interview.getDuration());
+                             dateTimeList.add(timeWithDuration);
+                         });
+         dto.setBookedSlots(dateTimeList);
+         return dto;
+    }
+
 
 }
