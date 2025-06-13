@@ -166,6 +166,9 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
 
     Optional<InterviewDetails> findByContactNumberAndCandidateEmailId(String candidateContactNo, String candidateEmailId);
 
+    List<InterviewDetails> findByAssignedTo(String userId);
+
+
 }
 
 

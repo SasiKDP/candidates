@@ -305,4 +305,11 @@ public class InterviewController {
         }
     }
 
+    @GetMapping("/interviewSlots/{userId}")
+    public ResponseEntity<InterviewSlotsDto> getInterviewSlots(
+            @PathVariable String userId
+    ){
+
+         return new ResponseEntity<>(interviewService.getInterviewSlots(userId),HttpStatus.OK);
+    }
 }
