@@ -488,7 +488,7 @@ public class SubmissionService {
         dto.setOverallFeedback(sub.getOverallFeedback());
         dto.setRecruiterName(sub.getRecruiterName());
         dto.setUserName(sub.getRecruiterName());
-        dto.setUserEmail(sub.getCandidate().getUserEmail());
+        dto.setUserEmail(sub.getUserEmail());
 
         return dto;
     }

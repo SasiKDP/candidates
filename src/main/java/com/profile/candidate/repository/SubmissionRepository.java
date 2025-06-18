@@ -78,8 +78,8 @@ SELECT
     c.full_name AS full_name,    
     cs.skills AS skills,      
     cs.job_id AS job_id,
-    c.user_id AS user_id,
-    c.user_email AS user_email,
+    cs.user_id AS user_id,
+    cs.user_email AS user_email,
     cs.preferred_location AS preferred_location,
     DATE_FORMAT(cs.profile_received_date, '%Y-%m-%d') AS profile_received_date,
     r.job_title AS job_title,    
@@ -141,7 +141,7 @@ SELECT
 FROM candidates c     
 JOIN candidate_submissions cs ON c.candidate_id = cs.candidate_id  
 JOIN requirements_model r ON cs.job_id = r.job_id    
-WHERE c.user_id = :userId     
+WHERE cs.user_id = :userId     
 AND cs.profile_received_date BETWEEN :startDate AND :endDate""", nativeQuery = true)
 	List<Tuple> findSelfSubmissionsByTeamleadAndDateRange(
 			@Param("userId") String userId,
