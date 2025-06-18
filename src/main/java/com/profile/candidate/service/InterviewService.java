@@ -1401,7 +1401,7 @@ public class InterviewService {
         interviewDetailsList.stream()
                 .forEach((interview)-> {
                     InterviewSlotsDto.InterviewDateWithDuration timeWithDuration=new InterviewSlotsDto.InterviewDateWithDuration();
-                    timeWithDuration.setInterviewDateTime(interview.getInterviewDateTime());
+                    timeWithDuration.setInterviewDateTime(interview.getInterviewDateTime().withOffsetSameInstant(ZoneOffset.of("+05:30")));
                     timeWithDuration.setDuration(interview.getDuration());
                     dateTimeList.add(timeWithDuration);
                 });
