@@ -1386,27 +1386,27 @@ public class InterviewService {
         return new TeamleadInterviewsDTO(selfInterviews, teamInterviews);
     }
 
-    public InterviewSlotsDto getInterviewSlots(String userId){
+    public InterviewSlotsDto getInterviewSlots(String userId) {
 
-        if(candidateRepository.findUserNameByUserId(userId).isEmpty())
-            throw new UserNotFoundException("No User Found With Id :"+userId);
-        String role=interviewRepository.findRoleByUserId(userId);
-        if(!role.equalsIgnoreCase("COORDINATOR"))
+        if (candidateRepository.findUserNameByUserId(userId).isEmpty())
+            throw new UserNotFoundException("No User Found With Id :" + userId);
+        String role = interviewRepository.findRoleByUserId(userId);
+        if (!role.equalsIgnoreCase("COORDINATOR"))
             throw new UserNotFoundException("Only COORDINATORS are Allowed");
-        List<InterviewDetails> interviewDetailsList=interviewRepository.findByAssignedTo(userId);
-        InterviewSlotsDto dto=new InterviewSlotsDto();
+        List<InterviewDetails> interviewDetailsList = interviewRepository.findByAssignedTo(userId);
+        InterviewSlotsDto dto = new InterviewSlotsDto();
         dto.setUserId(userId);
-        List<InterviewSlotsDto.InterviewDateWithDuration> dateTimeList=new ArrayList<>();
+        List<InterviewSlotsDto.InterviewDateWithDuration> dateTimeList = new ArrayList<>();
 
-         interviewDetailsList.stream()
-                         .forEach((interview)-> {
-                             InterviewSlotsDto.InterviewDateWithDuration timeWithDuration=new InterviewSlotsDto.InterviewDateWithDuration();
-                             timeWithDuration.setInterviewDateTime(interview.getInterviewDateTime());
-                             timeWithDuration.setDuration(interview.getDuration());
-                             dateTimeList.add(timeWithDuration);
-                         });
-         dto.setBookedSlots(dateTimeList);
-         return dto;
+        interviewDetailsList.stream()
+                .forEach((interview) -> {
+                    InterviewSlotsDto.InterviewDateWithDuration timeWithDuration = new InterviewSlotsDto.InterviewDateWithDuration();
+                    timeWithDuration.setInterviewDateTime(interview.getInterviewDateTime().withOffsetSameInstant(ZoneOffset.of("+05:30")));
+                    timeWithDuration.setDuration(interview.getDuration());
+                    dateTimeList.add(timeWithDuration);
+                });
+        dto.setBookedSlots(dateTimeList);
+        return dto;
     }
 
 
