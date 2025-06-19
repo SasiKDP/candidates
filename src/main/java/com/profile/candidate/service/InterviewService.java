@@ -866,7 +866,7 @@ public class InterviewService {
                 }
             } catch (JsonParseException e) {
                 // Handle invalid JSON (in case there's an error parsing the interviewStatus)
-                System.err.println("Error parsing interview status JSON: Invalid JSON format detected.");
+                System.err.println("Error parsing interview status JSON: Invalid JSON format detected."+e.getMessage());
                 latestInterviewStatus = interviewStatusJson;  // Treat it as plain string if JSON parsing fails
             } catch (IOException e) {
                 // Handle other IO issues

@@ -159,9 +159,9 @@ public class PlacementController {
             return ResponseEntity.ok(counts);
 
         } catch (Exception e) {
-            logger.error("Error fetching dashboard counts between {} and {}", startDate, endDate, e);
+            logger.error("Error fetching dashboard counts between {} and {}", startDate, endDate, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An error occurred while fetching dashboard counts"));
+                    .body(Collections.singletonMap("message", "An error occurred while fetching dashboard counts"+e.getMessage()));
         }
     }
 

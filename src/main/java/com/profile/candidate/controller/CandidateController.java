@@ -159,7 +159,7 @@ public class CandidateController {
             // Create an error response DTO with error details
             DeleteCandidateResponseDto errorResponse = new DeleteCandidateResponseDto(
                     "error",
-                    "Error occurred while deleting the candidate.",
+                    "Error occurred while deleting the candidate."+ex.getMessage(),
                     null,
                     ex.getMessage()
             );
