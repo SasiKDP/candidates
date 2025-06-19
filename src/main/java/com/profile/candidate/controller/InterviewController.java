@@ -193,10 +193,10 @@ public class InterviewController {
             return ResponseEntity.ok(response);
         } catch (CandidateNotFoundException e) {
             // If the candidate is not found
-            logger.error("Candidate not found for userId: {}");
+            logger.error("Candidate not found for userId: {}"+e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new InterviewResponseDto(
                     false,
-                    "Candidate not found ",
+                    "Candidate not found"+e.getMessage(),
                     null,
                     null
             ));
@@ -268,7 +268,7 @@ public class InterviewController {
             return ResponseEntity.ok(teamleadInterviewsDTO);
 
         } catch (CandidateNotFoundException ex) {
-            logger.error("No interviews found for teamlead with userId: {}", userId);
+            logger.error("No interviews found for teamlead with userId: {}", userId,ex.getMessage());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
         } catch (Exception ex) {
@@ -299,9 +299,9 @@ public class InterviewController {
             }
             return ResponseEntity.ok(interviews);
         } catch (Exception e) {
-            logger.error("Error while fetching scheduled interviews for userId: {} between {} and {}", userId, startDate, endDate, e);
+            logger.error("Error while fetching scheduled interviews for userId: {} between {} and {}", userId, startDate, endDate, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An error occurred while fetching interviews"));
+                    .body(Collections.singletonMap("message", "An error occurred while fetching interviews"+e.getMessage()));
         }
     }
 

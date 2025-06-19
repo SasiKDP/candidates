@@ -85,7 +85,7 @@ public class SubmissionController {
             return ResponseEntity.ok(submissions);
         } catch (CandidateNotFoundException ex) {
             // Return message in JSON body for 404
-            logger.error("No submissions found for userId: {} between {} and {}", userId, startDate, endDate);
+            logger.error("No submissions found for userId: {} between {} and {}", userId, startDate, endDate,ex.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Collections.singletonMap("message", ex.getMessage()));
 
@@ -93,7 +93,7 @@ public class SubmissionController {
             // Log the error and return HTTP 500 with message
             logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An internal error occurred while fetching submissions."));
+                    .body(Collections.singletonMap("message", "An internal error occurred while fetching submissions."+ex.getMessage()));
         }
     }
     @GetMapping("/submissions/{candidateId}")
@@ -118,7 +118,7 @@ public class SubmissionController {
             logger.info("Downloading resume for candidate ID: {}", candidateId);
             Submissions submissions = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, jobId);
             if (submissions == null) {
-                logger.error("Submission Not Found with Candidate ID : {} for Job Id :{}", candidateId, jobId);
+                logger.error("Submission Not Found with Candidate ID : {} for Job Id :{}", candidateId, jobId,);
                 throw new CandidateNotFoundException("Submissions not found with Candidate ID: " + candidateId + " and JobId: " + jobId);
             }
 
@@ -221,7 +221,7 @@ public class SubmissionController {
             return ResponseEntity.ok(submissionsDTO);
 
         } catch (CandidateNotFoundException ex) {
-            logger.error("No submissions found for userId: {}", userId);
+            logger.error("No submissions found for userId: {}", userId,ex.getMessage());
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         } catch (Exception ex) {
             logger.error("An error occurred while fetching submissions: {}", ex.getMessage(), ex);
@@ -280,7 +280,7 @@ public class SubmissionController {
             return ResponseEntity.badRequest()
                     .body(Collections.singletonMap("message", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Error fetching submissions for userId: {}", userId, e);
+            logger.error("Error fetching submissions for userId: {}", userId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Collections.singletonMap("message", "An error occurred while fetching submissions"));
         }

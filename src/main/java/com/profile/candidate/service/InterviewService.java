@@ -902,7 +902,7 @@ public class InterviewService {
                     latestInterviewStatus = interviewStatusJson;
                 }
             } catch (JsonParseException e) {
-                System.err.println("Error parsing interview status JSON: Invalid JSON format detected.");
+                System.err.println("Error parsing interview status JSON: Invalid JSON format detected."+e.getMessage());
                 latestInterviewStatus = interviewStatusJson;
             } catch (IOException e) {
                 System.err.println("Error reading interview status: " + e.getMessage());
