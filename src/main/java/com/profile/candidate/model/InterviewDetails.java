@@ -44,6 +44,16 @@ public class InterviewDetails {
     private String assignedTo;
     private String coordinatorName;
 
+    private String internalFeedback;
+
+    public String getInternalFeedback() {
+        return internalFeedback;
+    }
+
+    public void setInternalFeedback(String internalFeedback) {
+        this.internalFeedback = internalFeedback;
+    }
+
     @Transient
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -68,29 +78,6 @@ public class InterviewDetails {
             throw new RuntimeException("Failed to deserialize client emails", e);
         }
     }
-//    public void updateInterviewStatus(int stage, String status) {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        ArrayNode statusArray;
-//        try {
-//            if (this.interviewStatus != null && !this.interviewStatus.isEmpty()) {
-//                statusArray = (ArrayNode) objectMapper.readTree(this.interviewStatus);
-//            } else {
-//                statusArray = objectMapper.createArrayNode();
-//            }
-//            ObjectNode statusEntry = objectMapper.createObjectNode();
-//            statusEntry.put("stage", stage);
-//            statusEntry.put("status", status);
-//            statusEntry.put("timestamp", OffsetDateTime.now().toString());
-//
-//            // Add interview level from entity field
-//            statusEntry.put("interviewLevel", this.interviewLevel != null ? this.interviewLevel : "");
-//
-//            statusArray.add(statusEntry);
-//            this.interviewStatus = objectMapper.writeValueAsString(statusArray);
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException("Error updating interview status", e);
-//        }
-//    }
 
     public boolean getIsPlaced() {
         return isPlaced;
