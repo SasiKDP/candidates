@@ -311,4 +311,15 @@ public class InterviewController {
 
         return new ResponseEntity<>(interviewService.getInterviewSlots(userId),HttpStatus.OK);
     }
+
+
+    @PostMapping("/updateInterviewByCoordinator/{coordinatorId}/{interviewId}")
+    public ResponseEntity<InterviewResponseDto> updateInterviewByCoordinator(
+            @PathVariable String coordinatorId,@PathVariable String interviewId,
+            @RequestBody CoordinatorInterviewUpdateDto dto){
+
+       return new ResponseEntity<>(interviewService.updateInterviewByCoordinator(coordinatorId,interviewId,dto),HttpStatus.OK);
+
+
+    }
 }
