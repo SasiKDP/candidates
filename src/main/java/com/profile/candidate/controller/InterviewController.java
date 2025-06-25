@@ -313,7 +313,7 @@ public class InterviewController {
     }
 
 
-    @PostMapping("/updateInterviewByCoordinator/{coordinatorId}/{interviewId}")
+    @PutMapping("/updateInterviewByCoordinator/{coordinatorId}/{interviewId}")
     public ResponseEntity<InterviewResponseDto> updateInterviewByCoordinator(
             @PathVariable String coordinatorId,@PathVariable String interviewId,
             @RequestBody CoordinatorInterviewUpdateDto dto){
