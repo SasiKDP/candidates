@@ -1388,9 +1388,9 @@ public class InterviewService {
 
         if(candidateRepository.findUserNameByUserId(userId).isEmpty())
             throw new UserNotFoundException("No User Found With Id :"+userId);
-        String role=interviewRepository.findRoleByUserId(userId);
-        if(!role.equalsIgnoreCase("COORDINATOR"))
-            throw new UserNotFoundException("Only COORDINATORS are Allowed");
+//        String role=interviewRepository.findRoleByUserId(userId);
+//        if(!role.equalsIgnoreCase("COORDINATOR"))
+//            throw new UserNotFoundException("Only COORDINATORS are Allowed");
         List<InterviewDetails> interviewDetailsList=interviewRepository.findByAssignedTo(userId);
         InterviewSlotsDto dto=new InterviewSlotsDto();
         dto.setUserId(userId);
