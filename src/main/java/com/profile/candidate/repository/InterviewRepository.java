@@ -86,45 +86,49 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
     String findRoleByUserId(@Param("userId") String userId);
 
     @Query(value = """
-            SELECT 
-                c.job_id,
-                c.interview_id AS interview_id,
-                c.candidate_id,
-                c.full_name,
-                c.contact_number,
-                c.candidate_email_id,
-                c.user_email,
-                c.user_id,
-                DATE_FORMAT(c.interview_date_time, '%Y-%m-%dT%H:%i:%s') AS interview_date_time,
-                c.duration,
-                c.zoom_link,
-                DATE_FORMAT(c.timestamp, '%Y-%m-%dT%H:%i:%s') AS timestamp,
-                c.client_email,
-                c.client_name,
-                c.interview_level,
-                c.interview_status,
-                c.is_placed,
-                c.recruiter_name AS recruiterName
-            FROM 
-                interview_details c
-            WHERE 
-                c.job_id IN (
-                    SELECT r.job_id
-                    FROM requirements_model r
-                    JOIN bdm_client b 
-                        ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
-                    JOIN user_details u 
-                        ON b.on_boarded_by = u.user_name
-                    WHERE u.user_id = :userId
-                )
-                AND c.interview_date_time IS NOT NULL
-                AND c.timestamp BETWEEN :startDateTime AND :endDateTime
-            """, nativeQuery = true)
+    SELECT 
+        c.job_id,
+        c.interview_id AS interview_id,
+        c.candidate_id,
+        c.full_name,
+        c.contact_number,
+        c.candidate_email_id,
+        c.user_email,
+        c.user_id,
+        DATE_FORMAT(c.interview_date_time, '%Y-%m-%dT%H:%i:%s') AS interview_date_time,
+        c.duration,
+        c.zoom_link,
+        DATE_FORMAT(c.timestamp, '%Y-%m-%dT%H:%i:%s') AS timestamp,
+        c.client_email,
+        c.client_name,
+        c.interview_level,
+        c.interview_status,
+        c.is_placed,
+        c.recruiter_name AS recruiterName
+    FROM 
+        interview_details c
+    WHERE 
+        (
+            c.job_id IN (
+                SELECT r.job_id
+                FROM requirements_model r
+                JOIN bdm_client b 
+                    ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
+                JOIN user_details u 
+                    ON b.on_boarded_by = u.user_name
+                WHERE u.user_id = :userId
+            )
+            OR c.assigned_to = :userId
+        )
+        AND c.interview_date_time IS NOT NULL
+        AND c.timestamp BETWEEN :startDateTime AND :endDateTime
+    """, nativeQuery = true)
     List<Tuple> findScheduledInterviewsByBdmUserIdAndDateRange(
             @Param("userId") String userId,
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
     );
+
 
     @Query(value = """
                 SELECT c.* 
