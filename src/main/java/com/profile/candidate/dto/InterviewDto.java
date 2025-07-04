@@ -34,6 +34,8 @@ public class InterviewDto {
 
     // Added interviewStatus field
     private String interviewStatus;
+    private String internalFeedback;
+
 
     public String getAssignedTo() {
         return assignedTo;
@@ -142,6 +144,14 @@ public class InterviewDto {
 
     public void setExternalInterviewDetails(String externalInterviewDetails) {
         this.externalInterviewDetails = externalInterviewDetails;
+    }
+
+    public String getInternalFeedback() {
+        return internalFeedback;
+    }
+
+    public void setInternalFeedback(String internalFeedback) {
+        this.internalFeedback = internalFeedback;
     }
 
     public String getContactNumber() {
