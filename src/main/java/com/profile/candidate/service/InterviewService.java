@@ -238,6 +238,7 @@ public class InterviewService {
             String clientName,
             String interviewLevel,
             String externalInterviewDetails,
+            String internalFeedback,
             String interviewStatus,
             boolean skipNotification,
             String assignedTo) {
@@ -266,6 +267,9 @@ public class InterviewService {
         if (interviewLevel != null && !interviewLevel.isEmpty()) interviewDetails.setInterviewLevel(interviewLevel);
         if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty())
             interviewDetails.setExternalInterviewDetails(externalInterviewDetails);
+        if (internalFeedback != null && !internalFeedback.isEmpty()) {
+            interviewDetails.setInternalFeedback(internalFeedback);
+        }
 
         // Handle the interview status update if provided
         if (interviewStatus != null && !interviewStatus.isEmpty()) {
@@ -428,6 +432,7 @@ public class InterviewService {
             String clientName,
             String interviewLevel,
             String externalInterviewDetails,
+            String internalFeedback,
             String interviewStatus,
             boolean skipNotification) {
 
@@ -456,6 +461,9 @@ public class InterviewService {
         if (interviewLevel != null && !interviewLevel.isEmpty()) interviewDetails.setInterviewLevel(interviewLevel);
         if (externalInterviewDetails != null && !externalInterviewDetails.isEmpty())
             interviewDetails.setExternalInterviewDetails(externalInterviewDetails);
+        if (internalFeedback != null && !internalFeedback.isEmpty()) {
+            interviewDetails.setInternalFeedback(internalFeedback);
+        }
 
         // Handle the interview status update if provided
         if (interviewStatus != null && !interviewStatus.isEmpty()) {

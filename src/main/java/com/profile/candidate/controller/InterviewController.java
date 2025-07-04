@@ -141,6 +141,7 @@ public class InterviewController {
                     interviewRequest.getClientName(),
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getInternalFeedback(),
                     interviewRequest.getInterviewStatus(),
                     interviewRequest.isSkipNotification(),
                     interviewRequest.getAssignedTo()); // Added status update
@@ -228,6 +229,7 @@ public class InterviewController {
                     interviewRequest.getClientName(),
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getInternalFeedback(),
                     interviewRequest.getInterviewStatus(),
                     interviewRequest.isSkipNotification()
             ); // Added status update
