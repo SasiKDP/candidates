@@ -46,6 +46,16 @@ public class InterviewDetails {
 
     private String internalFeedback;
 
+    private String comments;
+
+    public String getComments() {
+        return comments;
+    }
+
+    public void setComments(String comments) {
+        this.comments = comments;
+    }
+
     public String getInternalFeedback() {
         return internalFeedback;
     }

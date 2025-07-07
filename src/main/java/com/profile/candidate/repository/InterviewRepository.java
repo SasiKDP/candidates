@@ -1,6 +1,5 @@
 package com.profile.candidate.repository;
 
-import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.InterviewDetails;
 import jakarta.persistence.Tuple;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -172,6 +171,7 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
     List<InterviewDetails> findByAssignedTo(String userId);
 
     InterviewDetails findByInterviewIdAndAssignedTo(String interviewId,String coordinatorId);
+
 }
 
 

@@ -24,13 +24,15 @@ public class GetInterviewResponseDto {
     private String latestInterviewStatus;
     private String recruiterName;
     private boolean isPlaced;// New field for status
+    private String technology;
 
+    public String getTechnology() {
+        return technology;
+    }
 
-    // Constructor
-
-
-    // Getters and Setters
-
+    public void setTechnology(String technology) {
+        this.technology = technology;
+    }
 
     public String getRecruiterName() {
         return recruiterName;
@@ -40,7 +42,13 @@ public class GetInterviewResponseDto {
         this.recruiterName = recruiterName;
     }
 
-    public GetInterviewResponseDto(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus, String recruiterName, boolean isPlaced) {
+    public GetInterviewResponseDto(String interviewId, String jobId, String candidateId,
+                                   String candidateFullName, String candidateContactNo,
+                                   String candidateEmailId, String userEmail, String userId,
+                                   OffsetDateTime interviewDateTime, Integer duration, String zoomLink,
+                                   LocalDateTime interviewScheduledTimestamp, List<String> clientEmail,
+                                   String clientName, String interviewLevel, String latestInterviewStatus,
+                                   String recruiterName, boolean isPlaced, String technology) {
         this.interviewId = interviewId;
         this.jobId = jobId;
         this.candidateId = candidateId;
@@ -59,6 +67,7 @@ public class GetInterviewResponseDto {
         this.latestInterviewStatus = latestInterviewStatus;
         this.recruiterName = recruiterName;
         this.isPlaced = isPlaced;
+        this.technology = technology;
     }
 
     public boolean getIsPlaced() {
