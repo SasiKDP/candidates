@@ -181,37 +181,35 @@ public class SubmissionController {
         Submissions updateSubmission = new Submissions();
         CandidateDetails updatedCandidateDetails = new CandidateDetails();
 
-        updateSubmission.setJobId(allParams.get("jobId"));
-        updatedCandidateDetails.setUserId(allParams.get("userId"));
-        updatedCandidateDetails.setFullName(allParams.get("fullName"));
-        updatedCandidateDetails.setCandidateEmailId(allParams.get("candidateEmailId"));
-        updatedCandidateDetails.setContactNumber(allParams.get("contactNumber"));
-        updatedCandidateDetails.setQualification(allParams.get("qualification"));
-        if (allParams.get("totalExperience") != null) {
-            updatedCandidateDetails.setTotalExperience(Float.parseFloat(allParams.get("totalExperience")));
-        }
-        updatedCandidateDetails.setCurrentCTC(allParams.get("currentCTC"));
-        updatedCandidateDetails.setExpectedCTC(allParams.get("expectedCTC"));
-        updatedCandidateDetails.setNoticePeriod(allParams.get("noticePeriod"));
-        updatedCandidateDetails.setCurrentLocation(allParams.get("currentLocation"));
-        if (allParams.get("relevantExperience") != null) {
-            updatedCandidateDetails.setRelevantExperience(Float.parseFloat(allParams.get("relevantExperience")));
-        }
-        updatedCandidateDetails.setCurrentOrganization(allParams.get("currentOrganization"));
-        updatedCandidateDetails.setUserEmail(allParams.get("userEmail"));
 
+        // CandidateDetails checks
+        if (allParams.get("userId") != null) updatedCandidateDetails.setUserId(allParams.get("userId"));
+        if (allParams.get("fullName") != null) updatedCandidateDetails.setFullName(allParams.get("fullName"));
+        if (allParams.get("candidateEmailId") != null) updatedCandidateDetails.setCandidateEmailId(allParams.get("candidateEmailId"));
+        if (allParams.get("contactNumber") != null) updatedCandidateDetails.setContactNumber(allParams.get("contactNumber"));
+        if (allParams.get("qualification") != null) updatedCandidateDetails.setQualification(allParams.get("qualification"));
+        if (allParams.get("totalExperience") != null) updatedCandidateDetails.setTotalExperience(Float.parseFloat(allParams.get("totalExperience")));
+        if (allParams.get("currentCTC") != null) updatedCandidateDetails.setCurrentCTC(allParams.get("currentCTC"));
+        if (allParams.get("expectedCTC") != null) updatedCandidateDetails.setExpectedCTC(allParams.get("expectedCTC"));
+        if (allParams.get("noticePeriod") != null) updatedCandidateDetails.setNoticePeriod(allParams.get("noticePeriod"));
+        if (allParams.get("currentLocation") != null) updatedCandidateDetails.setCurrentLocation(allParams.get("currentLocation"));
+        if (allParams.get("relevantExperience") != null) updatedCandidateDetails.setRelevantExperience(Float.parseFloat(allParams.get("relevantExperience")));
+        if (allParams.get("currentOrganization") != null) updatedCandidateDetails.setCurrentOrganization(allParams.get("currentOrganization"));
+        if (allParams.get("userEmail") != null) updatedCandidateDetails.setUserEmail(allParams.get("userEmail"));
+
+        // Submission checks
+        if (allParams.get("jobId") != null) updateSubmission.setJobId(allParams.get("jobId"));
         updateSubmission.setCandidate(updatedCandidateDetails);
-        updateSubmission.setPreferredLocation(allParams.get("preferredLocation"));
-        updateSubmission.setSkills(allParams.get("skills"));
-        updateSubmission.setCommunicationSkills(allParams.get("communicationSkills"));
-        if (allParams.get("requiredTechnologiesRating") != null) {
-            updateSubmission.setRequiredTechnologiesRating(Double.parseDouble(allParams.get("requiredTechnologiesRating")));
-        }
-        updateSubmission.setOverallFeedback(allParams.get("overallFeedback"));
-
+        if (allParams.get("preferredLocation") != null) updateSubmission.setPreferredLocation(allParams.get("preferredLocation"));
+        if (allParams.get("skills") != null) updateSubmission.setSkills(allParams.get("skills"));
+        if (allParams.get("communicationSkills") != null) updateSubmission.setCommunicationSkills(allParams.get("communicationSkills"));
+        if (allParams.get("requiredTechnologiesRating") != null) updateSubmission.setRequiredTechnologiesRating(Double.parseDouble(allParams.get("requiredTechnologiesRating")));
+        if (allParams.get("overallFeedback") != null) updateSubmission.setOverallFeedback(allParams.get("overallFeedback"));
+        if (allParams.get("status") != null) updateSubmission.setStatus(allParams.get("status"));
         CandidateResponseDto response = submissionService.editSubmission(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
     @GetMapping("/submissions/teamlead/{userId}")
     public ResponseEntity<TeamleadSubmissionsDTO> getSubmissionsForTeamlead(@PathVariable String userId) {
         try {
@@ -236,34 +234,29 @@ public class SubmissionController {
 
         Submissions updateSubmission = new Submissions();
         CandidateDetails updatedCandidateDetails = new CandidateDetails();
+        if (allParams.get("userId") != null) updatedCandidateDetails.setUserId(allParams.get("userId"));
+        if (allParams.get("fullName") != null) updatedCandidateDetails.setFullName(allParams.get("fullName"));
+        if (allParams.get("candidateEmailId") != null) updatedCandidateDetails.setCandidateEmailId(allParams.get("candidateEmailId"));
+        if (allParams.get("contactNumber") != null) updatedCandidateDetails.setContactNumber(allParams.get("contactNumber"));
+        if (allParams.get("qualification") != null) updatedCandidateDetails.setQualification(allParams.get("qualification"));
+        if (allParams.get("totalExperience") != null) updatedCandidateDetails.setTotalExperience(Float.parseFloat(allParams.get("totalExperience")));
+        if (allParams.get("currentCTC") != null) updatedCandidateDetails.setCurrentCTC(allParams.get("currentCTC"));
+        if (allParams.get("expectedCTC") != null) updatedCandidateDetails.setExpectedCTC(allParams.get("expectedCTC"));
+        if (allParams.get("noticePeriod") != null) updatedCandidateDetails.setNoticePeriod(allParams.get("noticePeriod"));
+        if (allParams.get("currentLocation") != null) updatedCandidateDetails.setCurrentLocation(allParams.get("currentLocation"));
+        if (allParams.get("relevantExperience") != null) updatedCandidateDetails.setRelevantExperience(Float.parseFloat(allParams.get("relevantExperience")));
+        if (allParams.get("currentOrganization") != null) updatedCandidateDetails.setCurrentOrganization(allParams.get("currentOrganization"));
+        if (allParams.get("userEmail") != null) updatedCandidateDetails.setUserEmail(allParams.get("userEmail"));
 
-        updateSubmission.setJobId(allParams.get("jobId"));
-        //updatedCandidateDetails.setUserId(allParams.get("userId"));
-        updatedCandidateDetails.setFullName(allParams.get("fullName"));
-        updatedCandidateDetails.setCandidateEmailId(allParams.get("candidateEmailId"));
-        updatedCandidateDetails.setContactNumber(allParams.get("contactNumber"));
-        updatedCandidateDetails.setQualification(allParams.get("qualification"));
-        if (allParams.get("totalExperience") != null) {
-            updatedCandidateDetails.setTotalExperience(Float.parseFloat(allParams.get("totalExperience")));
-        }
-        updatedCandidateDetails.setCurrentCTC(allParams.get("currentCTC"));
-        updatedCandidateDetails.setExpectedCTC(allParams.get("expectedCTC"));
-        updatedCandidateDetails.setNoticePeriod(allParams.get("noticePeriod"));
-        updatedCandidateDetails.setCurrentLocation(allParams.get("currentLocation"));
-        if (allParams.get("relevantExperience") != null) {
-            updatedCandidateDetails.setRelevantExperience(Float.parseFloat(allParams.get("relevantExperience")));
-        }
-        updatedCandidateDetails.setCurrentOrganization(allParams.get("currentOrganization"));
-        updatedCandidateDetails.setUserEmail(allParams.get("userEmail"));
-
+        // Submission checks
+        if (allParams.get("jobId") != null) updateSubmission.setJobId(allParams.get("jobId"));
         updateSubmission.setCandidate(updatedCandidateDetails);
-        updateSubmission.setPreferredLocation(allParams.get("preferredLocation"));
-        updateSubmission.setSkills(allParams.get("skills"));
-        updateSubmission.setCommunicationSkills(allParams.get("communicationSkills"));
-        if (allParams.get("requiredTechnologiesRating") != null) {
-            updateSubmission.setRequiredTechnologiesRating(Double.parseDouble(allParams.get("requiredTechnologiesRating")));
-        }
-        updateSubmission.setOverallFeedback(allParams.get("overallFeedback"));
+        if (allParams.get("preferredLocation") != null) updateSubmission.setPreferredLocation(allParams.get("preferredLocation"));
+        if (allParams.get("skills") != null) updateSubmission.setSkills(allParams.get("skills"));
+        if (allParams.get("communicationSkills") != null) updateSubmission.setCommunicationSkills(allParams.get("communicationSkills"));
+        if (allParams.get("requiredTechnologiesRating") != null) updateSubmission.setRequiredTechnologiesRating(Double.parseDouble(allParams.get("requiredTechnologiesRating")));
+        if (allParams.get("overallFeedback") != null) updateSubmission.setOverallFeedback(allParams.get("overallFeedback"));
+        if (allParams.get("status") != null) updateSubmission.setStatus(allParams.get("status"));
 
         CandidateResponseDto response = submissionService.editSubmissionWithOutUserId(submissionId, updatedCandidateDetails, updateSubmission, resumeFile);
         return new ResponseEntity<>(response, HttpStatus.OK);

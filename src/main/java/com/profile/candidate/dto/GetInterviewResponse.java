@@ -65,9 +65,19 @@ public class GetInterviewResponse {
         private String latestInterviewStatus;
         private boolean isPlaced;
         private String recruiterName;
+
+        private String technology;
         //private String emailId;
 
-        public InterviewData(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus, boolean isPlaced, String recruiterName) {
+
+        public InterviewData(String interviewId, String jobId,
+                             String candidateId, String candidateFullName,
+                             String candidateContactNo, String candidateEmailId,
+                             String userEmail, String userId, OffsetDateTime interviewDateTime,
+                             Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp,
+                             List<String> clientEmail, String clientName, String interviewLevel,
+                             String latestInterviewStatus, boolean isPlaced, String recruiterName,
+                             String technology) {
             this.interviewId = interviewId;
             this.jobId = jobId;
             this.candidateId = candidateId;
@@ -86,8 +96,19 @@ public class GetInterviewResponse {
             this.latestInterviewStatus = latestInterviewStatus;
             this.isPlaced = isPlaced;
             this.recruiterName = recruiterName;
+            this.technology = technology;
         }
+
         // Getters and Setters
+
+        public String getTechnology() {
+            return technology;
+        }
+
+        public void setTechnology(String technology) {
+            this.technology = technology;
+        }
+
         public String getRecruiterName() {
             return recruiterName;
         }

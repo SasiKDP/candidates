@@ -35,7 +35,15 @@ public class InterviewDto {
     // Added interviewStatus field
     private String interviewStatus;
     private String internalFeedback;
+    private String comments;
 
+    public String getComments() {
+        return comments;
+    }
+
+    public void setComments(String comments) {
+        this.comments = comments;
+    }
 
     public String getAssignedTo() {
         return assignedTo;

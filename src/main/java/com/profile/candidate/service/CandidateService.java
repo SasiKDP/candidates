@@ -129,6 +129,8 @@ public class CandidateService {
         submission.setRecruiterName(recruiterName);
         submission.setUserId(submissionDetails.getUserId());
         submission.setUserEmail(submissionDetails.getUserEmail());
+
+        submission.setStatus("PROCESSED FOR INTERVIEW");
         // Save the submission
         submissionRepository.save(submission);
 

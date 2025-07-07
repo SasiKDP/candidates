@@ -52,12 +52,7 @@ public class InterviewController {
                 logger.error("Interview Already Scheduled for Candidate Id :"+interviewRequest.getCandidateId());
                 throw new InterviewAlreadyScheduledException("Interview Already Scheduled for Candidate Id :"+interviewRequest.getCandidateId());
             }
-             //Check if the candidate belongs to the user
-//            boolean isValidCandidate =submissionService.isCandidateValidForUser(userId, interviewRequest.getCandidateId());
-//            if (!isValidCandidate) {
-//                logger.error("Candidate ID does not belong to the provided userId.");
-//              throw new InvalidCandidateDataException("Candidate ID does not belong to the provided userId.");
-//            }
+
             InterviewResponseDto response = interviewService.scheduleInterview(
                     userId,
                     interviewRequest.getCandidateId(),
@@ -74,7 +69,8 @@ public class InterviewController {
                     interviewRequest.getContactNumber(),
                     interviewRequest.getCandidateEmailId(),
                     interviewRequest.isSkipNotification(),
-                    interviewRequest.getAssignedTo());
+                    interviewRequest.getAssignedTo(),
+                    interviewRequest.getComments());
             return ResponseEntity.ok(response);
         }
         catch (JsonProcessingException e) {
@@ -190,7 +186,8 @@ public class InterviewController {
                     interviewRequest.getContactNumber(),
                     interviewRequest.getCandidateEmailId(),
                     interviewRequest.isSkipNotification(),
-                    interviewRequest.getAssignedTo());
+                    interviewRequest.getAssignedTo(),
+                    interviewRequest.getComments());
             return ResponseEntity.ok(response);
         } catch (CandidateNotFoundException e) {
             // If the candidate is not found
@@ -231,7 +228,8 @@ public class InterviewController {
                     interviewRequest.getExternalInterviewDetails(),
                     interviewRequest.getInternalFeedback(),
                     interviewRequest.getInterviewStatus(),
-                    interviewRequest.isSkipNotification()
+                    interviewRequest.isSkipNotification(),
+                    interviewRequest.getComments()
             ); // Added status update
             return ResponseEntity.ok(response);
     }
@@ -321,7 +319,11 @@ public class InterviewController {
             @RequestBody CoordinatorInterviewUpdateDto dto){
 
        return new ResponseEntity<>(interviewService.updateInterviewByCoordinator(coordinatorId,interviewId,dto),HttpStatus.OK);
+    }
 
+    @GetMapping("/coordinatorInterviews/{userId}")
+    public ResponseEntity<List<CoordinatorInterviewDto>> getCoordinatorInterviews(String userId){
 
+          return new ResponseEntity<>(interviewService.getCoordinatorInterviews(userId),HttpStatus.OK);
     }
 }

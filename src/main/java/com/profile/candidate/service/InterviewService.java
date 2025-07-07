@@ -39,7 +39,7 @@ public class InterviewService {
     @Autowired
     CandidateRepository candidateRepository;
     @Autowired
-    InterviewRepository interviewRepository;
+    private  InterviewRepository interviewRepository;
     @Autowired
     SubmissionRepository submissionRepository;
 
@@ -48,7 +48,7 @@ public class InterviewService {
     public InterviewResponseDto scheduleInterview(String userId, String candidateId, OffsetDateTime interviewDateTime, Integer duration,
                                                   String zoomLink, String userEmail, List<String> clientEmails,
                                                   String clientName, String interviewLevel, String externalInterviewDetails, String jobId, String fullName,
-                                                  String contactNumber, String candidateEmailId, boolean skipNotification,String assignedTo) throws JsonProcessingException {
+                                                  String contactNumber, String candidateEmailId, boolean skipNotification,String assignedTo,String comments) throws JsonProcessingException {
 
         System.out.println("Starting to schedule interview for userId: " + userId + " and candidateId: " + candidateId);
         if (candidateId == null)
@@ -110,6 +110,11 @@ public class InterviewService {
         interviewDetails.setInterviewId(interviewId);
         interviewDetails.setJobId(jobId);
 
+        Submissions submissions=submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
+        submissions.setStatus("MOVED TO INTERVIEW");
+           if(interviewLevel.equalsIgnoreCase("INTERNAL")){
+                interviewDetails.setComments(comments);
+           }
         ObjectMapper objectMapper = new ObjectMapper();
         ArrayNode statusArray = objectMapper.createArrayNode();
         ObjectNode statusEntry = objectMapper.createObjectNode();
@@ -270,7 +275,18 @@ public class InterviewService {
         if (internalFeedback != null && !internalFeedback.isEmpty()) {
             interviewDetails.setInternalFeedback(internalFeedback);
         }
+          if(interviewLevel.equalsIgnoreCase("INTERNAL") && interviewStatus.equalsIgnoreCase("REJECTED")){
 
+              Submissions submissions=submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
+              submissions.setStatus("SCREEN REJECT");
+          }
+          if(interviewLevel.equalsIgnoreCase("EXTERNAL") ||
+                  interviewLevel.equalsIgnoreCase("EXTERNAL-L1") ||
+                  interviewLevel.equalsIgnoreCase("EXTERNAL-L2") ||
+                  interviewLevel.equalsIgnoreCase("FINAL") && interviewStatus.equalsIgnoreCase("REJECTED")){
+              Submissions submissions=submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
+              submissions.setStatus("CLIENT REJECT");
+          }
         // Handle the interview status update if provided
         if (interviewStatus != null && !interviewStatus.isEmpty()) {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -434,7 +450,8 @@ public class InterviewService {
             String externalInterviewDetails,
             String internalFeedback,
             String interviewStatus,
-            boolean skipNotification) {
+            boolean skipNotification,
+            String comments) {
 
         logger.info("Starting interview update  and candidateId: {}", candidateId);
 
@@ -464,7 +481,21 @@ public class InterviewService {
         if (internalFeedback != null && !internalFeedback.isEmpty()) {
             interviewDetails.setInternalFeedback(internalFeedback);
         }
+        if (comments != null && !comments.isEmpty()) {
+            interviewDetails.setComments(internalFeedback);
+        }
+        if(interviewLevel.equalsIgnoreCase("INTERNAL") && interviewStatus.equalsIgnoreCase("REJECTED")){
 
+            Submissions submissions=submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
+            submissions.setStatus("SCREEN REJECT");
+        }
+        if(interviewLevel.equalsIgnoreCase("EXTERNAL") ||
+                interviewLevel.equalsIgnoreCase("EXTERNAL-L1") ||
+                interviewLevel.equalsIgnoreCase("EXTERNAL-L2") ||
+                interviewLevel.equalsIgnoreCase("FINAL") && interviewStatus.equalsIgnoreCase("REJECTED")){
+            Submissions submissions=submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
+            submissions.setStatus("CLIENT REJECT");
+        }
         // Handle the interview status update if provided
         if (interviewStatus != null && !interviewStatus.isEmpty()) {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -618,7 +649,8 @@ public class InterviewService {
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
                         i.getIsPlaced(),
-                        i.getRecruiterName()
+                        i.getRecruiterName(),
+                        interviewRepository.findJobTitleByJobId(i.getJobId())
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", dataList, null);
@@ -655,7 +687,8 @@ public class InterviewService {
                             i.getInterviewLevel(),
                             latestInterviewStatusFromJson(i.getInterviewStatus()),
                             i.getIsPlaced(),
-                            i.getRecruiterName()
+                            i.getRecruiterName(),
+                            interviewRepository.findJobTitleByJobId(i.getJobId())
                     ))
                     .collect(Collectors.toList());
             return new GetInterviewResponse(true, "Interviews found", dataList, null);
@@ -706,14 +739,15 @@ public class InterviewService {
                 i.getInterviewLevel(),
                 latestInterviewStatusFromJson(i.getInterviewStatus()),
                 i.getIsPlaced(),
-                i.getRecruiterName()
+                i.getRecruiterName(),
+                interviewRepository.findJobTitleByJobId(i.getJobId())
         );
         return new GetInterviewResponse(true, "Interview found", List.of(payload), null);
     }
     public InterviewResponseDto scheduleInterviewWithOutUserId(String candidateId, OffsetDateTime interviewDateTime, Integer duration,
                                                                String zoomLink, List<String> clientEmail,
                                                                String clientName, String interviewLevel, String externalInterviewDetails, String jobId, String fullName,
-                                                               String contactNumber, String candidateEmailId, boolean skipNotification,String assignedTo) throws JsonProcessingException {
+                                                               String contactNumber, String candidateEmailId, boolean skipNotification,String assignedTo,String comments) throws JsonProcessingException {
 
         System.out.println("Starting to schedule interview for userId: " + " and candidateId: " + candidateId);
         if (candidateId == null) {
@@ -764,6 +798,10 @@ public class InterviewService {
         interviewDetails.setCandidateEmailId(candidateEmailId);
         interviewDetails.setTimestamp(LocalDateTime.now());
 
+        if(interviewLevel.equalsIgnoreCase("INTERNAL")){
+            interviewDetails.setComments(comments);
+        }
+
         String clientId = interviewRepository.findClientIdByClientName(clientName);
         if (clientId == null) throw new InvalidClientException("No Client With Name :" + clientName);
 
@@ -771,6 +809,9 @@ public class InterviewService {
         String interviewId = candidateId + "_" + clientId + "_" + jobId;
         interviewDetails.setInterviewId(interviewId);
         interviewDetails.setJobId(jobId);
+
+        Submissions submissions=submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId,jobId);
+        submissions.setStatus("MOVED TO INTERVIEW");
         // Set interview details
         ObjectMapper objectMapper = new ObjectMapper();
         ArrayNode statusArray = objectMapper.createArrayNode();
@@ -880,13 +921,14 @@ public class InterviewService {
                             i.getInterviewLevel(),
                             latestInterviewStatusFromJson(i.getInterviewStatus()),
                             i.getIsPlaced(),
-                            i.getRecruiterName()
+                            i.getRecruiterName(),
+                            interviewRepository.findJobTitleByJobId(i.getJobId())
                     ))
                     .collect(Collectors.toList());
         }
             return new GetInterviewResponse(true, "Interviews found", payloadList, null);
     }
-    public String latestInterviewStatusFromJson(String interviewStatusJson) {
+    public static String latestInterviewStatusFromJson(String interviewStatusJson) {
         String latestInterviewStatus = null;
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -1105,7 +1147,8 @@ public class InterviewService {
                         i.getInterviewLevel(),
                         latestInterviewStatusFromJson(i.getInterviewStatus()),
                         i.getIsPlaced(),
-                        i.getRecruiterName()
+                        i.getRecruiterName(),
+                        interviewRepository.findJobTitleByJobId(i.getJobId())
                 ))
                 .collect(Collectors.toList());
         return new GetInterviewResponse(true, "Interviews found", payloadList, null);
@@ -1200,7 +1243,8 @@ public class InterviewService {
                             interview.getInterviewLevel(),
                             latestInterviewStatus,
                             interview.getRecruiterName(),
-                            interview.getIsPlaced()
+                            interview.getIsPlaced(),
+                            interviewRepository.findJobTitleByJobId(interview.getJobId())
                     ));
                 }
             }
@@ -1234,7 +1278,8 @@ public class InterviewService {
                                 interview.getInterviewLevel(),
                                 latestInterviewStatus,
                                 interview.getRecruiterName(),
-                                interview.getIsPlaced()
+                                interview.getIsPlaced(),
+                                interviewRepository.findJobTitleByJobId(interview.getJobId())
                         ));
                     }
                 }
@@ -1288,7 +1333,8 @@ public class InterviewService {
                                 tuple.get("interview_level", String.class),
                                 latestInterviewStatus,
                                 tuple.get("recruiterName",String.class),
-                                tuple.get("is_placed", Boolean.class)
+                                tuple.get("is_placed", Boolean.class),
+                                interviewRepository.findJobTitleByJobId(tuple.get("job_id", String.class))
                         ));
                     }
                 }
@@ -1356,7 +1402,8 @@ public class InterviewService {
                     interview.getInterviewLevel(),
                     latestInterviewStatus,
                     interview.getRecruiterName(),
-                    interview.getIsPlaced()
+                    interview.getIsPlaced(),
+                    interviewRepository.findJobTitleByJobId(interview.getJobId())
             ));
         }
         return response;
@@ -1529,5 +1576,44 @@ public class InterviewService {
         );
     }
 
+    public List<CoordinatorInterviewDto> getCoordinatorInterviews(String userId){
+
+        List<InterviewDetails> interviews=interviewRepository.findByAssignedTo(userId);
+
+        List<CoordinatorInterviewDto> response=interviews.stream()
+                .map(interview -> {
+                    String technology=interviewRepository.findJobTitleByJobId(interview.getJobId());
+                   return InterviewService.convertIntoDto(interview,technology);
+                })
+                .collect(Collectors.toList());
+
+        return response;
+    }
+
+    public static CoordinatorInterviewDto convertIntoDto(InterviewDetails interviewDetails,String technology){
+
+        CoordinatorInterviewDto dto=new CoordinatorInterviewDto();
+
+        dto.setInterviewId(interviewDetails.getInterviewId());
+        dto.setFullName(interviewDetails.getFullName());
+        dto.setInterviewLevel(interviewDetails.getInterviewLevel());
+        dto.setInterviewStatus(latestInterviewStatusFromJson(interviewDetails.getInterviewStatus()));
+        dto.setCandidateId(interviewDetails.getCandidateId());
+        dto.setCandidateEmailId(interviewDetails.getCandidateEmailId());
+        dto.setContactNumber(interviewDetails.getContactNumber());
+        dto.setClientName(interviewDetails.getClientName());
+        dto.setDuration(interviewDetails.getDuration());
+        dto.setInterviewDateTime(interviewDetails.getInterviewDateTime().toLocalDateTime());
+        dto.setJobId(interviewDetails.getJobId());
+        dto.setComments(interviewDetails.getComments());
+        dto.setInternalFeedback(interviewDetails.getInternalFeedback());
+        dto.setUserEmail(interviewDetails.getUserEmail());
+        dto.setRecruiterName(interviewDetails.getRecruiterName());
+        dto.setExternalInterviewDetails(interviewDetails.getExternalInterviewDetails());
+        dto.setZoomLink(interviewDetails.getZoomLink());
+        dto.setUserId(interviewDetails.getUserId());
+        dto.setTechnology(technology);
+        return dto;
+    }
 
 }
