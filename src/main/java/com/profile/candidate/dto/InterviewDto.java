@@ -30,11 +30,28 @@ public class InterviewDto {
 
     private String candidateEmailId;
 
+    private String assignedTo;
+
     // Added interviewStatus field
     private String interviewStatus;
+    private String internalFeedback;
+    private String comments;
 
-    private String assignedTo;
-    // Constructor
+    public String getComments() {
+        return comments;
+    }
+
+    public void setComments(String comments) {
+        this.comments = comments;
+    }
+
+    public String getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        this.assignedTo = assignedTo;
+    }
 
     public boolean isSkipNotification() {
         return skipNotification;
@@ -137,6 +154,14 @@ public class InterviewDto {
         this.externalInterviewDetails = externalInterviewDetails;
     }
 
+    public String getInternalFeedback() {
+        return internalFeedback;
+    }
+
+    public void setInternalFeedback(String internalFeedback) {
+        this.internalFeedback = internalFeedback;
+    }
+
     public String getContactNumber() {
         return contactNumber;
     }
@@ -169,11 +194,4 @@ public class InterviewDto {
         this.clientEmail = clientEmail;
     }
 
-    public String getAssignedTo() {
-        return assignedTo;
-    }
-
-    public void setAssignedTo(String assignedTo) {
-        this.assignedTo = assignedTo;
-    }
 }

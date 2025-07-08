@@ -77,6 +77,16 @@ public class BenchDetails {
  @Column(name = "created_date")
  private LocalDate createdDate;
 
+ private String remarks;
+
+ public String getRemarks() {
+  return remarks;
+ }
+
+ public void setRemarks(String remarks) {
+  this.remarks = remarks;
+ }
+
  public LocalDate getCreatedDate() {
   return createdDate;
  }

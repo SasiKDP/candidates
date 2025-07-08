@@ -19,12 +19,12 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
-//@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
-//        "http://192.168.0.135:80",
-//        "http://mymulya.com:443",
-//        "http://182.18.177.16:443",
-//        "http://localhost/","http://192.168.0.135",
-//        "http://182.18.177.16"})
+@CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
+        "http://192.168.0.135:80",
+        "http://mymulya.com:443",
+        "http://182.18.177.16:443",
+        "http://localhost/","http://192.168.0.135",
+        "http://182.18.177.16"})
 @RestController
 @RequestMapping("/candidate")
 public class InterviewController {
@@ -52,12 +52,7 @@ public class InterviewController {
                 logger.error("Interview Already Scheduled for Candidate Id :"+interviewRequest.getCandidateId());
                 throw new InterviewAlreadyScheduledException("Interview Already Scheduled for Candidate Id :"+interviewRequest.getCandidateId());
             }
-             //Check if the candidate belongs to the user
-//            boolean isValidCandidate =submissionService.isCandidateValidForUser(userId, interviewRequest.getCandidateId());
-//            if (!isValidCandidate) {
-//                logger.error("Candidate ID does not belong to the provided userId.");
-//              throw new InvalidCandidateDataException("Candidate ID does not belong to the provided userId.");
-//            }
+
             InterviewResponseDto response = interviewService.scheduleInterview(
                     userId,
                     interviewRequest.getCandidateId(),
@@ -74,7 +69,8 @@ public class InterviewController {
                     interviewRequest.getContactNumber(),
                     interviewRequest.getCandidateEmailId(),
                     interviewRequest.isSkipNotification(),
-                    interviewRequest.getAssignedTo());
+                    interviewRequest.getAssignedTo(),
+                    interviewRequest.getComments());
             return ResponseEntity.ok(response);
         }
         catch (JsonProcessingException e) {
@@ -141,6 +137,7 @@ public class InterviewController {
                     interviewRequest.getClientName(),
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getInternalFeedback(),
                     interviewRequest.getInterviewStatus(),
                     interviewRequest.isSkipNotification(),
                     interviewRequest.getAssignedTo()); // Added status update
@@ -189,7 +186,8 @@ public class InterviewController {
                     interviewRequest.getContactNumber(),
                     interviewRequest.getCandidateEmailId(),
                     interviewRequest.isSkipNotification(),
-                    interviewRequest.getAssignedTo());
+                    interviewRequest.getAssignedTo(),
+                    interviewRequest.getComments());
             return ResponseEntity.ok(response);
         } catch (CandidateNotFoundException e) {
             // If the candidate is not found
@@ -228,24 +226,31 @@ public class InterviewController {
                     interviewRequest.getClientName(),
                     interviewRequest.getInterviewLevel(),
                     interviewRequest.getExternalInterviewDetails(),
+                    interviewRequest.getInternalFeedback(),
                     interviewRequest.getInterviewStatus(),
-                    interviewRequest.isSkipNotification()
+                    interviewRequest.isSkipNotification(),
+                    interviewRequest.getComments()
             ); // Added status update
             return ResponseEntity.ok(response);
     }
     @GetMapping("/interviews/interviewsByUserId/{userId}")
-    public ResponseEntity<List<GetInterviewResponseDto>> getInterviewsByUserId(@PathVariable String userId) throws JsonProcessingException {
-          return new ResponseEntity<>(interviewService.getAllScheduledInterviewsByUserId(userId), HttpStatus.OK);
-
+    public ResponseEntity<List<GetInterviewResponseDto>> getInterviewsByUserId(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "ALL") String interviewLevel  // NEW: filter by level
+    ) throws JsonProcessingException {
+        List<GetInterviewResponseDto> interviews = interviewService.getAllScheduledInterviewsByUserId(userId, interviewLevel);
+        return new ResponseEntity<>(interviews, HttpStatus.OK);
     }
+
     @GetMapping("/interviews/{userId}/filterByDate")
     public ResponseEntity<GetInterviewResponse> getInterviewsByUserIdAndDateRange(
             @PathVariable String userId,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        GetInterviewResponse interviews = interviewService.getScheduledInterviewsByUserIdAndDateRange(userId, startDate, endDate);
-
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "ALL") String interviewLevel // NEW: filter by level
+    ) {
+        GetInterviewResponse interviews = interviewService.getScheduledInterviewsByUserIdAndDateRange(
+                userId, startDate, endDate, interviewLevel);
         return ResponseEntity.ok(interviews);
     }
 
@@ -304,12 +309,26 @@ public class InterviewController {
                     .body(Collections.singletonMap("message", "An error occurred while fetching interviews"));
         }
     }
-
     @GetMapping("/interviewSlots/{userId}")
     public ResponseEntity<InterviewSlotsDto> getInterviewSlots(
             @PathVariable String userId
     ){
 
-         return new ResponseEntity<>(interviewService.getInterviewSlots(userId),HttpStatus.OK);
+        return new ResponseEntity<>(interviewService.getInterviewSlots(userId),HttpStatus.OK);
+    }
+
+
+    @PutMapping("/updateInterviewByCoordinator/{coordinatorId}/{interviewId}")
+    public ResponseEntity<InterviewResponseDto> updateInterviewByCoordinator(
+            @PathVariable String coordinatorId,@PathVariable String interviewId,
+            @RequestBody CoordinatorInterviewUpdateDto dto){
+
+       return new ResponseEntity<>(interviewService.updateInterviewByCoordinator(coordinatorId,interviewId,dto),HttpStatus.OK);
+    }
+
+    @GetMapping("/coordinatorInterviews/{userId}")
+    public ResponseEntity<List<CoordinatorInterviewDto>> getCoordinatorInterviews(String userId){
+
+          return new ResponseEntity<>(interviewService.getCoordinatorInterviews(userId),HttpStatus.OK);
     }
 }

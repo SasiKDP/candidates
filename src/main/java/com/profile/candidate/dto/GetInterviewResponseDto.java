@@ -24,13 +24,17 @@ public class GetInterviewResponseDto {
     private String latestInterviewStatus;
     private String recruiterName;
     private boolean isPlaced;// New field for status
+    private String technology;
+    private String internalFeedback;
+    private String comments;
 
+    public String getTechnology() {
+        return technology;
+    }
 
-    // Constructor
-
-
-    // Getters and Setters
-
+    public void setTechnology(String technology) {
+        this.technology = technology;
+    }
 
     public String getRecruiterName() {
         return recruiterName;
@@ -40,7 +44,13 @@ public class GetInterviewResponseDto {
         this.recruiterName = recruiterName;
     }
 
-    public GetInterviewResponseDto(String interviewId, String jobId, String candidateId, String candidateFullName, String candidateContactNo, String candidateEmailId, String userEmail, String userId, OffsetDateTime interviewDateTime, Integer duration, String zoomLink, LocalDateTime interviewScheduledTimestamp, List<String> clientEmail, String clientName, String interviewLevel, String latestInterviewStatus, String recruiterName, boolean isPlaced) {
+    public GetInterviewResponseDto(String interviewId, String jobId, String candidateId,
+                                   String candidateFullName, String candidateContactNo,
+                                   String candidateEmailId, String userEmail, String userId,
+                                   OffsetDateTime interviewDateTime, Integer duration, String zoomLink,
+                                   LocalDateTime interviewScheduledTimestamp, List<String> clientEmail,
+                                   String clientName, String interviewLevel, String latestInterviewStatus,
+                                   String recruiterName, boolean isPlaced, String technology, String internalFeedback, String comments) {
         this.interviewId = interviewId;
         this.jobId = jobId;
         this.candidateId = candidateId;
@@ -59,6 +69,9 @@ public class GetInterviewResponseDto {
         this.latestInterviewStatus = latestInterviewStatus;
         this.recruiterName = recruiterName;
         this.isPlaced = isPlaced;
+        this.technology = technology;
+        this.internalFeedback = internalFeedback;
+        this.comments = comments;
     }
 
     public boolean getIsPlaced() {
@@ -195,6 +208,30 @@ public class GetInterviewResponseDto {
 
     public void setInterviewId(String interviewId) {
         this.interviewId = interviewId;
+    }
+
+    public boolean isPlaced() {
+        return isPlaced;
+    }
+
+    public void setPlaced(boolean placed) {
+        isPlaced = placed;
+    }
+
+    public String getInternalFeedback() {
+        return internalFeedback;
+    }
+
+    public void setInternalFeedback(String internalFeedback) {
+        this.internalFeedback = internalFeedback;
+    }
+
+    public String getComments() {
+        return comments;
+    }
+
+    public void setComments(String comments) {
+        this.comments = comments;
     }
 
     @Override

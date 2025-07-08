@@ -91,6 +91,8 @@ public class SubmissionService {
         data.setRequiredTechnologiesRating(sub.getRequiredTechnologiesRating());
         data.setClientName(sub.getClientName());
         data.setRecruiterName(sub.getRecruiterName());
+        data.setStatus(sub.getStatus());
+
         CandidateDetails candidate = sub.getCandidate();
         //CandidateDto candidateDto = new CandidateDto();
         data.setUserId(candidate.getUserId());
@@ -147,6 +149,8 @@ public class SubmissionService {
     }
     public CandidateResponseDto editSubmission(String submissionId, CandidateDetails updatedCandidateDetails, Submissions updatedSubmissionsDetails, MultipartFile resumeFile) {
 
+        logger.info("Updating status: {}", updatedSubmissionsDetails.getStatus());
+
         Optional<Submissions> submissions=submissionRepository.findById(submissionId);
         if(submissions.isEmpty()) throw new SubmissionNotFoundException("No Submissions Found with Submission Id :"+submissionId);
         try {
@@ -183,7 +187,7 @@ public class SubmissionService {
             existedSubmission.setRequiredTechnologiesRating(updatedSubmissionsDetails.getRequiredTechnologiesRating());
             existedSubmission.setOverallFeedback(updatedSubmissionsDetails.getOverallFeedback());
             existedSubmission.setSubmittedAt(LocalDateTime.now());
-
+            existedSubmission.setStatus(updatedSubmissionsDetails.getStatus());
             if (resumeFile != null && !resumeFile.isEmpty()) {
                 // Convert the resume file to byte[] and set it in the candidateDetails object
                 byte[] resumeData = resumeFile.getBytes();
@@ -239,17 +243,6 @@ public class SubmissionService {
             throw new RuntimeException("An error occurred while saving the resume file", ex);
         }
     }
-//    public boolean isCandidateValidForUser(String userId, String candidateId) {
-//        // Fetch the candidate by candidateId
-//        Submissions candidateDetails = submissionRepository.findByCandidateId(candidateId)
-//                .orElseThrow(() -> new CandidateNotFoundException("Candidate not found"));
-//        // Check if the userId associated with the candidate matches the provided userId
-//        if (!candidateDetails.getUserId().equals(userId)) {
-//            return false;
-//        }
-//        return true;
-//    }
-    // Method to update the candidate fields with new values
     private void updateCandidateFields(CandidateDetails existingCandidate, CandidateDetails updatedCandidateDetails) {
         //if (updatedCandidateDetails.getJobId() != null) existingCandidate.setJobId(updatedCandidateDetails.getJobId());
         if (updatedCandidateDetails.getUserId() != null) existingCandidate.setUserId(updatedCandidateDetails.getUserId());
@@ -489,6 +482,7 @@ public class SubmissionService {
         dto.setRecruiterName(sub.getRecruiterName());
         dto.setUserName(sub.getRecruiterName());
         dto.setUserEmail(sub.getUserEmail());
+        dto.setStatus(sub.getStatus());
 
         return dto;
     }
@@ -536,11 +530,6 @@ public class SubmissionService {
                 logger.error("No Candidate found with Id {}" + candidateId);
                 throw new CandidateNotFoundException("Candidate Not Exists with candidateId " + candidateId);
             }
-//            Optional<CandidateDetails> optionalCandidate=candidateRepository.findByCandidateIdAndUserId(candidateId,updatedCandidateDetails.getUserId());
-//            if(optionalCandidate.isEmpty()) {
-//                logger.error("Candidate Id {} Not Related to User Id {}", candidateId, updatedCandidateDetails.getUserId());
-//                throw new CandidateNotFoundException("Candidate Id: " + candidateId + " Not related to UserId: " + updatedCandidateDetails.getUserId());
-//            }
             Submissions existedSubmission = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, updatedSubmissionsDetails.getJobId());
             if (existedSubmission == null) {
                 logger.error("Candidate Not Submitted For JobId {} ", updatedSubmissionsDetails.getJobId());
@@ -560,6 +549,7 @@ public class SubmissionService {
             existedSubmission.setRequiredTechnologiesRating(updatedSubmissionsDetails.getRequiredTechnologiesRating());
             existedSubmission.setOverallFeedback(updatedSubmissionsDetails.getOverallFeedback());
             existedSubmission.setSubmittedAt(LocalDateTime.now());
+            existedSubmission.setStatus(updatedSubmissionsDetails.getStatus());
 
             if (resumeFile != null && !resumeFile.isEmpty()) {
                 // Convert the resume file to byte[] and set it in the candidateDetails object

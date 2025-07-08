@@ -68,7 +68,8 @@ public class BenchController {
             @RequestParam(value = "skills") String skillsJson, // Expecting JSON string
             @RequestParam(value = "linkedin", required = false) String linkedin,
             @RequestParam(value = "referredBy", required = false) String referredBy,
-            @RequestParam(value = "technology", required = false) String technology)
+            @RequestParam(value = "technology", required = false) String technology,
+            @RequestParam(value="remarks", required = false) String remarks)
 
     {
         try {
@@ -85,7 +86,7 @@ public class BenchController {
             benchDetails.setLinkedin(linkedin);
             benchDetails.setReferredBy(referredBy);
             benchDetails.setTechnology(technology);
-
+            benchDetails.setRemarks(remarks);
             // Process resume file
             if (resumeFile != null && !resumeFile.isEmpty()) {
                 benchDetails.setResume(resumeFile.getBytes());
@@ -141,7 +142,8 @@ public class BenchController {
                             bench.getLinkedin(),
                             bench.getReferredBy(),
                             bench.getCreatedDate(),
-                            bench.getTechnology()
+                            bench.getTechnology(),
+                            bench.getRemarks()
                     ))
                     .collect(Collectors.toList());
 
@@ -172,7 +174,8 @@ public class BenchController {
                             bench.getLinkedin(),
                             bench.getReferredBy(),
                             bench.getCreatedDate(),
-                            bench.getTechnology()
+                            bench.getTechnology(),
+                            bench.getRemarks()
                     ))
                     .collect(Collectors.toList());
 
@@ -215,7 +218,8 @@ public class BenchController {
             @RequestPart(value = "skills", required = false) String skillsJson, // Expecting JSON array
             @RequestParam(value = "linkedin", required = false) String linkedin,
             @RequestParam(value = "referredBy", required = false) String referredBy,
-            @RequestParam(value = "technology", required = false) String technology
+            @RequestParam(value = "technology", required = false) String technology,
+            @RequestParam(value="remarks",required = false) String remarks
 
     ) {
         try {
@@ -247,7 +251,7 @@ public class BenchController {
             benchDetails.setReferredBy(referredBy);
             benchDetails.setResume(resumeData);
             benchDetails.setTechnology(technology);
-
+            benchDetails.setRemarks(remarks);
             // ✅ Call service to update details
             BenchDetails updatedBenchDetails = benchService.updateBenchDetails(id, benchDetails);
 

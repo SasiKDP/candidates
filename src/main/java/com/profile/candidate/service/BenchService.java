@@ -130,7 +130,7 @@ public class BenchService {
             if (benchDetails.getLinkedin() != null) existingBench.setLinkedin(benchDetails.getLinkedin());
             if (benchDetails.getReferredBy() != null) existingBench.setReferredBy(benchDetails.getReferredBy());
             if (benchDetails.getTechnology() != null) existingBench.setTechnology(benchDetails.getTechnology());
-
+             if(benchDetails.getRemarks()!=null) existingBench.setRemarks(benchDetails.getRemarks());
             return benchRepository.save(existingBench);
         }).orElseThrow(() -> new IllegalArgumentException("BenchDetails with ID " + id + " not found"));
     }

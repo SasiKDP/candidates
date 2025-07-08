@@ -165,6 +165,7 @@ public class InterviewEmailService {
             }
         }
     }
+
     public void sendEmailToUser(String userEmailId, String subject, String emailBody) {
         if (userEmailId != null && !userEmailId.isEmpty()) {
             try {
