@@ -374,7 +374,7 @@ public class PlacementService {
     private final Random random = new Random();
     private static final long OTP_EXPIRY_TIME_MS = 5 * 60 * 1000; // 5 minutes
     private static final long OTP_COOLDOWN_MS = 60 * 1000; // 1 minute
-     //String ADMIN_EMAIL_ID="putluruarunkumarreddy13@gmail.com";
+    //String ADMIN_EMAIL_ID="putluruarunkumarreddy13@gmail.com";
     //String ADMIN_EMAIL_ID=placementRepository.findPrimarySuperAdminEmail();
     private void startOtpCleanupTask() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
