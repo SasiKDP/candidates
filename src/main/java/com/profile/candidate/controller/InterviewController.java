@@ -234,18 +234,23 @@ public class InterviewController {
             return ResponseEntity.ok(response);
     }
     @GetMapping("/interviews/interviewsByUserId/{userId}")
-    public ResponseEntity<List<GetInterviewResponseDto>> getInterviewsByUserId(@PathVariable String userId) throws JsonProcessingException {
-          return new ResponseEntity<>(interviewService.getAllScheduledInterviewsByUserId(userId), HttpStatus.OK);
-
+    public ResponseEntity<List<GetInterviewResponseDto>> getInterviewsByUserId(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "ALL") String interviewLevel  // NEW: filter by level
+    ) throws JsonProcessingException {
+        List<GetInterviewResponseDto> interviews = interviewService.getAllScheduledInterviewsByUserId(userId, interviewLevel);
+        return new ResponseEntity<>(interviews, HttpStatus.OK);
     }
+
     @GetMapping("/interviews/{userId}/filterByDate")
     public ResponseEntity<GetInterviewResponse> getInterviewsByUserIdAndDateRange(
             @PathVariable String userId,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        GetInterviewResponse interviews = interviewService.getScheduledInterviewsByUserIdAndDateRange(userId, startDate, endDate);
-
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "ALL") String interviewLevel // NEW: filter by level
+    ) {
+        GetInterviewResponse interviews = interviewService.getScheduledInterviewsByUserIdAndDateRange(
+                userId, startDate, endDate, interviewLevel);
         return ResponseEntity.ok(interviews);
     }
 
