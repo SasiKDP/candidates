@@ -1301,8 +1301,9 @@ public class InterviewService {
                                 latestInterviewStatus,
                                 tuple.get("recruiterName", String.class),
                                 tuple.get("is_placed", Boolean.class),
-                                tuple.get("technlogy",String.class)
-
+                                tuple.get("technlogy",String.class),
+                                tuple.get("internalFeedback",String.class),
+                                tuple.get("comments",String.class)
                         ));
                     }
                 }
@@ -1338,7 +1339,7 @@ public class InterviewService {
 
 
     private GetInterviewResponseDto toDto(InterviewDetails interview) {
-        String technology = String.valueOf(interviewRepository.findByCandidateIdAndJobId(interview.getCandidateId(),interview.getJobId()));
+        String technology = (interviewRepository.findJobTitleByJobId(interview.getJobId()));
 
         return new GetInterviewResponseDto(
                 interview.getInterviewId(),
@@ -1359,9 +1360,9 @@ public class InterviewService {
                 latestInterviewStatusFromJson(interview.getInterviewStatus()),
                 interview.getRecruiterName(),
                 interview.getIsPlaced(),
-                technology
-
-
+                technology,
+                interview.getInternalFeedback(),
+                interview.getComments()
         );
     }
 
@@ -1427,7 +1428,9 @@ public class InterviewService {
                     latestInterviewStatus,
                     interview.getRecruiterName(),
                     interview.getIsPlaced(),
-                    interviewRepository.findJobTitleByJobId(interview.getJobId())
+                    interviewRepository.findJobTitleByJobId(interview.getJobId()),
+                    interview.getInternalFeedback(),
+                    interview.getComments()
             ));
         }
         return response;

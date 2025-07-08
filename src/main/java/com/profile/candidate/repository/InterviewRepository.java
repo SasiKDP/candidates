@@ -21,6 +21,7 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
             "WHERE r.client_name = :clientName " +
             "LIMIT 1", nativeQuery = true)
     String findClientIdByClientName(@Param("clientName") String clientName);
+
     @Query("SELECT i FROM InterviewDetails i WHERE i.assignedTo = :userId AND i.timestamp BETWEEN :startDateTime AND :endDateTime")
     List<InterviewDetails> findScheduledInterviewsByAssignedToAndDateRange(
             @Param("userId") String userId,
