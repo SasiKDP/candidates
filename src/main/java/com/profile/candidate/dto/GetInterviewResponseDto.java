@@ -206,6 +206,14 @@ public class GetInterviewResponseDto {
         this.interviewId = interviewId;
     }
 
+    public boolean isPlaced() {
+        return isPlaced;
+    }
+
+    public void setPlaced(boolean placed) {
+        isPlaced = placed;
+    }
+
     @Override
     public String toString() {
         return "GetInterviewResponseDto{" +
