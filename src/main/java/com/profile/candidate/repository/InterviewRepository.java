@@ -104,9 +104,13 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
         c.interview_level,
         c.interview_status,
         c.is_placed,
-        c.recruiter_name AS recruiterName
+        r2.job_title as technlogy,
+        c.recruiter_name AS recruiterName,
+        c.internal_feedback AS internalFeedback,
+        c.comments AS comments
     FROM 
-        interview_details c
+        interview_details c JOIN requirements_model r2
+        ON r2.job_id = c.job_id
     WHERE 
         (
             c.job_id IN (
@@ -118,7 +122,6 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
                     ON b.on_boarded_by = u.user_name
                 WHERE u.user_id = :userId
             )
-            OR c.assigned_to = :userId
         )
         AND c.interview_date_time IS NOT NULL
         AND c.timestamp BETWEEN :startDateTime AND :endDateTime
@@ -128,6 +131,14 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
     );
+
+    @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END " +
+            "FROM InterviewDetails i " +
+            "WHERE i.assignedTo = :userId AND i.interviewDateTime BETWEEN :start AND :end")
+    boolean existsByAssignedToAndDateRange(@Param("userId") String userId,
+                                           @Param("start") LocalDateTime start,
+                                           @Param("end") LocalDateTime end);
+
 
 
     @Query(value = """
