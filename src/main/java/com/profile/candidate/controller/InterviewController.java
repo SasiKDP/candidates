@@ -140,7 +140,8 @@ public class InterviewController {
                     interviewRequest.getInternalFeedback(),
                     interviewRequest.getInterviewStatus(),
                     interviewRequest.isSkipNotification(),
-                    interviewRequest.getAssignedTo()); // Added status update
+                    interviewRequest.getAssignedTo(),
+                    interviewRequest.getComments()); // Added status update
             return ResponseEntity.ok(response);
 
     }
