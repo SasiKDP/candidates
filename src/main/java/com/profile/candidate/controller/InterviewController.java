@@ -237,9 +237,10 @@ public class InterviewController {
     @GetMapping("/interviews/interviewsByUserId/{userId}")
     public ResponseEntity<List<GetInterviewResponseDto>> getInterviewsByUserId(
             @PathVariable String userId,
-            @RequestParam(defaultValue = "ALL") String interviewLevel  // NEW: filter by level
+            @RequestParam(defaultValue = "ALL") String interviewLevel,
+            @RequestParam(defaultValue = "false") boolean coordinator  // NEW: optional
     ) throws JsonProcessingException {
-        List<GetInterviewResponseDto> interviews = interviewService.getAllScheduledInterviewsByUserId(userId, interviewLevel);
+        List<GetInterviewResponseDto> interviews = interviewService.getAllScheduledInterviewsByUserId(userId, interviewLevel, coordinator);
         return new ResponseEntity<>(interviews, HttpStatus.OK);
     }
 
