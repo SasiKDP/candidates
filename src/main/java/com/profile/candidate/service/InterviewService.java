@@ -246,7 +246,8 @@ public class InterviewService {
             String internalFeedback,
             String interviewStatus,
             boolean skipNotification,
-            String assignedTo) {
+            String assignedTo,
+            String comments) {
 
         logger.info("Starting interview update for userId: {} and candidateId: {}", userId, candidateId);
 
@@ -274,6 +275,9 @@ public class InterviewService {
             interviewDetails.setExternalInterviewDetails(externalInterviewDetails);
         if (internalFeedback != null && !internalFeedback.isEmpty()) {
             interviewDetails.setInternalFeedback(internalFeedback);
+        }
+        if (comments != null && !comments.isEmpty()) {
+            interviewDetails.setComments(comments);
         }
           if(interviewLevel.equalsIgnoreCase("INTERNAL") && interviewStatus.equalsIgnoreCase("REJECTED")){
 
@@ -1494,10 +1498,8 @@ public class InterviewService {
         InterviewDetails interview=interviewRepository.findByInterviewIdAndAssignedTo(interviewId,coordinatorId);
 
         if(interview==null) throw new NoInterviewsFoundException("No Interview Found InterviewId"+interviewId+" for CoordinatorId "+coordinatorId);
-
          else {
              interview.setInternalFeedback(dto.getInternalFeedBack());
-
         }
           interviewRepository.save(interview);
 
