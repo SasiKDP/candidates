@@ -1501,14 +1501,56 @@ public class InterviewService {
         InterviewDetails interview=interviewRepository.findByInterviewIdAndAssignedTo(interviewId,coordinatorId);
 
         if(interview==null) throw new NoInterviewsFoundException("No Interview Found InterviewId"+interviewId+" for CoordinatorId "+coordinatorId);
-         else {
-             interview.setInternalFeedback(dto.getInternalFeedBack());
+
+        else {
+            interview.setInternalFeedback(dto.getInternalFeedBack());
+            if (dto.getInterviewStatus() != null && !dto.getInterviewStatus().isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                ArrayNode historyArray;
+                try {
+                    String existingStatus = interview.getInterviewStatus();
+                    if (existingStatus != null && !existingStatus.isEmpty()) {
+                        try {
+                            JsonNode jsonNode = objectMapper.readTree(existingStatus);
+                            if (jsonNode.isArray()) {
+                                historyArray = (ArrayNode) jsonNode;
+                            } else {
+                                logger.error("Existing interviewStatus is not a valid JSON array: {}", existingStatus);
+                                historyArray = objectMapper.createArrayNode(); // Reset to new array
+                            }
+                        } catch (JsonProcessingException e) {
+                            logger.error("Error parsing existing interviewStatus JSON for candidate {}: {}",
+                                    interview.getCandidateId(), e.getMessage());
+                            historyArray = objectMapper.createArrayNode(); // Reset on failure
+                        }
+                    } else {
+                        historyArray = objectMapper.createArrayNode(); // Start fresh if no status exists
+                    }
+                    // If the status is provided, don't add "Scheduled" unless this is the first entry
+                    int nextStage = historyArray.size() + 1; // Changed 'round' to 'stage'
+                    ObjectNode newEntry = objectMapper.createObjectNode();
+
+                    // Add the current status (from UI)
+                    newEntry.put("stage", nextStage);
+                    newEntry.put("status", dto.getInterviewStatus());
+                    newEntry.put("interviewLevel", "INTERNAL");
+                    newEntry.put("timestamp", OffsetDateTime.now().toString());
+
+                    historyArray.add(newEntry);
+                    // Debugging Log
+                    logger.info("Updated Interview Status JSON for Candidate {}: {}",
+                            interview.getCandidateId(), objectMapper.writeValueAsString(historyArray));
+                    interview.setInterviewStatus(objectMapper.writeValueAsString(historyArray));
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Error processing interview status JSON", e);
+                }
+            }
         }
-          interviewRepository.save(interview);
+        interviewRepository.save(interview);
 
 
         String jobTitle = interviewRepository.findJobTitleByJobId(interview.getJobId());
-        String subject="Candidate Selected For Internal Level";
+        String subject="Candidate Status and Feedback for Internal Level";
         String userEmailId = interview.getUserEmail();
         Optional<CandidateDetails> optionalCandidate=candidateRepository.findById(interview.getCandidateId());
         CandidateDetails candidate=optionalCandidate.get();
@@ -1518,9 +1560,14 @@ public class InterviewService {
         } else {
             if (!dto.isSkipNotification()) {
                 try {
+                    if (dto.getInterviewStatus() == null ) {
+                        logger.warn("No interview status found, skipping email notifications");
+                    } else {
                         emailService.sendEmailToUser(interview.getUserEmail(),subject,buildFeedbackEmailBody(
-                                userName,candidate.getFullName(),interview.getJobId(),
-                                        dto.getInternalFeedBack()));
+                                userName,candidate.getFullName(),jobTitle,
+                                dto.getInterviewStatus(),dto.getInternalFeedBack()
+                        ));
+                    }
                 } catch (Exception e) {
                     logger.error("Error processing interview notifications: {}", e.getMessage(), e);
                 }
@@ -1543,6 +1590,7 @@ public class InterviewService {
             String userName,
             String candidateName,
             String jobTitle,
+            String selected,
             String feedbackComments
     ) {
         return String.format(
@@ -1551,14 +1599,17 @@ public class InterviewService {
                         + "for the position <b>%s</b>.</p>"
                         + "<p><b>Feedback Summary:</b></p>"
                         + "<ul>"
+                        + "<li><b>Selection Status:</b> %s</li>"
                         + "<li><b>Comments:</b> %s</li>"
                         + "</ul>"
                         + "<p>Thank you for your input.</p>"
                         + "<p>Best regards,<br>The Scheduling System</p>",
                 userName, candidateName, jobTitle,
+                selected,
                 feedbackComments != null ? feedbackComments : "N/A"
         );
     }
+
 
     public List<CoordinatorInterviewDto> getCoordinatorInterviews(String userId){
 
