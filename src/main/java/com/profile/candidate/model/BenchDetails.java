@@ -48,8 +48,10 @@ public class BenchDetails {
  @Column(name = "contact_number", nullable = false)
  private String contactNumber;
 
- @JsonProperty("skills")  // ✅ Ensure proper mapping
- private List<String> skills;  // ✅ Expecting an array, NOT a string
+ @JdbcTypeCode(SqlTypes.JSON)
+ @Column(name = "skills", columnDefinition = "json")
+ private List<String> skills;
+  // ✅ Expecting an array, NOT a string
 
  @Column(name = "technology")
  private String technology;
