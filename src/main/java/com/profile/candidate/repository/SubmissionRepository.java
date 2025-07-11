@@ -31,6 +31,9 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
 
     Submissions findByCandidate_CandidateEmailIdAndJobId(String candidateId, String jobId);
 
+    @Query(value = "SELECT r.job_title FROM requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
+    String findJobTitleByJobId(@Param("jobId") String jobId);
+
     @Query("SELECT s.candidate.candidateId FROM Submissions s WHERE s.submissionId = :submissionId")
     String findCandidateIdBySubmissionId(@Param("submissionId") String submissionId);
 
@@ -97,7 +100,8 @@ SELECT
     cs.communication_skills AS communication_skills,
     cs.required_technologies_rating AS required_technologies_rating,
     cs.overall_feedback AS overall_feedback,
-    cs.submitted_at AS submitted_at
+    cs.submitted_at AS submitted_at,
+    r.job_title AS technology
 FROM user_details u 
 JOIN requirements_model r ON r.assigned_by = u.user_name  
 JOIN candidate_submissions cs ON cs.job_id = r.job_id    
@@ -137,7 +141,8 @@ SELECT
     cs.communication_skills AS communication_skills,
     cs.required_technologies_rating AS required_technologies_rating,
     cs.overall_feedback AS overall_feedback,
-    cs.submitted_at AS submitted_at
+    cs.submitted_at AS submitted_at,
+    r.job_title AS technology
 FROM candidates c     
 JOIN candidate_submissions cs ON c.candidate_id = cs.candidate_id  
 JOIN requirements_model r ON cs.job_id = r.job_id    

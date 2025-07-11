@@ -92,6 +92,7 @@ public class SubmissionService {
         data.setClientName(sub.getClientName());
         data.setRecruiterName(sub.getRecruiterName());
         data.setStatus(sub.getStatus());
+        data.setTechnology(submissionRepository.findJobTitleByJobId(sub.getJobId()));
 
         CandidateDetails candidate = sub.getCandidate();
         //CandidateDto candidateDto = new CandidateDto();
@@ -368,6 +369,7 @@ public class SubmissionService {
             dto.setExpectedCTC(tuple.get("expected_ctc", String.class));
             dto.setNoticePeriod(tuple.get("notice_period", String.class));
             dto.setCurrentLocation(tuple.get("current_location", String.class));
+            dto.setTechnology(tuple.get("job_title",String.class));
 
             // Submission information fields
             dto.setCommunicationSkills(tuple.get("communication_skills", String.class));
@@ -414,8 +416,10 @@ public class SubmissionService {
         return submissions.stream().map(submission -> {
 
             Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(submission.getJobId());
+            String technology = submissionRepository.findJobTitleByJobId(submission.getJobId());
             String clientName = clientNameOpt.orElse(null);
             SubmissionGetResponseDto dto= convertToSubmissionGetResponseDto(submission);
+            dto.setTechnology(technology);
             dto.setClientName(clientName);
             return dto;
         }).collect(Collectors.toList());
@@ -446,14 +450,15 @@ public class SubmissionService {
 
         return submissions.stream().map(submission -> {
             Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(submission.getJobId());
+            String technology = submissionRepository.findJobTitleByJobId(submission.getJobId());
             String clientName = clientNameOpt.orElse(null);
             SubmissionGetResponseDto dto=convertToSubmissionGetResponseDto(submission);
+            dto.setTechnology(technology);
             dto.setClientName(clientName);
             return dto;
         }).collect(Collectors.toList());
     }
     private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions sub) {
-        String candidateId = submissionRepository.findCandidateIdBySubmissionId(sub.getSubmissionId());
 
         SubmissionGetResponseDto dto = new SubmissionGetResponseDto();
 
@@ -483,6 +488,8 @@ public class SubmissionService {
         dto.setUserName(sub.getRecruiterName());
         dto.setUserEmail(sub.getUserEmail());
         dto.setStatus(sub.getStatus());
+        dto.setTechnology(submissionRepository.findJobTitleByJobId(sub.getJobId()));
+
 
         return dto;
     }
