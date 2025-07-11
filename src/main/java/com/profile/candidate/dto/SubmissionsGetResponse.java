@@ -43,6 +43,8 @@ public class SubmissionsGetResponse {
 
         private String jobId;
 
+        private String technology;
+
         private String clientName;
 
         private LocalDate profileReceivedDate;
@@ -72,6 +74,10 @@ public class SubmissionsGetResponse {
         private String userEmail;
 
         private String status;
+
+        public String getTechnology() {return technology;}
+
+        public void setTechnology(String technology) { this.technology = technology; }
 
         public String getStatus() {
             return status;
