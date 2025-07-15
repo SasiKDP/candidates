@@ -5,6 +5,7 @@ import com.profile.candidate.exceptions.CandidateNotFoundException;
 import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.model.CandidateDetails;
 import com.profile.candidate.model.Submissions;
+import com.profile.candidate.repository.CandidateRepository;
 import com.profile.candidate.repository.SubmissionRepository;
 import com.profile.candidate.service.CandidateService;
 import com.profile.candidate.service.SubmissionService;
@@ -24,9 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.springframework.http.*;
 @CrossOrigin(origins = {"http://35.188.150.92", "http://192.168.0.140:3000", "http://192.168.0.139:3000","https://mymulya.com", "http://localhost:3000","http://192.168.0.135:3000",
@@ -44,6 +43,8 @@ public class SubmissionController {
     SubmissionService submissionService;
     @Autowired
     SubmissionRepository submissionRepository;
+    @Autowired
+    CandidateRepository candidateRepository;
     @Autowired
     CandidateService candidateService;
     private static final Logger logger = LoggerFactory.getLogger(SubmissionController.class);
@@ -277,5 +278,48 @@ public class SubmissionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Collections.singletonMap("message", "An error occurred while fetching submissions"));
         }
+    }
+
+
+    @GetMapping("/closedjobs/{jobId}")
+    public List<Map<String, Object>> getCandidatesByJob(@PathVariable String jobId) {
+        List<Submissions> submissions = submissionRepository.findByJobId(jobId);
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        // ✅ Fetch technology (job title) from requirements_model
+        String technology = submissionRepository.findJobTitleByJobId(jobId);
+
+        for (Submissions submission : submissions) {
+            CandidateDetails candidate = submission.getCandidate();
+            if (candidate == null) continue;
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("candidate_email_id", candidate.getCandidateEmailId());
+            map.put("full_name", candidate.getFullName());
+            map.put("contact_number", candidate.getContactNumber());
+            map.put("relevant_experience", candidate.getRelevantExperience());
+            map.put("total_experience", candidate.getTotalExperience());
+            map.put("referred_by", submission.getRecruiterName());
+            map.put("technology", technology); // ✅ Fetched from requirements_model
+
+            // ✅ Directly set resume as Base64 string
+            if (submission.getResume() != null) {
+                String base64Resume = Base64.getEncoder().encodeToString(submission.getResume());
+                map.put("resume", base64Resume);
+            } else {
+                map.put("resume", null);
+            }
+            // ✅ Convert skills to JSON array
+            List<String> skillsArray = Arrays.stream(
+                            Optional.ofNullable(submission.getSkills()).orElse("").split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            map.put("skills", skillsArray);
+
+            result.add(map);
+        }
+
+        return result;
     }
 }

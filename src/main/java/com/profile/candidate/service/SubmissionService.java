@@ -636,6 +636,18 @@ public class SubmissionService {
         List<SubmissionGetResponseDto> teamSubDtos = mapTuplesToResponseDto(teamSubs);
         return new TeamleadSubmissionsDTO(selfSubDtos, teamSubDtos);
     }
+
+    public byte[] getResumeByCandidateAndJob(String candidateId, String jobId) {
+        Submissions submission = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, jobId);
+        if (submission == null) {
+            throw new CandidateNotFoundException("Submission not found for candidateId: " + candidateId + ", jobId: " + jobId);
+        }
+        byte[] resume = submission.getResume();
+        if (resume == null || resume.length == 0) {
+            throw new CandidateNotFoundException("Resume is missing for candidateId: " + candidateId + ", jobId: " + jobId);
+        }
+        return resume;
+    }
 }
 
 
