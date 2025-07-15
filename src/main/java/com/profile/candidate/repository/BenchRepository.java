@@ -1,5 +1,6 @@
 package com.profile.candidate.repository;
 import com.profile.candidate.model.BenchDetails;
+import com.profile.candidate.model.Submissions;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -36,4 +37,5 @@ public interface BenchRepository extends JpaRepository<BenchDetails, String> {
     @Query("SELECT b FROM BenchDetails b WHERE b.createdDate BETWEEN :startDate AND :endDate")
     List<BenchDetails> findByCreatedDateBetween(@Param("startDate") LocalDate startDate,
                                                 @Param("endDate") LocalDate endDate);
+
 }
