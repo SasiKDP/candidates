@@ -159,6 +159,7 @@ AND cs.profile_received_date BETWEEN :startDate AND :endDate""", nativeQuery = t
             "WHERE r.job_id = :jobId AND EXISTS " +
             "(SELECT 1 FROM candidate_submissions c WHERE c.job_id = :jobId)", nativeQuery = true)
     void updateRequirementStatus(@Param("jobId") String jobId);
+    Optional<Submissions> findByCandidateCandidateIdAndJobId(String candidateId, String jobId);
 
     List<Submissions> findByJobId(String jobId);
 }
