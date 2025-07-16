@@ -134,6 +134,7 @@ public class BenchController {
             if (benchRepository.existsByEmail(req.getEmail())) continue;
 
             BenchDetails bench = new BenchDetails();
+            bench.setId(benchService.generateCustomId());
             bench.setFullName(req.getFullName());
             bench.setEmail(req.getEmail());
             bench.setRelevantExperience(req.getRelevantExperience());
