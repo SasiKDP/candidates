@@ -1,11 +1,15 @@
 package com.profile.candidate.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profile.candidate.dto.*;
 import com.profile.candidate.exceptions.CandidateNotFoundException;
 import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.model.CandidateDetails;
+import com.profile.candidate.model.InterviewDetails;
 import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.CandidateRepository;
+import com.profile.candidate.repository.InterviewRepository;
 import com.profile.candidate.repository.SubmissionRepository;
 import com.profile.candidate.service.CandidateService;
 import com.profile.candidate.service.SubmissionService;
@@ -44,7 +48,7 @@ public class SubmissionController {
     @Autowired
     SubmissionRepository submissionRepository;
     @Autowired
-    CandidateRepository candidateRepository;
+    InterviewRepository interviewRepository;
     @Autowired
     CandidateService candidateService;
     private static final Logger logger = LoggerFactory.getLogger(SubmissionController.class);
@@ -284,14 +288,45 @@ public class SubmissionController {
     @GetMapping("/closedjobs/{jobId}")
     public List<Map<String, Object>> getCandidatesByJob(@PathVariable String jobId) {
         List<Submissions> submissions = submissionRepository.findByJobId(jobId);
-        List<Map<String, Object>> result = new ArrayList<>();
+        logger.info("Fetched total {} submissions for jobId: {}", submissions.size(), jobId);
 
-        // ✅ Fetch technology (job title) from requirements_model
+        List<Map<String, Object>> result = new ArrayList<>();
+        int skippedCount = 0;
+
         String technology = submissionRepository.findJobTitleByJobId(jobId);
 
         for (Submissions submission : submissions) {
             CandidateDetails candidate = submission.getCandidate();
-            if (candidate == null) continue;
+            if (candidate == null) {
+                logger.warn("Skipping submission with null candidate (submissionId: {})", submission.getSubmissionId());
+                continue;
+            }
+
+            // ✅ Exclude based on latest interview status if INTERNAL + REJECTED
+            List<InterviewDetails> interviews = interviewRepository.findByCandidateIdOrderByTimestampDesc(candidate.getCandidateId());
+            if (!interviews.isEmpty()) {
+                InterviewDetails latest = interviews.get(0);
+                String interviewStatusJson = latest.getInterviewStatus();
+                if (interviewStatusJson != null && !interviewStatusJson.isBlank()) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        List<Map<String, Object>> statusList = mapper.readValue(
+                                interviewStatusJson, new TypeReference<>() {});
+                        if (!statusList.isEmpty()) {
+                            Map<String, Object> lastStatus = statusList.get(statusList.size() - 1);
+                            String level = (String) lastStatus.get("interviewLevel");
+                            String status = (String) lastStatus.get("status");
+                            if ("INTERNAL".equalsIgnoreCase(level) && "REJECTED".equalsIgnoreCase(status)) {
+                                logger.info("Skipping candidate {} due to INTERNAL + REJECTED", candidate.getCandidateEmailId());
+                                skippedCount++;
+                                continue;
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error parsing interview status for candidate {}: {}", candidate.getCandidateEmailId(), e.getMessage());
+                    }
+                }
+            }
 
             Map<String, Object> map = new HashMap<>();
             map.put("candidate_email_id", candidate.getCandidateEmailId());
@@ -300,16 +335,15 @@ public class SubmissionController {
             map.put("relevant_experience", candidate.getRelevantExperience());
             map.put("total_experience", candidate.getTotalExperience());
             map.put("referred_by", submission.getRecruiterName());
-            map.put("technology", technology); // ✅ Fetched from requirements_model
+            map.put("technology", technology);
 
-            // ✅ Directly set resume as Base64 string
             if (submission.getResume() != null) {
                 String base64Resume = Base64.getEncoder().encodeToString(submission.getResume());
                 map.put("resume", base64Resume);
             } else {
                 map.put("resume", null);
             }
-            // ✅ Convert skills to JSON array
+
             List<String> skillsArray = Arrays.stream(
                             Optional.ofNullable(submission.getSkills()).orElse("").split(","))
                     .map(String::trim)
@@ -319,6 +353,9 @@ public class SubmissionController {
 
             result.add(map);
         }
+
+        logger.info("Final shortlisted candidates for jobId {}: {}", jobId, result.size());
+        logger.info("Skipped {} candidates due to INTERNAL + REJECTED", skippedCount);
 
         return result;
     }
