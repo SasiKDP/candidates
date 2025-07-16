@@ -104,24 +104,27 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
         c.interview_level,
         c.interview_status,
         c.is_placed,
-        r2.job_title as technlogy,
+        r2.job_title AS technlogy,
         c.recruiter_name AS recruiterName,
         c.internal_feedback AS internalFeedback,
-        c.comments AS comments
+        c.comments AS comments,
+        cd.total_experience,
+        cd.relevant_experience,
+        s.skills
     FROM 
-        interview_details c JOIN requirements_model r2
-        ON r2.job_id = c.job_id
+        interview_details c
+    JOIN requirements_model r2 ON r2.job_id = c.job_id
+    LEFT JOIN candidates cd ON cd.candidate_id = c.candidate_id
+    LEFT JOIN candidate_submissions s ON s.candidate_id = c.candidate_id AND s.job_id = c.job_id
     WHERE 
-        (
-            c.job_id IN (
-                SELECT r.job_id
-                FROM requirements_model r
-                JOIN bdm_client b 
-                    ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
-                JOIN user_details u 
-                    ON b.on_boarded_by = u.user_name
-                WHERE u.user_id = :userId
-            )
+        c.job_id IN (
+            SELECT r.job_id
+            FROM requirements_model r
+            JOIN bdm_client b 
+                ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
+            JOIN user_details u 
+                ON b.on_boarded_by = u.user_name
+            WHERE u.user_id = :userId
         )
         AND c.interview_date_time IS NOT NULL
         AND c.timestamp BETWEEN :startDateTime AND :endDateTime
