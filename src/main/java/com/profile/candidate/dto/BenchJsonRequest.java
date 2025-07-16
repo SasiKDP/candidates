@@ -1,20 +1,41 @@
 package com.profile.candidate.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.util.List;
 
 public class BenchJsonRequest {
+
+    @JsonProperty("full_name")
     private String fullName;
+
+    @JsonProperty("candidate_email_id") // or "email" if that is correct
     private String email;
+
+    @JsonProperty("relevant_experience")
     private BigDecimal relevantExperience;
+
+    @JsonProperty("total_experience")
     private BigDecimal totalExperience;
+
+    @JsonProperty("contact_number")
     private String contactNumber;
+
     private List<String> skills;
+
     private String linkedin;
+
+    @JsonProperty("referred_by")
     private String referredBy;
+
     private String technology;
+
     private String remarks;
-    private String resume; // Base64-encoded string
+
+    private String resume;
+
+    // getters and setters.
 
     public String getFullName() {
         return fullName;
@@ -103,6 +124,6 @@ public class BenchJsonRequest {
     public void setResume(String resume) {
         this.resume = resume;
     }
-
-    // Getters and Setters
+    //
+    // ..
 }
