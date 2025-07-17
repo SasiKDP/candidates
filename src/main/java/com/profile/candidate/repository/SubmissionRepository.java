@@ -76,7 +76,7 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
 	@Query(value = """    
 SELECT 
     cs.submission_id,     
-    cs.candidate_id AS candidate_id,       
+    cs.candidate_id AS candidateId,       
     cs.recruiter_name as recruiter_name,   
     c.full_name AS full_name,    
     cs.skills AS skills,      
@@ -116,7 +116,8 @@ AND cs.job_id IN (SELECT r2.job_id FROM requirements_model r2 WHERE r2.assigned_
 	);
 	@Query(value = """    
 SELECT         
-    cs.submission_id,        
+    cs.submission_id,      
+    c.candidate_id AS candidateId,  
     cs.recruiter_name as recruiter_name,       
     cs.candidate_id AS candidate_id,        
     c.full_name AS full_name,       

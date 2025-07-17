@@ -187,6 +187,8 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
 
     InterviewDetails findByInterviewIdAndAssignedTo(String interviewId,String coordinatorId);
     List<InterviewDetails> findByCandidateIdOrderByTimestampDesc(String candidateId);
-}
+
+    @Query("SELECT DISTINCT i.candidateId FROM InterviewDetails i")
+    List<String> findAllCandidateIdsWithInterviews();}
 
 
