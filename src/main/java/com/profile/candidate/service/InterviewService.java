@@ -1142,7 +1142,7 @@ public class InterviewService {
                         + (formattedZoomLink != null && !formattedZoomLink.isEmpty()
                         ? "<li><b>Join Zoom Meeting:</b> " + formattedZoomLink + "</li>" : "")
                         + "</ul>"
-                        + "<p>Kindly confirm your availability by replying to this email.</p>"
+                        + "<p><b><span style='font-size:18px;'>Please do not reply to this email address as it is sent from an unmonitored mailbox.</span></b></p>"
                         + "<p>Best regards,</p>"
                         + "<p>The Interview Team</p>",
                 recipientName, jobTitle, clientName, formattedDate, formattedTime, formattedDuration);
