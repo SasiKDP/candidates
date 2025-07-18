@@ -50,7 +50,7 @@ public class SubmissionService {
         List<Submissions> submissions = submissionRepository.findByProfileReceivedDateBetween(startOfMonth, endOfMonth);
 
         // Step 2: Fetch all candidateIds from interview table
-        List<String> interviewedCandidateIds = interviewRepository.findAllCandidateIdsWithInterviews();
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
         Set<String> interviewedSet = interviewedCandidateIds.stream()
                 .filter(Objects::nonNull)
                 .map(id -> id.trim().toLowerCase())
@@ -389,7 +389,7 @@ public class SubmissionService {
         logger.info("Fetched {} team submissions", teamSubs.size());
 
         // Fetch interviewed candidate IDs
-        List<String> interviewedCandidateIds = interviewRepository.findAllCandidateIdsWithInterviews();
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
         Set<String> normalizedInterviewedIds = interviewedCandidateIds.stream()
                 .filter(Objects::nonNull)
                 .map(id -> id.trim().toLowerCase())
@@ -498,7 +498,7 @@ public class SubmissionService {
         }
 
         // ✅ Fetch interviewed candidate IDs
-        List<String> interviewedCandidateIds = interviewRepository.findAllCandidateIdsWithInterviews();
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
         Set<String> interviewedSet = interviewedCandidateIds.stream()
                 .filter(Objects::nonNull)
                 .map(id -> id.trim().toLowerCase())
@@ -557,7 +557,7 @@ public class SubmissionService {
         }
 
         // ✅ Get interviewed candidate IDs and normalize
-        List<String> interviewedCandidateIds = interviewRepository.findAllCandidateIdsWithInterviews();
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
         Set<String> interviewedSet = interviewedCandidateIds.stream()
                 .filter(Objects::nonNull)
                 .map(id -> id.trim().toLowerCase())
@@ -787,7 +787,7 @@ public class SubmissionService {
                 selfSubs.size(), teamSubs.size(), userId);
 
         // ✅ Normalize interview candidate IDs for safe comparison
-        List<String> interviewedCandidateIds = interviewRepository.findAllCandidateIdsWithInterviews();
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
         Set<String> interviewedSet = interviewedCandidateIds.stream()
                 .filter(Objects::nonNull)
                 .map(id -> id.trim().toLowerCase())
