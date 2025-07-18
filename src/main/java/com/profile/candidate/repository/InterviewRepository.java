@@ -189,6 +189,28 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
     List<InterviewDetails> findByCandidateIdOrderByTimestampDesc(String candidateId);
 
     @Query("SELECT DISTINCT i.candidateId FROM InterviewDetails i")
-    List<String> findAllCandidateIdsWithInterviews();}
+    List<String> findAllCandidateIdsWithInterviews();
+
+
+    @Query(value = """
+    SELECT DISTINCT id.candidate_id
+    FROM interview_details id
+    WHERE id.interview_status IS NOT NULL
+      AND id.interview_status != ''
+      AND JSON_VALID(id.interview_status)
+      AND (
+          JSON_UNQUOTE(JSON_EXTRACT(id.interview_status, CONCAT(
+              '$[', JSON_LENGTH(id.interview_status) - 1, '].status'))) != 'REJECTED'
+          OR JSON_UNQUOTE(JSON_EXTRACT(id.interview_status, CONCAT(
+              '$[', JSON_LENGTH(id.interview_status) - 1, '].interviewLevel'))) != 'INTERNAL'
+      )
+    """, nativeQuery = true)
+    List<String> findInternalRejectedCandidateIdsLatestOnly();
+
+
+
+}
+
+
 
 
