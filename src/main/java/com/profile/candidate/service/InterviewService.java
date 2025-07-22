@@ -1683,6 +1683,7 @@ public class InterviewService {
         List<InterviewSlotsDto.InterviewDateWithDuration> dateTimeList=new ArrayList<>();
 
         interviewDetailsList.stream()
+                .filter((interview)-> "INTERNAL".equalsIgnoreCase(interview.getInterviewLevel()))
                 .forEach((interview)-> {
                     InterviewSlotsDto.InterviewDateWithDuration timeWithDuration=new InterviewSlotsDto.InterviewDateWithDuration();
                     timeWithDuration.setInterviewDateTime(interview.getInterviewDateTime().withOffsetSameInstant(ZoneOffset.of("+05:30")));
@@ -1690,6 +1691,7 @@ public class InterviewService {
                     dateTimeList.add(timeWithDuration);
                 });
         dto.setBookedSlots(dateTimeList);
+        logger.info("Total slots :"+dto.getBookedSlots().size());
         return dto;
     }
 
