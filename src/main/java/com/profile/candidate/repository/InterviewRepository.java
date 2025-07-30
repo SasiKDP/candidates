@@ -104,21 +104,27 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
         c.interview_level,
         c.interview_status,
         c.is_placed,
-        c.recruiter_name AS recruiterName
+        r2.job_title AS technlogy,
+        c.recruiter_name AS recruiterName,
+        c.internal_feedback AS internalFeedback,
+        c.comments AS comments,
+        cd.total_experience,
+        cd.relevant_experience,
+        s.skills
     FROM 
         interview_details c
+    JOIN requirements_model r2 ON r2.job_id = c.job_id
+    LEFT JOIN candidates cd ON cd.candidate_id = c.candidate_id
+    LEFT JOIN candidate_submissions s ON s.candidate_id = c.candidate_id AND s.job_id = c.job_id
     WHERE 
-        (
-            c.job_id IN (
-                SELECT r.job_id
-                FROM requirements_model r
-                JOIN bdm_client b 
-                    ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
-                JOIN user_details u 
-                    ON b.on_boarded_by = u.user_name
-                WHERE u.user_id = :userId
-            )
-            OR c.assigned_to = :userId
+        c.job_id IN (
+            SELECT r.job_id
+            FROM requirements_model r
+            JOIN bdm_client b 
+                ON TRIM(UPPER(r.client_name)) COLLATE utf8mb4_bin = TRIM(UPPER(b.client_name)) COLLATE utf8mb4_bin
+            JOIN user_details u 
+                ON b.on_boarded_by = u.user_name
+            WHERE u.user_id = :userId
         )
         AND c.interview_date_time IS NOT NULL
         AND c.timestamp BETWEEN :startDateTime AND :endDateTime
@@ -128,6 +134,14 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
     );
+
+    @Query("SELECT CASE WHEN COUNT(i) > 0 THEN true ELSE false END " +
+            "FROM InterviewDetails i " +
+            "WHERE i.assignedTo = :userId AND i.interviewDateTime BETWEEN :start AND :end")
+    boolean existsByAssignedToAndDateRange(@Param("userId") String userId,
+                                           @Param("start") LocalDateTime start,
+                                           @Param("end") LocalDateTime end);
+
 
 
     @Query(value = """
@@ -172,7 +186,31 @@ public interface InterviewRepository extends JpaRepository<InterviewDetails,Stri
     List<InterviewDetails> findByAssignedTo(String userId);
 
     InterviewDetails findByInterviewIdAndAssignedTo(String interviewId,String coordinatorId);
+    List<InterviewDetails> findByCandidateIdOrderByTimestampDesc(String candidateId);
+
+    @Query("SELECT DISTINCT i.candidateId FROM InterviewDetails i")
+    List<String> findAllCandidateIdsWithInterviews();
+
+
+    @Query(value = """
+    SELECT DISTINCT id.candidate_id
+    FROM interview_details id
+    WHERE id.interview_status IS NOT NULL
+      AND id.interview_status != ''
+      AND JSON_VALID(id.interview_status)
+      AND (
+          JSON_UNQUOTE(JSON_EXTRACT(id.interview_status, CONCAT(
+              '$[', JSON_LENGTH(id.interview_status) - 1, '].status'))) != 'REJECTED'
+          OR JSON_UNQUOTE(JSON_EXTRACT(id.interview_status, CONCAT(
+              '$[', JSON_LENGTH(id.interview_status) - 1, '].interviewLevel'))) != 'INTERNAL'
+      )
+    """, nativeQuery = true)
+    List<String> findInternalRejectedCandidateIdsLatestOnly();
+
+
 
 }
+
+
 
 

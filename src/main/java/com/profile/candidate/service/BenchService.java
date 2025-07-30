@@ -1,8 +1,10 @@
 package com.profile.candidate.service;
 
 import com.profile.candidate.dto.BenchDetailsDto;
+import com.profile.candidate.exceptions.CandidateNotFoundException;
 import com.profile.candidate.exceptions.DateRangeValidationException;
 import com.profile.candidate.model.BenchDetails;
+import com.profile.candidate.model.Submissions;
 import com.profile.candidate.repository.BenchRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +49,7 @@ public class BenchService {
 
     }
 
-    private String generateCustomId() {
+    public String generateCustomId() {
         // Fetch all existing Bench IDs that follow the pattern "BENCH###"
         List<Integer> existingNumbers = benchRepository.findAll().stream()
                 .map(BenchDetails::getId)
@@ -213,4 +215,5 @@ public class BenchService {
             return null;
         }
     }
+
 }
