@@ -31,6 +31,9 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
 
     Submissions findByCandidate_CandidateEmailIdAndJobId(String candidateId, String jobId);
 
+    @Query(value = "SELECT r.job_title FROM requirements_model r WHERE r.job_id = :jobId", nativeQuery = true)
+    String findJobTitleByJobId(@Param("jobId") String jobId);
+
     @Query("SELECT s.candidate.candidateId FROM Submissions s WHERE s.submissionId = :submissionId")
     String findCandidateIdBySubmissionId(@Param("submissionId") String submissionId);
 
@@ -73,7 +76,7 @@ public interface SubmissionRepository extends JpaRepository<Submissions,String> 
 	@Query(value = """    
 SELECT 
     cs.submission_id,     
-    cs.candidate_id AS candidate_id,       
+    cs.candidate_id AS candidateId,       
     cs.recruiter_name as recruiter_name,   
     c.full_name AS full_name,    
     cs.skills AS skills,      
@@ -97,7 +100,8 @@ SELECT
     cs.communication_skills AS communication_skills,
     cs.required_technologies_rating AS required_technologies_rating,
     cs.overall_feedback AS overall_feedback,
-    cs.submitted_at AS submitted_at
+    cs.submitted_at AS submitted_at,
+    r.job_title AS technology
 FROM user_details u 
 JOIN requirements_model r ON r.assigned_by = u.user_name  
 JOIN candidate_submissions cs ON cs.job_id = r.job_id    
@@ -112,7 +116,8 @@ AND cs.job_id IN (SELECT r2.job_id FROM requirements_model r2 WHERE r2.assigned_
 	);
 	@Query(value = """    
 SELECT         
-    cs.submission_id,        
+    cs.submission_id,      
+    c.candidate_id AS candidateId,  
     cs.recruiter_name as recruiter_name,       
     cs.candidate_id AS candidate_id,        
     c.full_name AS full_name,       
@@ -120,7 +125,7 @@ SELECT
     c.candidate_email_id AS candidate_email_id,       
     cs.skills AS skills,        
     cs.job_id AS job_id,        
-    cs.user_id AS user_id,
+    cs.user_id AS user_id,  
     cs.user_email AS user_email,        
     cs.preferred_location AS preferred_location,   
     DATE_FORMAT(cs.profile_received_date, '%Y-%m-%d') AS profile_received_date,   
@@ -137,7 +142,8 @@ SELECT
     cs.communication_skills AS communication_skills,
     cs.required_technologies_rating AS required_technologies_rating,
     cs.overall_feedback AS overall_feedback,
-    cs.submitted_at AS submitted_at
+    cs.submitted_at AS submitted_at,
+    r.job_title AS technology
 FROM candidates c     
 JOIN candidate_submissions cs ON c.candidate_id = cs.candidate_id  
 JOIN requirements_model r ON cs.job_id = r.job_id    
@@ -154,5 +160,7 @@ AND cs.profile_received_date BETWEEN :startDate AND :endDate""", nativeQuery = t
             "WHERE r.job_id = :jobId AND EXISTS " +
             "(SELECT 1 FROM candidate_submissions c WHERE c.job_id = :jobId)", nativeQuery = true)
     void updateRequirementStatus(@Param("jobId") String jobId);
+    Optional<Submissions> findByCandidateCandidateIdAndJobId(String candidateId, String jobId);
 
+    List<Submissions> findByJobId(String jobId);
 }

@@ -43,16 +43,46 @@ public class SubmissionService {
     private static final Logger logger = LoggerFactory.getLogger(SubmissionService.class);
 
     public SubmissionsGetResponse getAllSubmissions() {
-
         LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
         LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
-        List<Submissions> submissions = submissionRepository.findByProfileReceivedDateBetween(startOfMonth,endOfMonth);
-        List<SubmissionsGetResponse.GetSubmissionData> data =submissions.stream()
+
+        // Step 1: Fetch all submissions for this month
+        List<Submissions> submissions = submissionRepository.findByProfileReceivedDateBetween(startOfMonth, endOfMonth);
+
+        // Step 2: Fetch all candidateIds from interview table
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
+        Set<String> interviewedSet = interviewedCandidateIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> id.trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        // Step 3: Filter out submissions for candidates who are in interviews
+        List<Submissions> filteredSubmissions = submissions.stream()
+                .filter(sub -> {
+                    String candidateId = sub.getCandidate() != null ? sub.getCandidate().getCandidateId() : null;
+                    return candidateId != null && !interviewedSet.contains(candidateId.trim().toLowerCase());
+                })
+                .collect(Collectors.toList());
+
+        // Step 4: Convert to response DTO
+        List<SubmissionsGetResponse.GetSubmissionData> data = filteredSubmissions.stream()
                 .map(this::convertToSubmissionsGetResponse)
                 .collect(Collectors.toList());
-        SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions found",data,null);
-        return response;
+
+        // ✅ Final log summary at the end
+        logger.info("Submissions Summary ({} to {}): Total={}, Interviewed={}, Excluded={}, Included={}",
+                startOfMonth, endOfMonth,
+                submissions.size(),
+                interviewedSet.size(),
+                submissions.size() - filteredSubmissions.size(),
+                filteredSubmissions.size()
+        );
+
+        return new SubmissionsGetResponse(true, "Filtered Submissions Found", data, null);
     }
+
+
+
 
     public SubmissionsGetResponse getSubmissions(String candidateId) {
         Optional<CandidateDetails> candidateDetails = candidateRepository.findById(candidateId);
@@ -67,14 +97,45 @@ public class SubmissionService {
       return response;
     }
     public SubmissionsGetResponse getSubmissionById(String submissionId) {
-        Optional<Submissions> submissions = submissionRepository.findById(submissionId);
-        if (submissions.isEmpty()) {
+        Optional<Submissions> submissionOpt = submissionRepository.findById(submissionId);
+
+        if (submissionOpt.isEmpty()) {
             throw new SubmissionNotFoundException("Invalid SubmissionId " + submissionId);
         }
-        List<SubmissionsGetResponse.GetSubmissionData> data= Collections.singletonList(convertToSubmissionsGetResponse(submissions.get()));
-        SubmissionsGetResponse response=new SubmissionsGetResponse(true,"Submissions Found",data,null);
-      return  response;
+
+        Submissions submission = submissionOpt.get();
+        String candidateId = submission.getCandidate() != null ? submission.getCandidate().getCandidateId() : null;
+
+        if (candidateId == null) {
+            throw new SubmissionNotFoundException("Submission has no associated candidate.");
+        }
+
+        // Fetch interviewed candidate IDs
+        List<String> interviewedCandidateIds = interviewRepository.findAllCandidateIdsWithInterviews();
+
+        // Normalize
+        Set<String> normalizedInterviewedIds = interviewedCandidateIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> id.trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        logger.info("Fetched {} interviewed candidate IDs from interview details.", normalizedInterviewedIds.size());
+
+        if (normalizedInterviewedIds.contains(candidateId.trim().toLowerCase())) {
+            logger.info("Candidate {} is in interview list. Submission excluded.", candidateId);
+            return new SubmissionsGetResponse(true, "Candidate is in interview, no submission shown", Collections.emptyList(), null);
+        }
+
+        logger.info("Candidate {} is NOT in interview list. Submission included.", candidateId);
+
+        List<SubmissionsGetResponse.GetSubmissionData> data = Collections.singletonList(
+                convertToSubmissionsGetResponse(submission)
+        );
+
+        return new SubmissionsGetResponse(true, "Submissions Found", data, null);
     }
+
+
     private SubmissionsGetResponse.GetSubmissionData convertToSubmissionsGetResponse(Submissions sub) {
 
         SubmissionsGetResponse.GetSubmissionData data = new SubmissionsGetResponse.GetSubmissionData();
@@ -92,6 +153,7 @@ public class SubmissionService {
         data.setClientName(sub.getClientName());
         data.setRecruiterName(sub.getRecruiterName());
         data.setStatus(sub.getStatus());
+        data.setTechnology(submissionRepository.findJobTitleByJobId(sub.getJobId()));
 
         CandidateDetails candidate = sub.getCandidate();
         //CandidateDto candidateDto = new CandidateDto();
@@ -311,42 +373,63 @@ public class SubmissionService {
     }
 
     public TeamleadSubmissionsDTO getSubmissionsForTeamlead(String userId) {
-        // Get the current date
         LocalDate currentDate = LocalDate.now();
-
-        // Calculate the start and end date for the current month
-        LocalDate startOfMonth = currentDate.withDayOfMonth(1);  // First day of the current month
-        LocalDate endOfMonth = currentDate.withDayOfMonth(currentDate.lengthOfMonth());  // Last day of the current month
-
-        // Convert LocalDate to LocalDateTime for query compatibility (starting at the beginning and end of the day)
+        LocalDate startOfMonth = currentDate.withDayOfMonth(1);
+        LocalDate endOfMonth = currentDate.withDayOfMonth(currentDate.lengthOfMonth());
         LocalDateTime startDateTime = startOfMonth.atStartOfDay();
         LocalDateTime endDateTime = endOfMonth.atTime(LocalTime.MAX);
 
-        // Log the date range being fetched
         logger.info("Fetching current month submissions for teamlead with userId: {} between {} and {}", userId, startDateTime, endDateTime);
 
-        // Fetch self submissions for the current month
+        // Fetch all self/team submissions
         List<Tuple> selfSubs = submissionRepository.findSelfSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
-
-        // Fetch team submissions for the current month
         List<Tuple> teamSubs = submissionRepository.findTeamSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
-        logger.info("Fetched {} self submissions for teamlead with userId: {} between {} and {}", selfSubs.size(), userId, startDateTime, endDateTime);
-        logger.info("Fetched {} team submissions for teamlead with userId: {} between {} and {}", teamSubs.size(), userId, startDateTime, endDateTime);
 
-        // Convert Tuple data to DTO for both self and team submissions
-        List<SubmissionGetResponseDto> selfSubDtos = mapTuplesToResponseDto(selfSubs);
-        List<SubmissionGetResponseDto> teamSubDtos = mapTuplesToResponseDto(teamSubs);
+        logger.info("Fetched {} self submissions", selfSubs.size());
+        logger.info("Fetched {} team submissions", teamSubs.size());
 
-        // Return the DTO containing both self and team submissions
+        // Fetch interviewed candidate IDs
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
+        Set<String> normalizedInterviewedIds = interviewedCandidateIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> id.trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        logger.info("Fetched {} interviewed candidate IDs", normalizedInterviewedIds.size());
+
+        // Filter out interviewed candidates from self submissions
+        List<Tuple> filteredSelfSubs = selfSubs.stream()
+                .filter(t -> {
+                    String candidateId = (String) t.get("candidateId");
+                    return candidateId != null && !normalizedInterviewedIds.contains(candidateId.trim().toLowerCase());
+                })
+                .toList();
+
+        // Filter out interviewed candidates from team submissions
+        List<Tuple> filteredTeamSubs = teamSubs.stream()
+                .filter(t -> {
+                    String candidateId = (String) t.get("candidateId");
+                    return candidateId != null && !normalizedInterviewedIds.contains(candidateId.trim().toLowerCase());
+                })
+                .toList();
+
+        logger.info("Filtered self submissions: {} excluded, {} remaining", selfSubs.size() - filteredSelfSubs.size(), filteredSelfSubs.size());
+        logger.info("Filtered team submissions: {} excluded, {} remaining", teamSubs.size() - filteredTeamSubs.size(), filteredTeamSubs.size());
+
+        // Convert to DTOs
+        List<SubmissionGetResponseDto> selfSubDtos = mapTuplesToResponseDto(filteredSelfSubs);
+        List<SubmissionGetResponseDto> teamSubDtos = mapTuplesToResponseDto(filteredTeamSubs);
+
         return new TeamleadSubmissionsDTO(selfSubDtos, teamSubDtos);
     }
+
     public List<SubmissionGetResponseDto> mapTuplesToResponseDto(List<Tuple> tuples) {
         return tuples.stream().map(tuple -> {
             SubmissionGetResponseDto dto = new SubmissionGetResponseDto();
 
             // Common fields from both queries
             dto.setSubmissionId(tuple.get("submission_id", String.class));
-            dto.setCandidateId(tuple.get("candidate_id", String.class));
+            dto.setCandidateId(tuple.get("candidateId", String.class));
             dto.setFullName(tuple.get("full_name", String.class));
             dto.setSkills(tuple.get("skills", String.class));
             dto.setJobId(tuple.get("job_id", String.class));
@@ -368,6 +451,7 @@ public class SubmissionService {
             dto.setExpectedCTC(tuple.get("expected_ctc", String.class));
             dto.setNoticePeriod(tuple.get("notice_period", String.class));
             dto.setCurrentLocation(tuple.get("current_location", String.class));
+            dto.setTechnology(tuple.get("job_title",String.class));
 
             // Submission information fields
             dto.setCommunicationSkills(tuple.get("communication_skills", String.class));
@@ -389,11 +473,12 @@ public class SubmissionService {
     }
     // Method to get candidate submissions by userId
     public List<SubmissionGetResponseDto> getSubmissionsByUserId(String userId) {
-        // ✅ Validate user existence and fetch role
-        String role = submissionRepository.findRoleByUserId(userId); // Native query to join user_roles_prod and roles_prod
+        // ✅ Validate user existence and role
+        String role = submissionRepository.findRoleByUserId(userId);
         if (role == null) {
             throw new ResourceNotFoundException("User ID '" + userId + "' not found or role not assigned.");
         }
+
         LocalDate today = LocalDate.now();
         LocalDate startOfMonth = today.withDayOfMonth(1);
         LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
@@ -411,24 +496,48 @@ public class SubmissionService {
         if (submissions.isEmpty()) {
             throw new CandidateNotFoundException("No submissions found for userId: " + userId + " in the current month.");
         }
-        return submissions.stream().map(submission -> {
 
+        // ✅ Fetch interviewed candidate IDs
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
+        Set<String> interviewedSet = interviewedCandidateIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> id.trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        // ✅ Filter submissions
+        List<Submissions> filtered = submissions.stream()
+                .filter(sub -> sub.getCandidate() != null &&
+                        !interviewedSet.contains(sub.getCandidate().getCandidateId().trim().toLowerCase()))
+                .toList();
+
+        List<SubmissionGetResponseDto> dtoList = filtered.stream().map(submission -> {
             Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(submission.getJobId());
+            String technology = submissionRepository.findJobTitleByJobId(submission.getJobId());
             String clientName = clientNameOpt.orElse(null);
-            SubmissionGetResponseDto dto= convertToSubmissionGetResponseDto(submission);
+            SubmissionGetResponseDto dto = convertToSubmissionGetResponseDto(submission);
+            dto.setTechnology(technology);
             dto.setClientName(clientName);
             return dto;
         }).collect(Collectors.toList());
+
+        // ✅ Logging at the end
+        logger.info("Total submissions fetched for user '{}': {}", userId, submissions.size());
+        logger.info("Submissions excluded (in interviews): {}", submissions.size() - filtered.size());
+        logger.info("Final submissions returned (not in interviews): {}", dtoList.size());
+
+        return dtoList;
     }
 
 
     public List<SubmissionGetResponseDto> getSubmissionsByUserIdAndDateRange(String userId, LocalDate startDate, LocalDate endDate) {
+
         if (endDate.isBefore(startDate)) {
             throw new DateRangeValidationException("End date cannot be before start date.");
         }
 
-        // Fetch role
-        String role = submissionRepository.findRoleByUserId(userId); // write this query to join user_roles_prod and roles_prod
+        // ✅ Fetch role
+        String role = submissionRepository.findRoleByUserId(userId); // Assumes role is not null
+        logger.info("User ID: {} has role: {}", userId, role);
 
         List<Submissions> submissions;
 
@@ -440,20 +549,47 @@ public class SubmissionService {
             throw new UnsupportedOperationException("Only EMPLOYEE and BDM roles are supported.");
         }
 
+        logger.info("Fetched {} submissions for user {} (role: {}) between {} and {}",
+                submissions.size(), userId, role, startDate, endDate);
+
         if (submissions.isEmpty()) {
             throw new CandidateNotFoundException("No submissions found for userId: " + userId + " between " + startDate + " and " + endDate);
         }
 
-        return submissions.stream().map(submission -> {
-            Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(submission.getJobId());
-            String clientName = clientNameOpt.orElse(null);
-            SubmissionGetResponseDto dto=convertToSubmissionGetResponseDto(submission);
-            dto.setClientName(clientName);
-            return dto;
-        }).collect(Collectors.toList());
+        // ✅ Get interviewed candidate IDs and normalize
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
+        Set<String> interviewedSet = interviewedCandidateIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> id.trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        logger.info("Total interviewed candidate IDs: {}", interviewedSet.size());
+
+        // ✅ Filter and enrich DTOs
+        List<SubmissionGetResponseDto> response = submissions.stream()
+                .filter(sub -> {
+                    String candidateId = sub.getCandidate() != null ? sub.getCandidate().getCandidateId() : null;
+                    boolean include = candidateId != null && !interviewedSet.contains(candidateId.trim().toLowerCase());
+                    logger.debug("Candidate ID: {} -> {}", candidateId, include ? "Included" : "Excluded (interview)");
+                    return include;
+                })
+                .map(submission -> {
+                    Optional<String> clientNameOpt = candidateRepository.findClientNameByJobId(submission.getJobId());
+                    String technology = submissionRepository.findJobTitleByJobId(submission.getJobId());
+
+                    SubmissionGetResponseDto dto = convertToSubmissionGetResponseDto(submission);
+                    dto.setTechnology(technology);
+                    clientNameOpt.ifPresent(dto::setClientName);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        logger.info("Final DTO count after filtering: {}", response.size());
+
+        return response;
     }
+
     private SubmissionGetResponseDto convertToSubmissionGetResponseDto(Submissions sub) {
-        String candidateId = submissionRepository.findCandidateIdBySubmissionId(sub.getSubmissionId());
 
         SubmissionGetResponseDto dto = new SubmissionGetResponseDto();
 
@@ -483,6 +619,8 @@ public class SubmissionService {
         dto.setUserName(sub.getRecruiterName());
         dto.setUserEmail(sub.getUserEmail());
         dto.setStatus(sub.getStatus());
+        dto.setTechnology(submissionRepository.findJobTitleByJobId(sub.getJobId()));
+
 
         return dto;
     }
@@ -491,18 +629,41 @@ public class SubmissionService {
         if (endDate.isBefore(startDate)) {
             throw new DateRangeValidationException("End date cannot be before start date.");
         }
-        // ✅ Only hit DB after validations pass
+
         List<Submissions> submissions = submissionRepository.findByProfileReceivedDateBetween(startDate, endDate);
+        logger.info("Fetched {} submissions between {} and {}", submissions.size(), startDate, endDate);
 
         if (submissions.isEmpty()) {
-            throw new CandidateNotFoundException("No submissions found for Candidates between " + startDate + " and " + endDate);
+            throw new CandidateNotFoundException("No submissions found for candidates between " + startDate + " and " + endDate);
         }
-        return submissions.stream().map(submission-> {
-            SubmissionGetResponseDto dto = convertToSubmissionGetResponseDto(submission);
 
-            return dto;
-        }).collect(Collectors.toList());
+        // ✅ Get interviewed candidate IDs and normalize
+        List<String> interviewedCandidateIds = interviewRepository.findAllCandidateIdsWithInterviews();
+        Set<String> interviewedSet = interviewedCandidateIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> id.trim().toLowerCase())
+                .collect(Collectors.toSet());
+        logger.info("Total interviewed candidate IDs fetched: {}", interviewedSet.size());
+
+        // ✅ Filter submissions
+        List<Submissions> filteredSubmissions = submissions.stream()
+                .filter(sub -> {
+                    String candidateId = sub.getCandidate() != null ? sub.getCandidate().getCandidateId() : null;
+                    boolean isIncluded = candidateId != null && !interviewedSet.contains(candidateId.trim().toLowerCase());
+                    logger.debug("Candidate ID: {} -> {}", candidateId, isIncluded ? "Included" : "Excluded (in interview)");
+                    return isIncluded;
+                })
+                .collect(Collectors.toList());
+
+        logger.info("Final submissions: {} excluded, {} included",
+                submissions.size() - filteredSubmissions.size(), filteredSubmissions.size());
+
+        // ✅ Map to DTO
+        return filteredSubmissions.stream()
+                .map(this::convertToSubmissionGetResponseDto)
+                .collect(Collectors.toList());
     }
+
 
     public SubmissionsGetResponse getAllSubmissionsFilterByDate(LocalDate startDate, LocalDate endDate) {
 
@@ -607,27 +768,72 @@ public class SubmissionService {
 
     }
     public TeamleadSubmissionsDTO getSubmissionsForTeamlead(String userId, LocalDate startDate, LocalDate endDate) {
-        // 1. Validate input dates
         if (startDate == null || endDate == null) {
             throw new DateRangeValidationException("Start date and end date must not be null.");
         }
         if (endDate.isBefore(startDate)) {
             throw new DateRangeValidationException("End date cannot be before start date.");
         }
-        // 2. Convert LocalDate to LocalDateTime
+
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
-        // 3. Log
-        logger.info("Fetching submissions for teamlead with userId: {} between {} and {}", userId, startDateTime, endDateTime);
-        // 4. Fetch submissions
+
+        logger.info("Fetching submissions for teamlead (userId: {}) from {} to {}", userId, startDateTime, endDateTime);
+
         List<Tuple> selfSubs = submissionRepository.findSelfSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
         List<Tuple> teamSubs = submissionRepository.findTeamSubmissionsByTeamleadAndDateRange(userId, startDateTime, endDateTime);
-        logger.info("Fetched {} self submissions for teamlead with userId: {}", selfSubs.size(), userId);
-        logger.info("Fetched {} team submissions for teamlead with userId: {}", teamSubs.size(), userId);
-        // 5. Map results
-        List<SubmissionGetResponseDto> selfSubDtos = mapTuplesToResponseDto(selfSubs);
-        List<SubmissionGetResponseDto> teamSubDtos = mapTuplesToResponseDto(teamSubs);
+
+        logger.info("Found {} self submissions and {} team submissions for teamlead {}",
+                selfSubs.size(), teamSubs.size(), userId);
+
+        // ✅ Normalize interview candidate IDs for safe comparison
+        List<String> interviewedCandidateIds = interviewRepository.findInternalRejectedCandidateIdsLatestOnly();
+        Set<String> interviewedSet = interviewedCandidateIds.stream()
+                .filter(Objects::nonNull)
+                .map(id -> id.trim().toLowerCase())
+                .collect(Collectors.toSet());
+        logger.info("Interviewed candidates count: {}", interviewedSet.size());
+
+        // ✅ Filter self submissions
+        List<Tuple> filteredSelfSubs = selfSubs.stream()
+                .filter(t -> {
+                    String candidateId = (String) t.get("candidateId");
+                    boolean include = candidateId != null && !interviewedSet.contains(candidateId.trim().toLowerCase());
+                    logger.debug("Self Candidate ID: {} -> {}", candidateId, include ? "Included" : "Excluded");
+                    return include;
+                })
+                .toList();
+
+        // ✅ Filter team submissions
+        List<Tuple> filteredTeamSubs = teamSubs.stream()
+                .filter(t -> {
+                    String candidateId = (String) t.get("candidateId");
+                    boolean include = candidateId != null && !interviewedSet.contains(candidateId.trim().toLowerCase());
+                    logger.debug("Team Candidate ID: {} -> {}", candidateId, include ? "Included" : "Excluded");
+                    return include;
+                })
+                .toList();
+
+        logger.info("After filtering: {} self submissions and {} team submissions included",
+                filteredSelfSubs.size(), filteredTeamSubs.size());
+
+        // ✅ Convert to DTOs
+        List<SubmissionGetResponseDto> selfSubDtos = mapTuplesToResponseDto(filteredSelfSubs);
+        List<SubmissionGetResponseDto> teamSubDtos = mapTuplesToResponseDto(filteredTeamSubs);
+
         return new TeamleadSubmissionsDTO(selfSubDtos, teamSubDtos);
+    }
+
+    public byte[] getResumeByCandidateAndJob(String candidateId, String jobId) {
+        Submissions submission = submissionRepository.findByCandidate_CandidateIdAndJobId(candidateId, jobId);
+        if (submission == null) {
+            throw new CandidateNotFoundException("Submission not found for candidateId: " + candidateId + ", jobId: " + jobId);
+        }
+        byte[] resume = submission.getResume();
+        if (resume == null || resume.length == 0) {
+            throw new CandidateNotFoundException("Resume is missing for candidateId: " + candidateId + ", jobId: " + jobId);
+        }
+        return resume;
     }
 }
 

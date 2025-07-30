@@ -2,7 +2,7 @@ package com.profile.candidate.dto;
 
 public class CoordinatorInterviewUpdateDto {
 
-
+    private String interviewStatus;
 
     private String internalFeedBack;
 
@@ -14,6 +14,14 @@ public class CoordinatorInterviewUpdateDto {
 
     public void setSkipNotification(boolean skipNotification) {
         this.skipNotification = skipNotification;
+    }
+
+    public String getInterviewStatus() {
+        return interviewStatus;
+    }
+
+    public void setInterviewStatus(String interviewStatus) {
+        this.interviewStatus = interviewStatus;
     }
 
     public String getInternalFeedBack() {
